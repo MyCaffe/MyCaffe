@@ -119,6 +119,7 @@ namespace MyCaffe.layers
         private Stopwatch m_swTiming = new Stopwatch();
         private WorkspaceArgs m_argsWs = new WorkspaceArgs(0, 0);
         private OutputAdapter<T> m_outputAdatper = null;
+        private BlobCollection<T> m_colBlobsAdaptedNone = new BlobCollection<T>();
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -475,12 +476,6 @@ namespace MyCaffe.layers
 
         private void setupOutputAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (colBottom == colTop)
-                return;
-
-            if (colBottom.Count == colTop.Count)
-                return;
-
             if (m_param.output_adapter == null ||
                 m_param.output_adapter.OutputAdapterTypeMethod == OutputAdapterParameter.OutputAdapterType.NONE ||
                 m_param.output_adapter.enabled == false)
@@ -764,7 +759,7 @@ namespace MyCaffe.layers
                 forward(colBottom, colTop);
 
                 if (m_outputAdatper != null)
-                    m_outputAdatper.Forward(colBottom, colTop);
+                    m_outputAdatper.Forward(colTop, colTop);
 
                 for (int i = 0; i < colTop.Count; i++)
                 {
@@ -848,7 +843,7 @@ namespace MyCaffe.layers
                 convert(colBottom);
 
                 if (m_outputAdatper != null)
-                    m_outputAdatper.Backward(colTop, rgbPropagateDown, colBottom);
+                    m_outputAdatper.Backward(colTop, rgbPropagateDown, colTop);
 
                 backward(colTop, rgbPropagateDown, colBottom);
                 m_swTiming.Stop();
@@ -901,6 +896,14 @@ namespace MyCaffe.layers
         public BlobCollection<T> blobs
         {
             get { return m_colBlobs; }
+        }
+
+        /// <summary>
+        /// Returns the collection of adapted learnable parameter Blobs for the Layer (if any), or null.
+        /// </summary>
+        public BlobCollection<T> blobs_adapted
+        {
+            get { return (m_outputAdatper != null) ? m_outputAdatper.blobs : m_colBlobsAdaptedNone; }
         }
 
         /// <summary>
@@ -1227,6 +1230,25 @@ namespace MyCaffe.layers
             {
                 Blob<T> bSrc = paramEx.SharedLayer.blobs[i];
                 Blob<T> bDst = layer.blobs[i];
+
+                string strSrc = bSrc.shape_string;
+                string strDst = bDst.shape_string;
+                if (strSrc != strDst)
+                {
+                    m_log.WriteLine("WARNING: Cannot share blob '" + bSrc.Name + "'(" + strSrc + ") with blob '" + bDst.Name + "'(" + strDst + ") because the sizes differ!");
+                    return false;
+                }
+
+                bSrc.Share(bDst);
+            }
+
+            if (paramEx.SharedLayer.blobs_adapted.Count != layer.blobs_adapted.Count)
+                return false;
+
+            for (int i = 0; i < paramEx.SharedLayer.blobs_adapted.Count; i++)
+            {
+                Blob<T> bSrc = paramEx.SharedLayer.blobs_adapted[i];
+                Blob<T> bDst = layer.blobs_adapted[i];
 
                 string strSrc = bSrc.shape_string;
                 string strDst = bDst.shape_string;
