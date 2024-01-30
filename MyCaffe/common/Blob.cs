@@ -213,6 +213,24 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Squeeze the shape by removing shape=1 on the end each axis until the 'nNumAxes' is reached.
+        /// </summary>
+        /// <param name="nNumAxes">Specifies the number of axes to squeeze to.</param>
+        public void Squeeze(int nNumAxes)
+        {
+            if (nNumAxes < num_axes)
+            {
+                List<int> rgShape = Utility.Clone<int>(shape());
+                for (int i = rgShape.Count; i < 4; i++)
+                {
+                    rgShape.RemoveAt(i);
+                }
+
+                Reshape(rgShape);
+            }
+        }
+
+        /// <summary>
         /// Replace all NaN values with the specified value.
         /// </summary>
         /// <param name="dfReplacement">Specifies the replacement value.</param>
