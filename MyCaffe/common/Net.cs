@@ -73,6 +73,7 @@ namespace MyCaffe.common
         // The parameters in the network.
         BlobCollection<T> m_colParams = new BlobCollection<T>();
         BlobCollection<T> m_colLearnableParams = new BlobCollection<T>();
+        BlobCollection<T> m_colLearnableAdaptedParams = new BlobCollection<T>();
 
         // The mapping from params -> learnable_params : we have
         // learnable_param_ids.Count == params.Count,
@@ -485,6 +486,7 @@ namespace MyCaffe.common
 
                     int param_size = layer_param.GetParameterCount();
                     int num_param_blobs = m_rgLayers[layer_id].blobs.Count();
+                    int num_adapted_param_blobs = m_rgLayers[layer_id].blobs_adapted.Count();
                     m_log.CHECK_LE(param_size, num_param_blobs, "Too many params specified for layer " + layer_param.name);
 
                     ParamSpec default_param_spec = new ParamSpec();
@@ -501,6 +503,11 @@ namespace MyCaffe.common
                     for (int param_id = 0; param_id < num_param_blobs; param_id++)
                     {
                         AppendParam(param, layer_id, param_id);
+                    }
+
+                    for (int param_id = 0; param_id < num_adapted_param_blobs; param_id++)
+                    {
+                        AppendAdaptedParam(param, layer_id, param_id);
                     }
 
                     // Connect up the synced layers, if any.
@@ -746,6 +753,7 @@ namespace MyCaffe.common
                 m_colNetOutputBlobs.Clear();
                 m_colParams.Clear();
                 m_colLearnableParams.Clear();
+                m_colLearnableAdaptedParams.Clear();
                 m_rgnLearnableParamIds.Clear();
                 m_rgdfParamsLr.Clear();
                 m_rgdfParamsWeightDecay.Clear();
@@ -1292,6 +1300,17 @@ namespace MyCaffe.common
             m_rgrgbBottomNeedBackward[layer_id].Add(need_backward);
 
             return blob_id;
+        }
+
+        /// <summary>
+        /// Add any adapted learnable parameters to the list of adapted learnable parameters.
+        /// </summary>
+        /// <param name="param">Specifies the NetParameter used.</param>
+        /// <param name="layer_id">Specifies the Layer index associated with the Blob.</param>
+        /// <param name="adapted_param_id">Specifies the Blob index of the (adapted parameter) Blob.</param>
+        protected void AppendAdaptedParam(NetParameter param, int layer_id, int adapted_param_id)
+        {
+            m_colLearnableAdaptedParams.Add(m_rgLayers[layer_id].blobs_adapted[adapted_param_id]);
         }
 
         /// <summary>
@@ -1899,6 +1918,11 @@ namespace MyCaffe.common
             {
                 m_colLearnableParams[i].Update();
             }
+
+            for (int i = 0; i < m_colLearnableAdaptedParams.Count; i++)
+            {
+                m_colLearnableAdaptedParams[i].Update();
+            }
         }
 
         /// <summary>
@@ -1908,8 +1932,12 @@ namespace MyCaffe.common
         {
             for (int i = 0; i < m_colLearnableParams.Count; i++)
             {
-                Blob<T> blob = m_colLearnableParams[i];
-                blob.SetDiff(0.0);
+                m_colLearnableParams[i].SetDiff(0.0);
+            }
+
+            for (int i = 0; i < m_colLearnableAdaptedParams.Count; i++)
+            {
+                m_colLearnableAdaptedParams[i].SetDiff(0.0);
             }
         }
 
@@ -2550,6 +2578,59 @@ namespace MyCaffe.common
             }
 
             return persist.SaveWeights(m_colLearnableParams, bSaveDiff);
+        }
+
+        /// <summary>
+        /// Loads new adapted weights (only) into the Net.  Adapted weights are weights that are updated using an output adapter such as LoRA.
+        /// </summary>
+        /// <param name="rgWeights">Specifies the weights themselves.</param>
+        /// <param name="persist">Specifies an interface to the persistance object used to load the weights.</param>
+        /// <param name="inputWtInfo">Optionally, specifies the input blobs to import.  Note, when set, the <i>targetWtInfo</i> must also be specified.  When <i>null</i>, this parameter is ignored.</param>
+        /// <param name="targetWtInfo">Optionally, specifies the target blobs to import into.  Note, when set, the <i>inputWtInfo</i> must also be specified.  When <i>null</i>, this parameter is ignored.</param>
+        /// <param name="strSkipBlobType">Optionally, specifies a blob type where weights are NOT loaded.  See Blob.BLOB_TYPE for the types of Blobs.</param>
+        public void LoadAdaptedWeights(byte[] rgWeights, IXPersist<T> persist, List<string> inputWtInfo = null, List<string> targetWtInfo = null, string strSkipBlobType = null)
+        {
+            if (rgWeights == null)
+                return;
+
+            List<string> rgExpectedShapes = new List<string>();
+            bool bLoadedDiffs;
+
+            foreach (Blob<T> b in m_colLearnableAdaptedParams)
+            {
+                rgExpectedShapes.Add(b.shape_string);
+            }
+
+            if (inputWtInfo != null && inputWtInfo.Count == 0)
+                inputWtInfo = null;
+
+            if (targetWtInfo != null && targetWtInfo.Count == 0)
+                targetWtInfo = null;
+
+            bool bSizeToFit = (inputWtInfo != null && targetWtInfo != null) ? true : false;
+
+            persist.LoadWeights(rgWeights, rgExpectedShapes, m_colLearnableAdaptedParams, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo, strSkipBlobType);
+            m_cuda.SynchronizeDevice();
+        }
+
+        /// <summary>
+        /// Save the weights to a byte array.  Adapted weights are weights that are updated using an output adapter such as LoRA.
+        /// </summary>
+        /// <param name="persist">Specifies an interface to the persistance object used to save the weights.</param>
+        /// <param name="bSaveDiff">Specifies to save the diff values.</param>
+        /// <returns>The byte array containing the weights is returned.</returns>
+        public byte[] SaveAdaptedWeights(IXPersist<T> persist, bool bSaveDiff = false)
+        {
+            foreach (Blob<T> blob in m_colLearnableAdaptedParams)
+            {
+                foreach (Layer<T> layer in m_rgLayers)
+                {
+                    if (layer.blobs.Contains(blob))
+                        blob.Tag = layer.layer_param.name;
+                }
+            }
+
+            return persist.SaveWeights(m_colLearnableAdaptedParams, bSaveDiff);
         }
 
         /// <summary>
