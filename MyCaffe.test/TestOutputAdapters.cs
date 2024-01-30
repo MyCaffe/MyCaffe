@@ -23,7 +23,7 @@ namespace MyCaffe.test
             {
                 foreach (IOutputAdapterTest t in test.Tests)
                 {
-                    t.TestLayerForward(false, "lora");
+                    t.TestLayerForward(false, "lora", SolverParameter.SolverType.ADAM);
                 }
             }
             finally
@@ -41,7 +41,7 @@ namespace MyCaffe.test
             {
                 foreach (IOutputAdapterTest t in test.Tests)
                 {
-                    t.TestLayerGradient(false, "lora");
+                    t.TestLayerGradient(false, "lora", SolverParameter.SolverType.ADAM);
                 }
             }
             finally
@@ -59,7 +59,7 @@ namespace MyCaffe.test
             {
                 foreach (IOutputAdapterTest t in test.Tests)
                 {
-                    t.TestLayerForward(true, "lora");
+                    t.TestLayerForward(true, "lora", SolverParameter.SolverType.ADAM);
                 }
             }
             finally
@@ -69,7 +69,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestLayerGradientLoRAEnabled()
+        public void TestLayerGradientLoRAEnabled_ADAM()
         {
             OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
 
@@ -77,7 +77,116 @@ namespace MyCaffe.test
             {
                 foreach (IOutputAdapterTest t in test.Tests)
                 {
-                    t.TestLayerGradient(true, "lora");
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAM);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_ADAMW()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAMW);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_SGD()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.SGD);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_RMSPROP()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.RMSPROP);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_ADAGRAD()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAGRAD);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_NESTEROV()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.NESTEROV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestLayerGradientLoRAEnabled_ADADELTA()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADADELTA);
                 }
             }
             finally
@@ -89,8 +198,8 @@ namespace MyCaffe.test
 
     interface IOutputAdapterTest : ITest
     {
-        void TestLayerForward(bool bEnabled, string strType);
-        void TestLayerGradient(bool bEnabled, string strType);
+        void TestLayerForward(bool bEnabled, string strType, SolverParameter.SolverType type);
+        void TestLayerGradient(bool bEnabled, string strType, SolverParameter.SolverType type);
     }
 
     class OutputAdapterTest : TestBase
@@ -125,14 +234,17 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private string buildSolver()
+        private string buildSolver(SolverParameter.SolverType type)
         {
             SolverParameter solverParam = new SolverParameter();
             solverParam.base_lr = 0.01;
-            solverParam.type = SolverParameter.SolverType.ADAM;
-            solverParam.test_iter.Clear();
+            solverParam.type = type;
+            solverParam.test_iter[0] = 1;
             solverParam.test_interval = 1000;
             solverParam.test_initialization = false;
+
+            if (type == SolverParameter.SolverType.ADADELTA)
+                solverParam.momentum = 0.9;
 
             return solverParam.ToProto("root").ToString();
         }
@@ -176,13 +288,14 @@ namespace MyCaffe.test
                 loss.bottom.Add("ip");
                 loss.bottom.Add("target");
                 loss.top.Add("loss");
+                loss.include.Add(new NetStateRule(Phase.TRAIN));
                 pNet.layer.Add(loss);
             }
 
             return pNet.ToProto("root").ToString();
         }
 
-        public void TestLayerForward(bool bEnabled, string strType)
+        public void TestLayerForward(bool bEnabled, string strType, SolverParameter.SolverType type)
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe s = new SettingsCaffe();
@@ -191,7 +304,7 @@ namespace MyCaffe.test
 
             try
             {
-                string strSolver = buildSolver();
+                string strSolver = buildSolver(type);
                 string strModel = buildModel(bEnabled, strType, 2, 3, 1, 1, false);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
@@ -231,7 +344,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestLayerGradient(bool bEnabled, string strType)
+        public void TestLayerGradient(bool bEnabled, string strType, SolverParameter.SolverType type)
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe s = new SettingsCaffe();
@@ -240,13 +353,14 @@ namespace MyCaffe.test
 
             try
             {
-                string strSolver = buildSolver();
+                string strSolver = buildSolver(type);
                 string strModel = buildModel(bEnabled, strType, 2, 3, 1, 1, true);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
 
                 Solver<T> solver = mycaffe.GetInternalSolver();
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
                 Blob<T> blobX = net.FindBlob("x");
                 Blob<T> blobTrg = net.FindBlob("target");
 
@@ -272,11 +386,9 @@ namespace MyCaffe.test
 
                 float[] rgLastTop = null;
 
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 1000; i++)
                 {
-                    BlobCollection<T> colTop = net.Forward();
-                    float[] rgTop = convertF(colTop[0].mutable_cpu_data);
-
+                    net.Forward();
                     net.Backward();
                     solver.ApplyUpdate(i);
 
@@ -315,17 +427,43 @@ namespace MyCaffe.test
                         }
                     }
 
+                    BlobCollection<T> colTop = netTest.Forward();
+                    Blob<T> pred = colTop.FindBlob("ip");
+                    float[] rgTop = convertF(pred.mutable_cpu_data);
+
                     if (rgLastTop != null)
                     {
-                        for (int j=0; j<rgTop.Length; j++)
+                        if (i < 100)
                         {
-                            double dfDiff = Math.Abs(rgTop[j] - rgLastTop[j]);
-                            m_log.CHECK_GT(dfDiff, 1e-05, "The top difference is too small.");
-                            rgLastTop[j] = rgTop[j];
+                            for (int j = 0; j < rgTop.Length; j++)
+                            {
+                                double dfDiff = Math.Abs(rgTop[j] - rgLastTop[j]);
+                                m_log.CHECK_GT(dfDiff, 1e-06, "The top difference is too small.");
+                                rgLastTop[j] = rgTop[j];
+                            }
+                        }
+                        else
+                        {
+                            double dfSum = 0;
+                            for (int j = 0; j < rgTop.Length; j++)
+                            {
+                                double dfDiff = Math.Abs(rgTop[j] - rgLastTop[j]);
+                                dfSum += dfDiff;
+                            }
+
+                            double dfAve = dfSum / rgTop.Length;
+                            if (dfAve < 1e-06)
+                                break;
                         }
                     }
 
                     rgLastTop = Utility.Clone<float>(rgTop);
+                }
+
+                for (int j = 0; j < rgLastTop.Length; j++)
+                {
+                    double dfDiff = Math.Abs(rgTarget[j] - rgLastTop[j]);
+                    m_log.CHECK_LT(dfDiff, 1e-03, "The top difference is too small.");
                 }
             }
             finally
