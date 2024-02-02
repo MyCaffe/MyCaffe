@@ -233,6 +233,23 @@ class MemoryItem
 			return SetData(lSize, pSrc);
 		}
 
+		long SetHostDataAsFloat(float* fp, size_t lSize)
+		{
+			if (fp == NULL)
+				return ERROR_PARAM_NULL;
+
+			if (m_pData == NULL)
+				return ERROR_MEMORY_OUT;
+
+			if (lSize <= 0)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			if (lSize > m_lSize)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			return cudaMemcpy(m_pData, fp, lSize, cudaMemcpyHostToDevice);
+		}
+
 		float* GetHostDataAsFloat()
 		{
 			float* fp = (float*)malloc(Size());

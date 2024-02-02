@@ -200,7 +200,13 @@ const int ERROR_RNN8_NOT_INITIALIZED			 = ERROR_RNN8 + 1;
 const int ERROR_RNN8_INCOMPATIBLE_CUDNN_VER		 = ERROR_RNN8 + 2;
 const int ERROR_RNN8_INVALID_FILLER			     = ERROR_RNN8 + 3;
 
-const int ERROR_CPD                              = ERROR_RNN8 + 40;
+const int ERROR_ATTN = ERROR_RNN8 + 40;
+const int ERROR_ATTN_NOT_INITIALIZED             = ERROR_ATTN + 1;
+const int ERROR_ATTN_INCOMPATIBLE_CUDNN_VER      = ERROR_ATTN + 2;
+const int ERROR_ATTN_MISSING_DESCRIPTOR		     = ERROR_ATTN + 3;
+const int ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE      = ERROR_ATTN + 4;
+
+const int ERROR_CPD                              = ERROR_ATTN + 40;
 const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;
 
 const int ERROR_CUDNN_OFFSET					= 0x4000;

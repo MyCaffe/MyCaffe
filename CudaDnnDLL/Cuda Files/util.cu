@@ -285,6 +285,26 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "RNN8: The RNN8 does not support the filler specified. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_ATTN:
+			_snprintf(szErr, lMaxErr, "ATTN: A general Attention error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_ATTN_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "ATTN: The Attention is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_ATTN_INCOMPATIBLE_CUDNN_VER:
+			_snprintf(szErr, lMaxErr, "ATTN: The Attention requires cuDNN version 8.0+ to run. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_ATTN_MISSING_DESCRIPTOR:
+			_snprintf(szErr, lMaxErr, "ATTN: The Attention is missing a descriptor. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE:
+			_snprintf(szErr, lMaxErr, "ATTN: The Attention blob size is incompatible. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_CPD:
 			_snprintf(szErr, lMaxErr, "CPD: A general CPD error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;

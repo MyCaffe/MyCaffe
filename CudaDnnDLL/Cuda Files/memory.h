@@ -15,6 +15,7 @@
 #include "pca.h"
 #include "rnnData.h"
 #include "rnn8.h"
+#include "attn.h"
 #include "cpd.h"
 #include "tsne_gp.h"
 #include "tsne_g.h"
@@ -156,6 +157,7 @@ class Memory
 		HandleCollection<MID_HANDLES> m_rnnDataDesc1;
 		HandleCollection<MID_HANDLES> m_rnnDataDesc2;
 		HandleCollection<MID_HANDLES> m_rnn;
+		HandleCollection<MID_HANDLES> m_attn;
 		HandleCollection<MAX_HANDLES> m_cudnn;
 		HandleCollection<MIN_HANDLES> m_pca;
 		HandleCollection<MIN_HANDLES> m_tsnegp;
@@ -449,6 +451,13 @@ class Memory
 		long InitializeRnn8Weights(long hCuda, long hRnn, long hWt, FillerType ftWt, T fWtVal, T fWtVal2, FillerType ftBias, T fBiasVal, T fBiasVal2);
 		long ForwardRnn8(long hCuda, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWt, long hWork, long hReserved);
 		long BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved);
+
+		long CreateAttn(long* phHandle, Math<T>* pMath);
+		long FreeAttn(long hAttn);
+		attnHandle<T>* GetAttn(long hAttn);
+		long SetAttn(long hCuda, long hAttn, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, size_t lSeed);
+		long ForwardAttn(long hCuda, long hAttn, long hQ, long hK, long hV, long hMask, long hY);
+		long BackwardAttn(long hCuda, long hAttn, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY);
 
 		long CreateCpd(long* phHandle, Math<T>* pMath);
 		long FreeCpd(long hCpd);
@@ -1502,6 +1511,87 @@ inline long Memory<T>::BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, lo
 	return rnn->Backward(hCuda, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
 }
 
+
+template <class T>
+inline long Memory<T>::CreateAttn(long* phHandle, Math<T>* pMath)
+{
+	LONG lErr;
+	attnHandle<T>* attn = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((attn = new attnHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = attn->Initialize(this, pMath))
+	{
+		delete attn;
+		return lErr;
+	}
+
+	long hHandle = m_attn.Allocate(attn);
+	if (hHandle < 0)
+	{
+		delete attn;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeAttn(long hHandle)
+{
+	attnHandle<T>* attn = (attnHandle<T>*)m_attn.Free(hHandle);
+
+	if (attn != NULL)
+	{
+		attn->CleanUp();
+		delete attn;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline attnHandle<T>* Memory<T>::GetAttn(long hHandle)
+{
+	return (attnHandle<T>*)m_attn.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::SetAttn(long hCuda, long hAttn, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, size_t lSeed)
+{
+	LONG lErr;
+	attnHandle<T>* attn = (attnHandle<T>*)m_attn.GetData(hAttn);
+	if (attn == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = attn->Set(hCuda, nGpuID, bTraining, nBatch, nBlockSize, nHeads, nSize, fDropout, (unsigned long long)lSeed))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template <class T>
+inline long Memory<T>::ForwardAttn(long hCuda, long hAttn, long hQ, long hK, long hV, long hMask, long hY)
+{
+	attnHandle<T>* attn = (attnHandle<T>*)m_attn.GetData(hAttn);
+	if (attn == NULL)
+		return ERROR_PARAM_NULL;
+	return attn->Forward(hCuda, hQ, hK, hV, hMask, hY);
+}
+
+template <class T>
+inline long Memory<T>::BackwardAttn(long hCuda, long hAttn, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY)
+{
+	attnHandle<T>* attn = (attnHandle<T>*)m_attn.GetData(hAttn);
+	if (attn == NULL)
+		return ERROR_PARAM_NULL;
+	return attn->Backward(hCuda, hQ, hdQ, hK, hdK, hV, hdV, hMask, hY, hdY);
+}
 
 template <class T>
 inline long Memory<T>::CreateCpd(long* phHandle, Math<T>* pMath)

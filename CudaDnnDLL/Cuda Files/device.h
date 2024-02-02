@@ -361,6 +361,12 @@ class Device
 		long Rnn8Forward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long Rnn8Backward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long CreateAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long FreeAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long SetAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long AttnForward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long AttnBackward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long CreateCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FreeCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long SetCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -2435,6 +2441,103 @@ inline long Device<T>::Rnn8Backward(long lInput, T* pfInput, long llInput, LONGL
 
 	return m_memory.BackwardRnn8(hCuda, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
 }
+
+
+template <class T>
+inline long Device<T>::CreateAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateAttn(&hHandle, &m_math))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeAttn(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetAttn(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
+		return lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hAttn = (long)plInput[1];
+	int nGpuID = (int)plInput[2];
+	bool bTraining = (plInput[3] != 0) ? true : false;
+	int nBatch = (int)plInput[4];
+	int nBlockSize = (int)plInput[5];
+	int nHeads = (int)plInput[6];
+	int nSize = (int)plInput[7];
+	float fDropout = (float)pfInput[0];
+	size_t lSeed = (size_t)plInput[8];
+
+	return m_memory.SetAttn(hCuda, hAttn, nGpuID, bTraining, nBatch, nBlockSize, nHeads, nSize, fDropout, lSeed);
+}
+
+template <class T>
+inline long Device<T>::AttnForward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hAttn = (long)plInput[1];
+	long hQ = (long)plInput[2];
+	long hK = (long)plInput[3];
+	long hV = (long)plInput[4];
+	long hMask = (long)plInput[5];
+	long hY = (long)plInput[6];
+
+	return m_memory.ForwardAttn(hCuda, hAttn, hQ, hK, hV, hMask, hY);
+}
+
+template <class T>
+inline long Device<T>::AttnBackward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 11, 11))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hAttn = (long)plInput[1];
+	long hQ = (long)plInput[2];
+	long hdQ = (long)plInput[3];
+	long hK = (long)plInput[4];
+	long hdK = (long)plInput[5];
+	long hV = (long)plInput[6];
+	long hdV = (long)plInput[7];
+	long hMask = (long)plInput[8];
+	long hY = (long)plInput[9];
+	long hdY = (long)plInput[10];
+
+	return m_memory.BackwardAttn(hCuda, hAttn, hQ, hdQ, hK, hdK, hV, hdV, hMask, hY, hdY);
+}
+
 
 template <class T>
 inline long Device<T>::CreateCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
