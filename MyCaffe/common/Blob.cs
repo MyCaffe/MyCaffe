@@ -1036,10 +1036,10 @@ namespace MyCaffe.common
             SyncedMemory<T> dst = (bCopyDiff) ? m_diff : m_data;
             SyncedMemory<T> src = (bCopyDiff) ? blobSrc.m_diff : blobSrc.m_data;
 
-            int nN = num;
-            int nC = channels;
-            int nH = height;
-            int nW = width;
+            int nN = blobSrc.num;
+            int nC = blobSrc.channels;
+            int nH = blobSrc.height;
+            int nW = blobSrc.width;
 
             if (bUseCuda)
             {
@@ -4053,14 +4053,15 @@ namespace MyCaffe.common
             int k = blobA.shape(3);
 
             // Reshape the resulting blob to shape (B,C,M,N)
-            List<int> rgShape = Utility.Clone<int>(blobA.shape());
-            rgShape[rgShape.Count - 1] = n;
-            rgShape[rgShape.Count - 2] = m;
+            m_rgShape1[0] = blobA.shape(0);
+            m_rgShape1[1] = blobB.shape(1);
+            m_rgShape1[2] = m;
+            m_rgShape1[3] = n;
             
             if (bReshape)
-                Reshape(rgShape);
+                Reshape(m_rgShape1);
             else
-                m_log.CHECK(CompareShape(rgShape), "This (resulting) blob does not have the correct shape!  Expected shape = " + Utility.ToString<int>(rgShape));
+                m_log.CHECK(CompareShape(m_rgShape1), "This (resulting) blob does not have the correct shape!  Expected shape = " + Utility.ToString<int>(m_rgShape1.ToList()));
 
             long hA = (bADiff) ? blobA.gpu_diff : blobA.gpu_data;
             long hB = (bBDiff) ? blobB.gpu_diff : blobB.gpu_data;
@@ -4084,6 +4085,7 @@ namespace MyCaffe.common
         {
             if (dfScale != 1.0)
                 scale_diff(dfScale);
+
             blobWork.CopyFromAndTransposeHeightWidth(blobB, false);
             blobA.MatMul(this, blobWork, false, false, false, 1, true, false, true);
             blobWork.CopyFromAndTransposeHeightWidth(blobA, false);
@@ -4105,6 +4107,77 @@ namespace MyCaffe.common
             blobY.Reshape(rgShape);
 
             m_cuda.channel_percentile(m_nCount, num, channels, count(2), gpu_data, blobY.mutable_gpu_data, dfPercentile);
+        }
+
+        /// <summary>
+        /// Save the blob data to a raw file using the same format as used by the low-level debugging.
+        /// </summary>
+        /// <param name="strFile">Specifies the raw file name.</param>
+        /// <param name="bDiff">Specifies to save the diff (when true) instead of the data (false).</param>
+        public void SaveToRawFile(string strFile, bool bDiff = false)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                float[] rgData = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
+                bw.Write(rgData.Length);
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    bw.Write(rgData[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Save the blob data to a raw file using the same format as used by the low-level debugging.
+        /// </summary>
+        /// <param name="strFile">Specifies the raw file name.</param>
+        /// <param name="bDiff">Specifies to save the diff (when true) instead of the data (false).</param>
+        public void LoadFromRawFile(string strFile, bool bDiff = false)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Open))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                float[] rgData = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
+                int nLen = br.ReadInt32();
+
+                if (nLen != rgData.Length)
+                    throw new Exception("The raw file length does not match the blob length!");
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    rgData[i] = br.ReadSingle();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compare the contents of the blob with a raw file using the same format as used by the low-level debugging.
+        /// </summary>
+        /// <param name="strFile">Specifies the raw file name.</param>
+        /// <param name="bDiff">Specifies to save the diff (when true) instead of the data (false).</param>
+        /// <returns>If the blob and file contents are the same, true is returned otherwise false.</returns>
+        public bool CompareToRawFile(string strFile, bool bDiff = false)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Open))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                int nLen = br.ReadInt32();
+                float[] rgData = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
+
+                if (nLen != rgData.Length)
+                    return false;
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    float fVal = br.ReadSingle();
+                    if (fVal != rgData[i])
+                        return false;
+                }
+            }
+
+            return true;
         }
     }
 }
