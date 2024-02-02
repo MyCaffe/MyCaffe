@@ -56,6 +56,8 @@ namespace MyCaffe.layers.gpt
         int m_nBlockSize;
         double m_dfAttnDropout;
         double m_dfResidDropout;
+        long m_hCudnn = 0;
+        long m_hFlashAttention = 0;
 
         int m_nSize;
         int m_nB;
@@ -101,6 +103,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnQ.inner_product_param.axis = 2;
+            ipAttnQ.output_adapter = p.multihead_attention_param.output_adapter_q;
             ipAttnQ.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnQ.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnQ = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnQ, p), null);
@@ -121,6 +124,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnK.inner_product_param.axis = 2;
+            ipAttnK.output_adapter = p.multihead_attention_param.output_adapter_k;
             ipAttnK.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnK.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnK = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnK, p), null);
@@ -141,6 +145,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnV.inner_product_param.axis = 2;
+            ipAttnV.output_adapter = p.multihead_attention_param.output_adapter_v;
             ipAttnV.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnV.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnV = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnV, p), null);
@@ -161,6 +166,7 @@ namespace MyCaffe.layers.gpt
                 ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipProj.inner_product_param.axis = 2;
+            ipProj.output_adapter = p.multihead_attention_param.output_adapter_out;
             ipProj.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
@@ -256,6 +262,18 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobAttB);
             dispose(ref m_blobWork);
             dispose(ref m_blobY);
+
+            if (m_hFlashAttention != 0)
+            {
+                m_cuda.FreeAttn(m_hFlashAttention);
+                m_hFlashAttention = 0;
+            }
+
+            if (m_hCudnn != 0)
+            {
+                m_cuda.FreeCuDNN(m_hCudnn);
+                m_hCudnn = 0;
+            }
 
             base.dispose();
         }
@@ -407,6 +425,13 @@ namespace MyCaffe.layers.gpt
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
 
+            if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
+            {
+                m_hCudnn = m_cuda.CreateCuDNN();
+                m_hFlashAttention = m_cuda.CreateAttn();
+                m_cuda.SetAttn(m_hCudnn, m_hFlashAttention, m_cuda.GetDeviceID(), (m_phase == Phase.TRAIN) ? true : false, m_nB, m_nT, m_nHeads, m_nEmbed/m_nHeads, (float)m_param.multihead_attention_param.attn_dropout);
+            }
+
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nC;
@@ -519,10 +544,10 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// The forward computation.
         /// </summary>
-        /// <param name="colBottom">bottom input blob vector (length 1)
+        /// <param name="colBottom">bottom input blob vector (length 4) q, k, v, mask
         ///  -# @f$ (N \times C \times H \times W) @f$
         /// </param>
-        /// <param name="colTop">top output blob vector (length 1)
+        /// <param name="colTop">top output blob vector (length 1) y
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed causal self attention.
         /// </param>
@@ -565,14 +590,20 @@ namespace MyCaffe.layers.gpt
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
             // Perform Self Attention forward pass
+            if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
+            {
+                m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, blobMask.gpu_data, m_blobWork.mutable_gpu_data);
+            }
+            else
             {
                 // Multiply query and key(T) matrices and scale
                 // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
                 addInternal(m_blobKt, m_blobKt1);
                 m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-                
-                double dfScale = 1.0 / Math.Sqrt(m_nSize);
+
                 m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+                double dfScale = 1.0 / Math.Sqrt(m_nSize);
                 m_blobAttA.scale_data(dfScale);
 
                 // Apply mask to attention matrix
@@ -655,6 +686,13 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Perform Self Attention backward pass
+                // Perform Self Attention forward pass
+                if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
+                {
+                    m_blobY.CopyFrom(m_blobWork, true, true);
+                    m_cuda.AttnScaledDotProductBackward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobQt.mutable_gpu_diff, m_blobKt.gpu_data, m_blobKt.mutable_gpu_diff, m_blobVt.gpu_data, m_blobVt.mutable_gpu_diff, 0, m_blobY.gpu_data, m_blobY.gpu_diff);
+                }
+                else
                 {
                     // Multiply attention matrix with values
                     // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
@@ -666,7 +704,7 @@ namespace MyCaffe.layers.gpt
                     // att' = y' @ v^T 
                     // Gradient with respect to vt
                     // vt' = att^T @ y' 
-                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork);
+                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork, 1);
 
                     // Apply attention dropout.
                     // att = self.attn_dropout(att)

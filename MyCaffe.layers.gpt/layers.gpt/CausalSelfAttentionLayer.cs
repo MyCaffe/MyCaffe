@@ -91,6 +91,7 @@ namespace MyCaffe.layers.gpt
             ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
             ipAttn.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipAttn.inner_product_param.axis = 2;
+            ipAttn.output_adapter = p.causal_self_attention_param.output_adapter_q;
             ipAttn.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttn.parameters.Add(new ParamSpec(1.0, 0.0));
             m_c_attn = Layer<T>.Create(cuda, log, convertLayerParam(ipAttn, p), null);
@@ -102,7 +103,8 @@ namespace MyCaffe.layers.gpt
             ipProj.inner_product_param.bias_term = true;
             ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
             ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
-            ipProj.inner_product_param.axis = 2;            
+            ipProj.inner_product_param.axis = 2;
+            ipProj.output_adapter = p.causal_self_attention_param.output_adapter_out;
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);

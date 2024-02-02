@@ -45,6 +45,10 @@ namespace MyCaffe.layers.gpt
             p1.multihead_attention_param.attn_dropout = p.causal_self_attention_param.attn_dropout;
             p1.multihead_attention_param.resid_dropout = p.causal_self_attention_param.resid_dropout;
             p1.multihead_attention_param.weight_init = param.gpt.MultiheadAttentionParameter.WEIGHT_INIT.GPT;
+            p1.multihead_attention_param.output_adapter_q = p.causal_self_attention_param.output_adapter_q;
+            p1.multihead_attention_param.output_adapter_k = p.causal_self_attention_param.output_adapter_k;
+            p1.multihead_attention_param.output_adapter_v = p.causal_self_attention_param.output_adapter_v;
+            p1.multihead_attention_param.output_adapter_out = p.causal_self_attention_param.output_adapter_out;
             m_mh_att = new MultiheadAttentionLayer<T>(m_cuda, m_log, p1);
 
             // Causal mask to ensure that atttention is only applied to the left in the input sequence.

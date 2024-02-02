@@ -35,6 +35,10 @@ namespace MyCaffe.param.tft
         uint m_nNumHistoricalSteps = 0;  
         uint m_nNumFutureSteps = 0;
         bool m_bEnableSelfAttention = true;
+        OutputAdapterParameter m_output_adapter_q = new OutputAdapterParameter("q");
+        OutputAdapterParameter m_output_adapter_k = new OutputAdapterParameter("k");
+        OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
+        OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
 
         /** @copydoc LayerParameterBase */
         public MultiHeadAttentionInterpParameter()
@@ -136,6 +140,46 @@ namespace MyCaffe.param.tft
             set { m_fillerParam_bias = value; }
         }
 
+        /// <summary>
+        /// Specifies the output adapter for the 'q' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'q' Linear layer.")]
+        public OutputAdapterParameter output_adapter_q
+        {
+            get { return m_output_adapter_q; }
+            set { m_output_adapter_q = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'q' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'k' Linear layer.")]
+        public OutputAdapterParameter output_adapter_k
+        {
+            get { return m_output_adapter_k; }
+            set { m_output_adapter_k = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'v' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'v' Linear layer.")]
+        public OutputAdapterParameter output_adapter_v
+        {
+            get { return m_output_adapter_v; }
+            set { m_output_adapter_v = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'out' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'out' Linear layer.")]
+        public OutputAdapterParameter output_adapter_out
+        {
+            get { return m_output_adapter_out; }
+            set { m_output_adapter_out = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -168,6 +212,11 @@ namespace MyCaffe.param.tft
 
             m_bEnableNoise = p.m_bEnableNoise;
             m_dfSigmaInit = p.m_dfSigmaInit;
+
+            m_output_adapter_q = p.output_adapter_q.Clone();
+            m_output_adapter_k = p.output_adapter_k.Clone();
+            m_output_adapter_v = p.output_adapter_v.Clone();
+            m_output_adapter_out = p.output_adapter_out.Clone();
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -205,6 +254,11 @@ namespace MyCaffe.param.tft
                 rgChildren.Add("enable_noise", m_bEnableNoise.ToString());
                 rgChildren.Add("sigma_init", m_dfSigmaInit.ToString());
             }
+
+            rgChildren.Add(output_adapter_q.ToProto("output_adapter_q"));
+            rgChildren.Add(output_adapter_k.ToProto("output_adapter_k"));
+            rgChildren.Add(output_adapter_v.ToProto("output_adapter_v"));
+            rgChildren.Add(output_adapter_out.ToProto("output_adapter_out"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -247,6 +301,22 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("num_future_steps")) != null)
                 p.num_future_steps = uint.Parse(strVal);
+
+            RawProto rp1 = rp.FindChild("output_adapter_q");
+            if (rp1 != null)
+                p.output_adapter_q = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_k");
+            if (rp1 != null)
+                p.output_adapter_k = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_v");
+            if (rp1 != null)
+                p.output_adapter_v = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_out");
+            if (rp1 != null)
+                p.output_adapter_out = OutputAdapterParameter.FromProto(rp1);
 
             return p;
         }

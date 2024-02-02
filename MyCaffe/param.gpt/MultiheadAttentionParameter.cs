@@ -21,6 +21,11 @@ namespace MyCaffe.param.gpt
         uint m_nBlockSize = 128;
         uint m_nLayers = 6;
         WEIGHT_INIT m_weightInit = WEIGHT_INIT.ENCODER_DECODER;
+        OutputAdapterParameter m_output_adapter_q = new OutputAdapterParameter("q");
+        OutputAdapterParameter m_output_adapter_k = new OutputAdapterParameter("k");
+        OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
+        OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
+        bool m_bEnableFlashScaledDotProductAttention = false;
 
         /// <summary>
         /// Defines the weight initialization strategy.
@@ -50,6 +55,16 @@ namespace MyCaffe.param.gpt
         {
             get { return m_nLayers; }
             set { m_nLayers = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.
+        /// </summary>
+        [Description("Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.")]
+        public bool enable_flash_scaled_dot_product_attention
+        {
+            get { return m_bEnableFlashScaledDotProductAttention; }
+            set { m_bEnableFlashScaledDotProductAttention = value; }
         }
 
         /// <summary>
@@ -107,6 +122,46 @@ namespace MyCaffe.param.gpt
             set { m_weightInit = value; }
         }
 
+        /// <summary>
+        /// Specifies the output adapter for the 'q' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'q' Linear layer.")]
+        public OutputAdapterParameter output_adapter_q
+        {
+            get { return m_output_adapter_q; }
+            set { m_output_adapter_q = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'q' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'k' Linear layer.")]
+        public OutputAdapterParameter output_adapter_k
+        {
+            get { return m_output_adapter_k; }
+            set { m_output_adapter_k = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'v' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'v' Linear layer.")]
+        public OutputAdapterParameter output_adapter_v
+        {
+            get { return m_output_adapter_v; }
+            set { m_output_adapter_v = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter for the 'out' Linear layer.
+        /// </summary>
+        [Description("Specifies the output adapter for the 'out' Linear layer.")]
+        public OutputAdapterParameter output_adapter_out
+        {
+            get { return m_output_adapter_out; }
+            set { m_output_adapter_out = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -131,6 +186,11 @@ namespace MyCaffe.param.gpt
             m_dfAttnDropout = p.attn_dropout;
             m_dfResidDropout = p.resid_dropout;
             m_weightInit = p.weight_init;
+            m_output_adapter_q = p.output_adapter_q.Clone();
+            m_output_adapter_k = p.output_adapter_k.Clone();
+            m_output_adapter_v = p.output_adapter_v.Clone();
+            m_output_adapter_out = p.output_adapter_out.Clone();
+            m_bEnableFlashScaledDotProductAttention = p.enable_flash_scaled_dot_product_attention;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -157,6 +217,11 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("attn_dropout", attn_dropout.ToString());
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
             rgChildren.Add("weight_init", weight_init.ToString());
+            rgChildren.Add("enable_flash_scaled_dot_product_attention", enable_flash_scaled_dot_product_attention.ToString());
+            rgChildren.Add(output_adapter_q.ToProto("output_adapter_q"));
+            rgChildren.Add(output_adapter_k.ToProto("output_adapter_k"));
+            rgChildren.Add(output_adapter_v.ToProto("output_adapter_v"));
+            rgChildren.Add(output_adapter_out.ToProto("output_adapter_out"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -197,7 +262,26 @@ namespace MyCaffe.param.gpt
                     p.weight_init = WEIGHT_INIT.ENCODER_DECODER;
                 else
                     throw new Exception("Unknown weight init strategy '" + strVal + "'!");
-            }    
+            }
+            
+            if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
+                p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
+
+            RawProto rp1 = rp.FindChild("output_adapter_q");
+            if (rp1 != null)
+                p.output_adapter_q = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_k");
+            if (rp1 != null)
+                p.output_adapter_k = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_v");
+            if (rp1 != null)
+                p.output_adapter_v = OutputAdapterParameter.FromProto(rp1);
+
+            rp1 = rp.FindChild("output_adapter_out");
+            if (rp1 != null)
+                p.output_adapter_out = OutputAdapterParameter.FromProto(rp1);
 
             return p;
         }
