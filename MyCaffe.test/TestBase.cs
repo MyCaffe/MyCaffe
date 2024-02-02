@@ -14,6 +14,7 @@ using MyCaffe.db.image;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
+using MyCaffe.layers;
 
 namespace MyCaffe.test
 {
@@ -565,6 +566,15 @@ namespace MyCaffe.test
             {
                 b.Dispose();
                 b = null;
+            }
+        }
+
+        protected void dispose(ref Layer<T> layer)
+        {
+            if (layer != null)
+            {
+                layer.Dispose();
+                layer = null;
             }
         }
 
