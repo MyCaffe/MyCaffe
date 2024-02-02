@@ -155,6 +155,15 @@ class Math
 			m_mapCurand[nDeviceID] = curand;
 		}
 
+		long GetData(long hHandle, MemoryItem** ppItem)
+		{
+			return m_pMemCol->GetData(hHandle, ppItem);
+		}
+
+		long save_to_file(MemoryItem* pItem, char* pszFile, int nCount = -1);
+		long load_from_file(MemoryItem* pItem, char* pszFile, int nCount = -1);
+		long compare_to_file(MemoryItem* pItem, char* pszFile, int nCount = -1);
+
 		long set(int nCount, T* pMem, T fVal);
 		long set(int nCount, long hDst, T fVal, int nIdx, int nXOff = 0);
 		long get(int nCount, long hSrc, int nIdx, T* pfOutput);
@@ -179,6 +188,7 @@ class Math
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff, int nGroups, int nGroupAOff, int nGroupBOff, int nGroupCOff);
 		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc);
 		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc, int strideA, int nStrideB, int nStrideC, int nBatchCount);
+		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* , int lda, int ldb, int ldc, int strideA, int nStrideB, int nStrideC, int nBatchCount);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
 		long gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOff, int nXOff, int nYOff);
 		long axpy(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
@@ -194,6 +204,7 @@ class Math
 		long erf(T fVal, T* fResult);
 		long mask(int n, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY);
 		long mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY);
+		long mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace, T* x, T* mask, T* y);
 		long interp2(int nC, long hX, int nX1, int nY1, int nH1, int nW1, int nH1B, int nW1B, long hY, int nX2, int nY2, int nH2, int nW2, int nH2B, int nW2B, bool bBwd);
 		long add_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long add(int n, long hA, long hB, long hY, T fAlpha);

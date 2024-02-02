@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <complex>
 #include <math.h>
+#include <iostream>
+#include <fstream>
 
 //=============================================================================
 //	Constants
@@ -261,6 +263,133 @@ __global__ void nan_inf_test(int n, const T* in, T* out)
 //=============================================================================
 //	Class Methods
 //=============================================================================
+
+template <class T>
+long Math<T>::save_to_file(MemoryItem* pItem, char* pszFile, int nCount)
+{
+	std::ofstream outFile(pszFile, std::ios::out | std::ios::binary);
+	if (outFile.good())
+	{
+		float* p = pItem->GetHostDataAsFloat();
+
+		if (nCount == -1)
+			nCount = pItem->Size() / sizeof(float);
+
+		outFile.write(reinterpret_cast<const char*>(&nCount), sizeof(int));
+		for (int i = 0; i < nCount; i++)
+		{
+			float f = p[i];
+			outFile.write(reinterpret_cast<const char*>(&f), sizeof(float));
+		}
+
+		free(p);
+		outFile.close();
+		return 0;
+	}
+
+	return ERROR_FILE_CORRUPT;
+}
+
+template long Math<double>::save_to_file(MemoryItem* pItem, char* pszFile, int nCount);
+template long Math<float>::save_to_file(MemoryItem* pItem, char* pszFile, int nCount);
+
+
+template <class T>
+long Math<T>::load_from_file(MemoryItem* pItem, char* pszFile, int nCount)
+{
+	std::ifstream inFile(pszFile, std::ios::in | std::ios::binary);
+	if (inFile.good())
+	{
+		float* p = pItem->GetHostDataAsFloat();
+		int nCount1;
+
+		if (nCount == -1)
+			nCount = pItem->Size() / sizeof(float);
+		else if (nCount > pItem->Size() / sizeof(float))
+		{
+			free(p);
+			inFile.close();
+			return ERROR_FILE_CORRUPT;
+		}
+
+		inFile.read(reinterpret_cast<char*>(&nCount1), sizeof(int));
+		if (nCount != nCount1)
+		{
+			free(p);
+			inFile.close();
+			return ERROR_FILE_CORRUPT;
+		}
+
+		for (int i = 0; i < nCount; i++)
+		{
+			float f;
+			inFile.read(reinterpret_cast<char*>(&f), sizeof(float));
+			p[i] = f;
+		}
+
+		long lErr = pItem->SetHostDataAsFloat(p, nCount * sizeof(float));
+
+		free(p);
+		inFile.close();
+		return lErr;
+	}
+
+	return ERROR_FILE_CORRUPT;
+}
+
+template long Math<double>::load_from_file(MemoryItem* pItem, char* pszFile, int nCount);
+template long Math<float>::load_from_file(MemoryItem* pItem, char* pszFile, int nCount);
+
+
+template <class T>
+long Math<T>::compare_to_file(MemoryItem* pItem, char* pszFile, int nCount)
+{
+	std::ifstream inFile(pszFile, std::ios::in | std::ios::binary);
+	if (inFile.good())
+	{
+		float *p = pItem->GetHostDataAsFloat();
+		int nCount1;
+
+		if (nCount == -1)
+			nCount = pItem->Size() / sizeof(float);
+		else if (nCount > pItem->Size() / sizeof(float))
+		{
+			free(p);
+			inFile.close();
+			return ERROR_FILE_CORRUPT;
+		}			
+
+		inFile.read(reinterpret_cast<char*>(&nCount1), sizeof(int));
+		if (nCount != nCount1)
+		{
+			free(p);
+			inFile.close();
+			return ERROR_FILE_CORRUPT;
+		}
+
+		for (int i = 0; i < nCount; i++)
+		{
+			float f;
+			inFile.read(reinterpret_cast<char*>(&f), sizeof(float));
+			if (p[i] != f)
+			{
+				free(p);
+				inFile.close();
+				return ERROR_FILE_CORRUPT;
+			}
+		}
+
+		free(p);
+		inFile.close();
+		return 0;
+	}
+
+	return ERROR_FILE_CORRUPT;
+}
+
+template long Math<double>::compare_to_file(MemoryItem* pItem, char* pszFile, int nCount);
+template long Math<float>::compare_to_file(MemoryItem* pItem, char* pszFile, int nCount);
+
 
 template <class T>
 void Math<T>::Connect(Memory<T>* pMem)
@@ -1653,6 +1782,50 @@ long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float f
 	return cudaStreamSynchronize(stream);
 }
 
+template <>
+long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, double* a, double* b, double fBeta, double* c, int lda, int ldb, int ldc, int strideA, int strideB, int strideC, int batchCount)
+{
+	cublasHandle_t cublas;
+	if ((cublas = GetCublasHandle()) == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (lErr = cublasDgemmStridedBatched(cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, strideA, b, ldb, strideB, &fBeta, c, ldc, strideC, batchCount))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
+template <>
+long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, float* a, float* b, float fBeta, float* c, int lda, int ldb, int ldc, int strideA, int strideB, int strideC, int batchCount)
+{
+	cublasHandle_t cublas;
+	if ((cublas = GetCublasHandle()) == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (lErr = cublasSgemmStridedBatched(cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, strideA, b, ldb, strideB, &fBeta, c, ldc, strideC, batchCount))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
 
 template <> 
 long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, int lda, int ldb, int ldc)
@@ -2896,6 +3069,16 @@ long Math<T>::mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace,
 
 template long Math<double>::mask_batch(int n, int nBatch, int nMaskDim, double dfSearch, double dfReplace, long hX, long hMask, long hY);
 template long Math<float>::mask_batch(int n, int nBatch, int nMaskDim, float dfSearch, float dfReplace, long hX, long hMask, long hY);
+
+template <class T>
+long Math<T>::mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace, T* x, T* mask, T* y)
+{
+	mask_batch_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nBatch, nMaskDim, x, mask, y, fSearch, fReplace);
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mask_batch(int n, int nBatch, int nMaskDim, double dfSearch, double dfReplace, double* x, double* mask, double* y);
+template long Math<float>::mask_batch(int n, int nBatch, int nMaskDim, float dfSearch, float dfReplace, float* x, float* mask, float* y);
 
 
 // Bi-linear interpolation
@@ -4437,15 +4620,15 @@ long Math<float>::transpose_hw(int num, int c, int h, int w, long hSrc, long hDs
 	float* dst = (float*)pDst->Data();
 	int nCount = num * c;
 	int nDim = h * w;
-	float fAlpha = 0.0f;
-	float fBeta = 1.0f;
+	float fAlpha = 1.0f;
+	float fBeta = 0.0f;
 
-	int m = h;
-	int n = w;
+	int m = h; // (rows)
+	int n = w; // (cols)
 	
 	for (int i = 0; i < nCount; i++)
 	{
-		if (lErr = cublasSgeam(cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+		if (lErr = cublasSgeam(cublas, CUBLAS_OP_T, CUBLAS_OP_T, m, n, &fAlpha, src, n, &fBeta, src, n, dst, m))
 			return lErr | ERROR_CUBLAS_OFFSET;
 
 		src += nDim;
@@ -4476,15 +4659,15 @@ long Math<double>::transpose_hw(int num, int c, int h, int w, long hSrc, long hD
 	double* dst = (double*)pDst->Data();
 	int nCount = num * c;
 	int nDim = h * w;
-	double fAlpha = 0.0f;
-	double fBeta = 1.0f;
+	double fAlpha = 1.0f;
+	double fBeta = 0.0f;
 
-	int m = h;
-	int n = w;
-	
+	int m = h; // (rows)
+	int n = w; // (cols)
+
 	for (int i = 0; i < nCount; i++)
 	{
-		if (lErr = cublasDgeam(cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+		if (lErr = cublasDgeam(cublas, CUBLAS_OP_T, CUBLAS_OP_T, m, n, &fAlpha, src, n, &fBeta, src, n, dst, m))
 			return lErr | ERROR_CUBLAS_OFFSET;
 
 		src += nDim;
@@ -4505,15 +4688,15 @@ long Math<double>::transpose_hw(int num, int c, int h, int w, double* src, doubl
 
 	int nCount = num * c;
 	int nDim = h * w;
-	double fAlpha = 0.0f;
-	double fBeta = 1.0f;
+	double fAlpha = 1.0f;
+	double fBeta = 0.0f;
 
-	int m = h;
-	int n = w;
+	int m = h; // (rows)
+	int n = w; // (cols)
 
 	for (int i = 0; i < nCount; i++)
 	{
-		if (lErr = cublasDgeam(cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+		if (lErr = cublasDgeam(cublas, CUBLAS_OP_T, CUBLAS_OP_T, m, n, &fAlpha, src, n, &fBeta, src, n, dst, m))
 			return lErr | ERROR_CUBLAS_OFFSET;
 
 		src += nDim;
@@ -4534,15 +4717,15 @@ long Math<float>::transpose_hw(int num, int c, int h, int w, float* src, float* 
 
 	int nCount = num * c;
 	int nDim = h * w;
-	float fAlpha = 0.0f;
-	float fBeta = 1.0f;
+	float fAlpha = 1.0f;
+	float fBeta = 0.0f;
 
-	int m = h;
-	int n = w;
+	int m = h; // (rows)
+	int n = w; // (cols)
 
 	for (int i = 0; i < nCount; i++)
 	{
-		if (lErr = cublasSgeam(cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+		if (lErr = cublasSgeam(cublas, CUBLAS_OP_T, CUBLAS_OP_T, m, n, &fAlpha, src, n, &fBeta, src, n, dst, m))
 			return lErr | ERROR_CUBLAS_OFFSET;
 
 		src += nDim;
