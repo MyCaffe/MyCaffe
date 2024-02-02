@@ -401,6 +401,21 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDNN_FN_RNN8_BWD:
 			return m_device.Rnn8Backward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDNN_FN_ATTN_CREATE:
+			return m_device.CreateAttn(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_ATTN_FREE:
+			return m_device.FreeAttn(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_ATTN_SET:
+			return m_device.SetAttn(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_ATTN_FWD:
+			return m_device.AttnForward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_ATTN_BWD:
+			return m_device.AttnBackward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_CPD_CREATE:
 			return m_device.CreateCpd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1561,6 +1576,21 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_RNN8_BWD:
 		return "CUDNN_FN_RNN8_BWD";
+
+	case CUDNN_FN_ATTN_CREATE:
+		return "CUDNN_FN_ATTN_CREATE";
+
+	case CUDNN_FN_ATTN_FREE:
+		return "CUDNN_FN_ATTN_FREE";
+
+	case CUDNN_FN_ATTN_SET:
+		return "CUDNN_FN_ATTN_SET";
+
+	case CUDNN_FN_ATTN_FWD:
+		return "CUDNN_FN_ATTN_FWD";
+
+	case CUDNN_FN_ATTN_BWD:
+		return "CUDNN_FN_ATTN_BWD";
 
 	case CUDA_FN_CPD_CREATE:
 		return "CUDA_FN_CPD_CREATE";
