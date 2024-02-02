@@ -84,7 +84,7 @@ namespace MyCaffe.layers
             if (m_param is LayerParameterEx<T>)
             {
                 LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipUaParam = new LayerParameterEx<T>(ipUaParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                ipUaParam = new LayerParameterEx<T>(ipUaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
             }
 
             m_ipUa = new InnerProductLayer<T>(cuda, log, ipUaParam);
@@ -99,7 +99,7 @@ namespace MyCaffe.layers
             if (m_param is LayerParameterEx<T>)
             {
                 LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipWaParam = new LayerParameterEx<T>(ipWaParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                ipWaParam = new LayerParameterEx<T>(ipWaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
             }
 
             m_ipWa = new InnerProductLayer<T>(cuda, log, ipWaParam);
@@ -126,7 +126,7 @@ namespace MyCaffe.layers
             if (m_param is LayerParameterEx<T>)
             {
                 LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipVParam = new LayerParameterEx<T>(ipVParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                ipVParam = new LayerParameterEx<T>(ipVParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
             }
 
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
