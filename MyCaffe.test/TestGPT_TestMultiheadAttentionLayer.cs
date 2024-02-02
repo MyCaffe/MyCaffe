@@ -184,6 +184,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+
+        [TestMethod]
+        public void TestFlashAttentionTiming()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestFlashAttentionTiming();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IMultiheadAttentionLayerTest : ITest
@@ -194,6 +213,7 @@ namespace MyCaffe.test
         void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init, bool bEnableFlash);
         void TestFlashAttentionForward();
         void TestFlashAttentionBackward();
+        void TestFlashAttentionTiming();
     }
 
     class MultiheadAttentionLayerTest : TestBase
@@ -608,7 +628,7 @@ namespace MyCaffe.test
 
         private void scaled_dot_product_fwd(Blob<T> q, Blob<T> k, Blob<T> v, Blob<T> blobMask, Blob<T> y, int nSize)
         {
-            bool bSaveDebugFiles = true;
+            bool bSaveDebugFiles = false;
             string strPath = "c:\\temp\\_debug\\";
 
             if (bSaveDebugFiles)
@@ -844,6 +864,98 @@ namespace MyCaffe.test
                 m_log.CHECK(m_blobQ.Compare(blobQ, m_blobWork, true), "The Q blob diffs are different.");
                 m_log.CHECK(m_blobK.Compare(blobK, m_blobWork, true), "The K blob diffs are different.");
                 m_log.CHECK(m_blobV.Compare(blobV, m_blobWork, true), "The V blob diffs are different.");
+            }
+            finally
+            {
+                scaled_dot_product_cleanup();
+                dispose(ref blobY);
+
+                if (hAttn != 0)
+                    m_cuda.FreeAttn(hAttn);
+
+                if (hCuDnn != 0)
+                    m_cuda.FreeCuDNN(hCuDnn);
+            }
+        }
+
+        public void TestFlashAttentionTiming()
+        {
+            long hCuDnn = 0;
+            long hAttn = 0;
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobQ = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobK = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobV = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                int nBatch = 3;
+                int nHeads = 8;
+                int nBlock = 200;
+                int nSize = 64;
+                float fDropout = 0.0f;
+
+                scaled_dot_product_setup(nBatch, nHeads, nBlock, nSize, fDropout);
+                blobY.CopyFrom(m_blobY, false, true);
+                blobQ.CopyFrom(m_blobQ, false, true);
+                blobK.CopyFrom(m_blobK, false, true);
+                blobV.CopyFrom(m_blobV, false, true);
+
+                int nIterations = 1000;
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                Trace.WriteLine("Starting non-flash attention forward...");
+                for (int i = 0; i < nIterations; i++)
+                {
+                    scaled_dot_product_fwd(m_blobQ, m_blobK, m_blobV, m_blobMask, m_blobY, nSize);
+                }
+
+                double dfTotalForwardNormal = sw.Elapsed.TotalMilliseconds;
+                m_filler.Fill(m_blobY.count(), m_blobY.mutable_gpu_diff);
+
+                sw.Restart();
+                Trace.WriteLine("Starting non-flash attention backward...");
+                for (int i = 0; i < nIterations; i++)
+                {
+                    scaled_dot_product_bwd(m_blobQ, m_blobK, m_blobV, m_blobMask, m_blobY, nSize);
+                }
+
+                double dfTotalBackwardNormal = sw.Elapsed.TotalMilliseconds;
+
+                hCuDnn = m_cuda.CreateCuDNN();
+                hAttn = m_cuda.CreateAttn();
+                m_cuda.SetAttn(hCuDnn, hAttn, 0, true, nBatch, nBlock, nHeads, nSize, fDropout);
+
+                sw.Restart();
+                Trace.WriteLine("Starting flash attention forward...");
+                for (int i = 0; i < nIterations; i++)
+                {
+                    m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                }
+
+                double dfTotalForwardFlash = sw.Elapsed.TotalMilliseconds;
+
+                blobY.CopyFrom(m_blobY, true);
+
+                sw.Restart();
+                Trace.WriteLine("Starting non-flash attention backward...");
+                for (int i = 0; i < nIterations; i++)
+                {
+                    m_cuda.AttnScaledDotProductBackward(hCuDnn, hAttn, blobQ.gpu_data, blobQ.mutable_gpu_diff, blobK.gpu_data, blobK.mutable_gpu_diff, blobV.gpu_data, blobV.mutable_gpu_diff, m_blobMask.gpu_data, blobY.gpu_data, blobY.gpu_diff);
+                }
+
+                double dfTotalBackwardFlash = sw.Elapsed.TotalMilliseconds;
+
+                double dfAverageForwardNormal = dfTotalForwardNormal / nIterations;
+                double dfAverageBackwardNormal = dfTotalBackwardNormal / nIterations;
+                double dfAverageForwardFlash = dfTotalForwardFlash / nIterations;
+                double dfAverageBackwardFlash = dfTotalBackwardFlash / nIterations;
+
+                Trace.WriteLine("Average Forward Normal: " + dfAverageForwardNormal.ToString("N4") + " ms");
+                Trace.WriteLine("Average Backward Normal: " + dfAverageBackwardNormal.ToString("N4") + " ms");
+                Trace.WriteLine("Average Forward Flash: " + dfAverageForwardFlash.ToString("N4") + " ms");
+                Trace.WriteLine("Average Backward Flash: " + dfAverageBackwardFlash.ToString("N4") + " ms");               
             }
             finally
             {
