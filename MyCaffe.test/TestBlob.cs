@@ -171,7 +171,7 @@ namespace MyCaffe.test
             {
                 foreach (IBlobSimpleTest t in test.Tests)
                 {
-                    t.TestCopyTransposeHeightWidth(1, 1);
+                    t.TestCopyTransposeHeightWidth(1, 1, 4, 4);
                 }
             }
             finally
@@ -189,7 +189,79 @@ namespace MyCaffe.test
             {
                 foreach (IBlobSimpleTest t in test.Tests)
                 {
-                    t.TestCopyTransposeHeightWidth(3, 1);
+                    t.TestCopyTransposeHeightWidth(3, 1, 4, 4);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidthMgtrN()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(1, 1, 4, 2);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidthBatchMgtrN()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(3, 1, 4, 2);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidthMltN()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(1, 1, 2, 4);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidthBatchMltN()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(3, 1, 2, 4);
                 }
             }
             finally
@@ -511,7 +583,7 @@ namespace MyCaffe.test
         void TestLegacyBlobProtoShapeEquals();
         void TestCopyFrom();
         void TestCopyFromChannels();
-        void TestCopyTransposeHeightWidth(int nBatch, int nChannels);
+        void TestCopyTransposeHeightWidth(int nBatch, int nChannels, int nM, int nN);
         void TestMath_SumOfSquares();
         void TestMath_Asum();
         void TestMath_Scale();
@@ -1588,10 +1660,8 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCopyTransposeHeightWidth(int nBatch, int nChannels)
+        public void TestCopyTransposeHeightWidth(int nBatch, int nChannels, int nM, int nN)
         {            
-            int nM = 4;
-            int nN = 4;
             Blob<T> blobA = new Blob<T>(m_cuda, m_log);
             Blob<T> blobB = new Blob<T>(m_cuda, m_log);
             Blob<T> blobC = new Blob<T>(m_cuda, m_log);
