@@ -10,8 +10,6 @@ using MyCaffe.basecode;
 using System.ComponentModel;
 using System.Runtime.Remoting.Channels;
 using System.Xml.Linq;
-using System.Security.Cryptography.X509Certificates;
-using static MyCaffe.param.tft.ReshapeTemporalParameter;
 
 namespace MyCaffe.common
 {
@@ -1183,6 +1181,12 @@ namespace MyCaffe.common
             RNN8_INIT_WEIGHTS = 155,
             RNN8_FWD = 156,
             RNN8_BWD = 157,
+
+            ATTN_CREATE = 160,
+            ATTN_FREE = 161,
+            ATTN_SET = 162,
+            ATTN_SCALED_DOT_PRODUCT_FWD = 163,
+            ATTN_SCALED_DOT_PRODUCT_BWD = 164,
 
             CPD_CREATE = 180,
             CPD_FREE = 181,
@@ -5340,6 +5344,98 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
+        }
+
+
+        /// <summary>
+        /// Create the Attn.
+        /// </summary>
+        /// <returns>A handle to the Attn is returned.</returns>
+        public long CreateAttn()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ATTN_CREATE, null);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ATTN_CREATE, null);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an existing Attn.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the ATTN created with CreateAttn</param>
+        public void FreeAttn(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ATTN_FREE, m_param.AsDouble(h));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ATTN_FREE, m_param.AsFloat(h));
+        }
+
+        /// <summary>
+        /// Set the ATTN parameters.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hAttn">Specifies the handle to the ATTN created with CreateAttn.</param>
+        /// <param name="nGpuID">Specifies the GPUID for which the attention is run.</param>
+        /// <param name="bTraining">Specifies true for training and false for inference.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <param name="nBlockSize">Specifies the block or sequence size.</param>
+        /// <param name="nHeads">Specifies the number of heads.</param>
+        /// <param name="nSize">Specifies the state size where nSize * nHeads = the Embedding size for the multi-headed attention layer.</param>
+        /// <param name="fDropout">Specifies the dropout ratio used, or 0 to ignore.</param>
+        /// <param name="lSeed">Optionally, specifies the dropout seed (default = 0 to ignore).</param>
+        public void SetAttn(long hCuDnn, long hAttn, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, long lSeed = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SET, m_param.AsDouble((double)fDropout), m_param.AsLong(hCuDnn, hAttn, nGpuID, (bTraining) ? 1 : 0, nBatch, nBlockSize, nHeads, nSize, lSeed));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SET, m_param.AsFloat(fDropout), m_param.AsLong(hCuDnn, hAttn, nGpuID, (bTraining) ? 1 : 0, nBatch, nBlockSize, nHeads, nSize, lSeed));
+        }
+
+        /// <summary>
+        /// Calculate the scaled dot product attention forward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hAttn">Specifies the handle to the RNN8 created with CreateAttn.</param>
+        /// <param name="hQdata">Specifies a handle to the GPU memory containing the Q inputs.</param>
+        /// <param name="hKdata">Specifies a handle to the GPU memory containing the K inputs.</param>
+        /// <param name="hVdata">Specifies a handle to the GPU memory containing the V inputs.</param>
+        /// <param name="hMaskdata">Specifies a handle to the GPU memory containing the Mask inputs, or 0 to ignore.</param>
+        /// <param name="hYdata">Specifies a handle to the GPU memory containing the Y outputs.</param>
+        public void AttnScaledDotProductForward(long hCuDnn, long hAttn, long hQdata, long hKdata, long hVdata, long hMaskdata, long hYdata)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+        }
+
+        /// <summary>
+        /// Calculate the scaled dot product attention backward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hAttn">Specifies the handle to the RNN8 created with CreateAttn.</param>
+        /// <param name="hQdata">Specifies a handle to the GPU memory containing the Q inputs.</param>
+        /// <param name="hQdiff">Specifies a handle to the GPU memory containing the Q diff outputs.</param>
+        /// <param name="hKdata">Specifies a handle to the GPU memory containing the K inputs.</param>
+        /// <param name="hKdiff">Specifies a handle to the GPU memory containing the K diff outputs.</param>
+        /// <param name="hVdata">Specifies a handle to the GPU memory containing the V inputs.</param>
+        /// <param name="hVdiff">Specifies a handle to the GPU memory containing the V diff outputs.</param>
+        /// <param name="hMaskdata">Specifies a handle to the GPU memory containing the Mask inputs, or 0 to ignore.</param>
+        /// <param name="hYData">Specifies a handle to the GPU memory containing the Y data.</param>
+        /// <param name="hYdiff">Specifies a handle to the GPU memory containing the Y diff inputs.</param>
+        public void AttnScaledDotProductBackward(long hCuDnn, long hAttn, long hQdata, long hQdiff, long hKdata, long hKdiff, long hVdata, long hVdiff, long hMaskdata, long hYData, long hYdiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_BWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hQdiff, hKdata, hKdiff, hVdata, hVdiff, hMaskdata, hYData, hYdiff));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_BWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hQdiff, hKdata, hKdiff, hVdata, hVdiff, hMaskdata, hYData, hYdiff));
         }
 
 
