@@ -909,7 +909,7 @@ namespace MyCaffe.common
         void abs(int n, long hA, long hY);
         void exp(int n, long hA, long hY);
         void log(int n, long hA, long hY);
-        void invert(int n, long hA, long hY, int nAOff = 0, int nYOff = 0);
+        void invert(int n, long hA, long hY, int nAOff = 0, int nYOff = 0, double dfScaleNum = 1, double dfScaleDen = 1);
         void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
@@ -917,7 +917,7 @@ namespace MyCaffe.common
         double max(int n, long hA, out long lPos, int nAOff = 0, long hWork = 0);
         double sumsq(int n, long hW, long hA, int nAOff = 0);
         double sumsqdiff(int n, long hW, long hA, long hB, int nAOff = 0, int nBOff = 0);
-        void sqrt(int n, long hA, long hY);
+        void sqrt(int n, long hA, long hY, double dfEpsilon = 0);
         void sqrt_scale(int n, long hA, long hY);
         
         void mask(int n, int nMaskDim, double fSearch, double fReplace, long hX, long hMask, long hY);
@@ -6041,17 +6041,18 @@ namespace MyCaffe.common
         /// <param name="nChannels">Specifies the number of channels in the data.</param>
         /// <param name="nInnerNum">Specifies the spatial dimentions of the inner data.</param>
         /// <param name="fEps">Optionally, specifies the epsilon value to avoid numeric issues (default = 1e-10).</param>
+        /// <param name="bEnableRMSNorm">Optionally, specifies to use the RMSNorm algorithm instead of the LayerNorm.</param>
         /// <returns>The handle to the LayerNorm configuration.  This handle is used with all other layer norm functions.</returns>
-        public long CreateLayerNorm(int nGpuID, int nCount, int nOuterNum, int nChannels, int nInnerNum, float fEps = 1e-10f)
+        public long CreateLayerNorm(int nGpuID, int nCount, int nOuterNum, int nChannels, int nInnerNum, float fEps = 1e-10f, bool bEnableRMSNorm = false)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsDouble(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsDouble(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0, (bEnableRMSNorm) ? 1 : 0));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsFloat(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsFloat(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0, (bEnableRMSNorm) ? 1 : 0));
                 return (long)rg[0];
             }
         }
@@ -6911,8 +6912,8 @@ namespace MyCaffe.common
         /// </remarks>
         public void matmul(uint nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
         {
-            uint ldb = (uint)n;
-            uint lda = (uint)k;
+            uint ldb = (bTransB) ? (uint)k : (uint)n;
+            uint lda = (bTransA) ? (uint)m : (uint)k;
             uint ldc = (uint)n;
             uint strideb = (uint)(k * n);
             uint stridea = (uint)(m * k);
@@ -7804,12 +7805,14 @@ namespace MyCaffe.common
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         /// <param name="nXOff">Specifies an offset (in items, not bytes) into the memory of X.</param>
         /// <param name="nYOff">Specifies an offset (in items, not bytes) into the memory of Y.</param>
-        public void invert(int n, long hX, long hY, int nXOff = 0, int nYOff = 0)
+        /// <param name="dfScaleDenom">Optionally, scale the numerator (default = 1.)</param>
+        /// <param name="dfScaleNumerator">Optionally, scale the denominator (default = 1).</param>
+        public void invert(int n, long hX, long hY, int nXOff = 0, int nYOff = 0, double dfScaleNumerator = 1, double dfScaleDenom = 1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, null, m_param.AsLong(n, hX, hY, nXOff, nYOff));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, m_param.AsDouble(dfScaleNumerator, dfScaleDenom), m_param.AsLong(n, hX, hY, nXOff, nYOff));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, null, m_param.AsLong(n, hX, hY, nXOff, nYOff));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, m_param.AsFloat((float)dfScaleNumerator, (float)dfScaleDenom), m_param.AsLong(n, hX, hY, nXOff, nYOff));
         }
 
 #pragma warning disable 1591
@@ -7854,12 +7857,13 @@ namespace MyCaffe.common
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void sqrt(int n, long hX, long hY)
+        /// <param name="dfEpsilon">Optionally, add an epsilont value before performing the square root.</param>
+        public void sqrt(int n, long hX, long hY, double dfEpsilon = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, null, m_param.AsLong(n, hX, hY));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, m_param.AsDouble(dfEpsilon), m_param.AsLong(n, hX, hY));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, null, m_param.AsLong(n, hX, hY));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, m_param.AsFloat((float)dfEpsilon), m_param.AsLong(n, hX, hY));
         }
 
         /// <summary>
