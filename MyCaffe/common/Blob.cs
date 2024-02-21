@@ -4048,9 +4048,9 @@ namespace MyCaffe.common
 
             int nAxis = 2;
             uint nOuterCount = (uint)blobA.count(0, nAxis);
-            int m = blobA.shape(2);
-            int n = blobB.shape(3);
-            int k = blobA.shape(3);
+            int m = (bTransA) ? blobA.shape(3) : blobA.shape(2);
+            int n = (bTransB) ? blobB.shape(2) : blobB.shape(3);
+            int k = (bTransA) ? blobA.shape(2) : blobA.shape(3);
 
             // Reshape the resulting blob to shape (B,C,M,N)
             m_rgShape1[0] = blobA.shape(0);
@@ -4081,7 +4081,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// @see [PyGrad:functions.py](https://github.com/jaketae/pygrad/blob/master/pygrad/functions.py) by Jake Tae, 2020, GitHub:jaketae/pygrad
         /// </remarks>
-        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, Blob<T> blobWork, double dfScale = 1.0)
+        public void MatMulGradEx(Blob<T> blobA, Blob<T> blobB, Blob<T> blobWork, double dfScale = 1.0)
         {
             if (dfScale != 1.0)
                 scale_diff(dfScale);
@@ -4090,6 +4090,26 @@ namespace MyCaffe.common
             blobA.MatMul(this, blobWork, false, false, false, 1, true, false, true);
             blobWork.CopyFromAndTransposeHeightWidth(blobA, false);
             blobB.MatMul(blobWork, this, false, false, false, 1, false, true, true);
+        }
+
+        /// <summary>
+        /// Calculates and propagates the gradient for blobA and BlobB given the input gradient in this blob's diff values.  After
+        /// this call, the blobA and blobB diff values are filled with their respective gradients.
+        /// </summary>
+        /// <param name="blobA">Specifies the blobA where blobA gradients are placed (in diff values).</param>
+        /// <param name="blobB">Specifies the blobB where blobB gradients are placed (in diff values).</param>
+        /// <param name="blobWork">Specifies a work blob.</param>
+        /// <param name="dfScale">Specifies a scale to be applied to the diffs in this blob before the MatMul (default = 1.0).</param>
+        /// <remarks>
+        /// @see [PyGrad:functions.py](https://github.com/jaketae/pygrad/blob/master/pygrad/functions.py) by Jake Tae, 2020, GitHub:jaketae/pygrad
+        /// </remarks>
+        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, Blob<T> blobWork, double dfScale = 1.0)
+        {
+            if (dfScale != 1.0)
+                scale_diff(dfScale);
+
+            blobA.MatMul(this, blobB, false, false, true, 1, true, false, true);
+            blobB.MatMul(blobA, this, false, true, false, 1, false, true, true);
         }
 
         /// <summary>
