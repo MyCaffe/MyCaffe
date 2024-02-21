@@ -58,6 +58,9 @@ namespace MyCaffe.layers.gpt
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.RMSNORM:
+                    return new RMSNormLayer<double>(cuda, log, p);
+
                 default:
                     return null;
             }
@@ -102,6 +105,9 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.RMSNORM:
+                    return new RMSNormLayer<float>(cuda, log, p);
 
                 default:
                     return null;

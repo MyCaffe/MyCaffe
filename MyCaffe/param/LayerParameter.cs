@@ -489,6 +489,10 @@ namespace MyCaffe.param
             /// </summary>
             REVIN,
             /// <summary>
+            /// Initializes a parameter for the RMSNormLayer.
+            /// </summary>
+            RMSNORM,
+            /// <summary>
             /// Initializes a parameter for the ScalarLayer.
             /// </summary>
             SCALAR,
@@ -712,11 +716,13 @@ namespace MyCaffe.param
         /// <param name="lt">Assignes this LayerType to the layer.</param>
         /// <param name="strName">Assigns this name to the layer.</param>
         /// <param name="phase">Optionally, assigns this phase to the parmeter.</param>
-        public LayerParameter(LayerType lt, string strName = null, Phase? phase = null)
+        /// <param name="bFreezeLearning">Optionally, specifies to freeze learning.</param>
+        public LayerParameter(LayerType lt, string strName = null, Phase? phase = null, bool bFreezeLearning = false)
             : base()
         {
             m_type = lt;
             m_strName = strName;
+            m_bFreezeLearning = bFreezeLearning;
 
             if (m_strName == null)
                 m_strName = lt.ToString();
@@ -754,7 +760,13 @@ namespace MyCaffe.param
             m_nSolverCount = p.m_nSolverCount;
             m_nSolverRank = p.m_nSolverRank;
             m_bGroupStart = p.m_bGroupStart;
+            m_bFreezeLearning = p.m_bFreezeLearning;
+            m_bConnectLossEvent = p.m_bConnectLossEvent;
+            m_bUseHalfSize = p.m_bUseHalfSize;           
             m_outputAdapter = p.m_outputAdapter.Clone();
+            m_onnxConversionSupport = p.m_onnxConversionSupport;
+            m_rgstrExpectedBottom = p.m_rgstrExpectedBottom;
+            m_rgstrExpectedTop = p.m_rgstrExpectedTop;
         }
 
         /// <summary>
@@ -1644,6 +1656,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("revin");
                     m_rgLayerParameters[lt] = new RevINParameter();
+                    break;
+
+                case LayerType.RMSNORM:
+                    expected_bottom.Add("input");
+                    expected_top.Add("norm");
+                    m_rgLayerParameters[lt] = new RMSNormParameter();
                     break;
 
                 case LayerType.SQUEEZE:
@@ -2823,6 +2841,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.RMSNORM
+        /// </summary>
+        public RMSNormParameter rms_norm_param
+        {
+            get { return (RMSNormParameter)m_rgLayerParameters[LayerType.RMSNORM]; }
+            set { m_rgLayerParameters[LayerType.RMSNORM] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.RESHAPE
         /// </summary>
         public SqueezeParameter squeeze_param
@@ -3495,6 +3522,9 @@ namespace MyCaffe.param
                 case LayerType.REVIN:
                     return "RevIN";
 
+                case LayerType.RMSNORM:
+                    return "RMSNorm";
+
                 case LayerType.SQUEEZE:
                     return "Squeeze";
 
@@ -3631,7 +3661,9 @@ namespace MyCaffe.param
             rgChildren.Add<string>("bottom", bottom);
             rgChildren.Add<string>("top", top);
             rgChildren.Add<double>("loss_weight", loss_weight);
-            rgChildren.Add(output_adapter.ToProto("output_adapter"));
+
+            if (m_type == LayerType.INNERPRODUCT)
+                rgChildren.Add(output_adapter.ToProto("output_adapter"));
 
             if (group_start)
                 rgChildren.Add("group_start", group_start.ToString());
@@ -3763,6 +3795,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(positional_encoder_param, "positional_encoder_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gelu_param, "gelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(layer_norm_param, "layer_norm_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(rms_norm_param, "rms_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
@@ -4145,6 +4178,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("layer_norm_param")) != null)
                 p.layer_norm_param = LayerNormParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("rms_norm_param")) != null)
+                p.rms_norm_param = RMSNormParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("transformer_block_param")) != null)
                 p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
@@ -4617,6 +4653,9 @@ namespace MyCaffe.param
 
                 case "revin":
                     return LayerType.REVIN;
+
+                case "rmsnorm":
+                    return LayerType.RMSNORM;
 
                 case "squeeze":
                     return LayerType.SQUEEZE;
