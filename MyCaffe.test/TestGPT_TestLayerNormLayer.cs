@@ -16,9 +16,6 @@ using System.Net;
 using System.Diagnostics;
 using System.Threading;
 
-///
-/// WORK IN PROGRESS
-///
 namespace MyCaffe.test
 {
     [TestClass]
