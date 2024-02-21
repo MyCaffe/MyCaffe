@@ -2107,7 +2107,7 @@ inline long Memory<T>::SsdGetAllMatchIndices(long hSsd, vector<map<int, vector<i
 }
 
 template <class T>
-inline long Memory<T>::SsdGetAllNegIndices(LONG hSsd, vector<vector<int>>* pall_neg_indices)
+inline long Memory<T>::SsdGetAllNegIndices(long hSsd, vector<vector<int>>* pall_neg_indices)
 {
 	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
 	if (pSsd == NULL)
