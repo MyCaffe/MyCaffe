@@ -5854,7 +5854,34 @@ __global__ void invert_kernel(const int n, T* x, T* y)
 }
 
 template <typename T>
-long Math<T>::invert(int n, long hX, long hY, int nXOff, int nYOff)
+__global__ void invert_kernel_nd(const int n, T* x, T* y, T fN, T fD)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] == 0) ? 0 : fN / (x[i] * fD);
+	}
+}
+
+template <typename T>
+__global__ void invert_kernel_n(const int n, T* x, T* y, T fN)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] == 0) ? 0 : fN / x[i];
+	}
+}
+
+template <typename T>
+__global__ void invert_kernel_d(const int n, T* x, T* y, T fD)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] == 0) ? 0 : (T)1 / (x[i] * fD);
+	}
+}
+
+template <typename T>
+long Math<T>::invert(int n, long hX, long hY, int nXOff, int nYOff, T dfScaleNum, T dfScaleDenom)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -5875,13 +5902,20 @@ long Math<T>::invert(int n, long hX, long hY, int nXOff, int nYOff)
 	if (nYOff > 0)
 		y += nYOff;
 
-	invert_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y);
+	if (dfScaleNum != 0 && dfScaleNum != 1 && dfScaleDenom != 0 && dfScaleDenom != 1)
+		invert_kernel_nd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, dfScaleNum, dfScaleDenom);
+	else if (dfScaleNum != 0 && dfScaleNum != 1)
+		invert_kernel_n<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, dfScaleNum);
+	else if (dfScaleDenom != 0 && dfScaleDenom != 1)
+		invert_kernel_d<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, dfScaleDenom);
+	else
+		invert_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::invert(int n, long hA, long hY, int nXOff, int nYOff);
-template long Math<float>::invert(int n, long hA, long hY, int nXOff, int nYOff);
+template long Math<double>::invert(int n, long hA, long hY, int nXOff, int nYOff, double dfScaleNum, double dfScaleDenom);
+template long Math<float>::invert(int n, long hA, long hY, int nXOff, int nYOff, float dfScaleNum, float dfScaleDenom);
 
 
 template <typename T>
@@ -5959,16 +5993,16 @@ template long Math<float>::sign(int n, long hA, long hY, int nXOff, int nYOff);
 
 
 template <typename T>
-__global__ void sqrt_kernel(const int n, T* x, T* y)
+__global__ void sqrt_kernel(const int n, T* x, T* y, float fEpsilon)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
-		y[i] = sqrt(x[i]);
+		y[i] = sqrt(x[i] + fEpsilon);
 	}
 }
 
 template <typename T>
-long Math<T>::sqrt(int n, long hX, long hY)
+long Math<T>::sqrt(int n, long hX, long hY, float fEpsilon)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -5980,13 +6014,13 @@ long Math<T>::sqrt(int n, long hX, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	sqrt_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
+	sqrt_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data(), fEpsilon);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::sqrt(int n, long hA, long hY);
-template long Math<float>::sqrt(int n, long hA, long hY);
+template long Math<double>::sqrt(int n, long hA, long hY, float fEpsilon);
+template long Math<float>::sqrt(int n, long hA, long hY, float fEpsilon);
 
 
 template <typename T>

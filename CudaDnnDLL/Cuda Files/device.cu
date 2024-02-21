@@ -2508,7 +2508,18 @@ long Device<T>::cuda_invert(long lInput, T* pfInput, long llInput, LONGLONG* plI
 	if (llInput > 4)
 		nYOff = (int)plInput[4];
 
-	return m_math.invert(n, hX, hY, nXOff, nYOff);
+	T dfScaleNumerator = 0;
+	T dfScaleDenominator = 0;
+
+	if (lInput > 0)
+	{
+		dfScaleNumerator = (T)pfInput[0];
+
+		if (lInput > 1)
+			dfScaleDenominator = (T)pfInput[1];
+	}
+
+	return m_math.invert(n, hX, hY, nXOff, nYOff, dfScaleNumerator, dfScaleDenominator);
 }
 
 template long Device<double>::cuda_invert(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
@@ -2553,8 +2564,12 @@ long Device<T>::cuda_sqrt(long lInput, T* pfInput, long llInput, LONGLONG* plInp
 	int n = (int)plInput[0];
 	long hX = (long)plInput[1];
 	long hY = (long)plInput[2];
+	float fEpsilon = 0;
 
-	return m_math.sqrt(n, hX, hY);
+	if (lInput > 0)
+		fEpsilon = (float)pfInput[0];
+
+	return m_math.sqrt(n, hX, hY, fEpsilon);
 }
 
 template long Device<double>::cuda_sqrt(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
