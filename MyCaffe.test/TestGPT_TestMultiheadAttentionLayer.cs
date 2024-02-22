@@ -166,7 +166,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestFlashAttentionBackward()
         {
@@ -185,7 +184,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestFlashAttentionTiming()
         {
@@ -203,6 +201,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestRopeForward()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestRopeForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
     }
 
     interface IMultiheadAttentionLayerTest : ITest
@@ -214,6 +231,7 @@ namespace MyCaffe.test
         void TestFlashAttentionForward();
         void TestFlashAttentionBackward();
         void TestFlashAttentionTiming();
+        void TestRopeForward();
     }
 
     class MultiheadAttentionLayerTest : TestBase
@@ -967,6 +985,45 @@ namespace MyCaffe.test
 
                 if (hCuDnn != 0)
                     m_cuda.FreeCuDNN(hCuDnn);
+            }
+        }
+
+        public void TestRopeForward()
+        {
+            long hRope = 0;
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\gpt\\iter_0\\";
+
+            try
+            {
+                blobX.LoadFromNumpy(strPath + "pre_rope_xq.npy");
+                blobY.ReshapeLike(blobX);
+
+                int nBatch = blobX.num;
+                int nSeqLen = blobX.channels;
+                int nDim = blobX.width;
+                int nCount = blobX.count();
+
+                m_cuda.debug();
+
+                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nDim);
+                m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
+
+                blobVal.LoadFromNumpy(strPath + "post_rope_xq.npy");
+                m_log.CHECK(blobY.Compare(blobVal, m_blobWork), "The Y blob data is different.");
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                if (hRope != 0)
+                    m_cuda.FreeRope(hRope);
             }
         }
     }
