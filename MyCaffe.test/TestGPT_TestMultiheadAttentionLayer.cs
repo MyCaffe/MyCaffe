@@ -16,6 +16,7 @@ using System.Threading;
 using System.IO.Compression;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using MyCaffe.layers.gpt;
 
 namespace MyCaffe.test
 {
@@ -220,6 +221,59 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestRopeBackward()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestRopeBackward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardLlama()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestForwardLlama(1, 4, 2, 8, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardLlama()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackwardLlama(1, 4, 2, 8, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IMultiheadAttentionLayerTest : ITest
@@ -232,6 +286,9 @@ namespace MyCaffe.test
         void TestFlashAttentionBackward();
         void TestFlashAttentionTiming();
         void TestRopeForward();
+        void TestRopeBackward();
+        void TestForwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash);
+        void TestBackwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash);
     }
 
     class MultiheadAttentionLayerTest : TestBase
@@ -1008,11 +1065,11 @@ namespace MyCaffe.test
             Blob<T> blobY = new Blob<T>(m_cuda, m_log);
             Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
             Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = getTestDataLlamaPath("llama", "freqs_cos.npy");
+            string strPath = getTestDataLlamaPath("llama", "tfm.freqs_cos.npy");
 
             try
             {
-                blobX.LoadFromNumpy(strPath + "pre_rope_xq.npy");
+                blobX.LoadFromNumpy(strPath + "rope.pre_xq.npy");
                 blobY.ReshapeLike(blobX);
 
                 int nBatch = blobX.num;
@@ -1025,7 +1082,7 @@ namespace MyCaffe.test
                 hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nDim);
                 m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
 
-                blobVal.LoadFromNumpy(strPath + "post_rope_xq.npy");
+                blobVal.LoadFromNumpy(strPath + "rope.post_xq.npy");
                 m_log.CHECK(blobY.Compare(blobVal, m_blobWork, false, 2e-08), "The Y blob data is different.");
             }
             finally
@@ -1037,6 +1094,160 @@ namespace MyCaffe.test
 
                 if (hRope != 0)
                     m_cuda.FreeRope(hRope);
+            }
+        }
+
+        public void TestRopeBackward()
+        {
+            long hRope = 0;
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            string strPath = getTestDataLlamaPath("llama", "tfm.freqs_cos.npy");
+
+            try
+            {
+                blobX.LoadFromNumpy(strPath + "rope.pre_xq.npy");   
+                blobY.ReshapeLike(blobX);
+                blobY.LoadFromNumpy(strPath + "mth0.4.xq.rope.grad.npy", true);
+
+                int nBatch = blobX.num;
+                int nSeqLen = blobX.channels;
+                int nDim = blobX.width;
+                int nCount = blobX.count();
+
+                m_cuda.debug();
+
+                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nDim);
+                m_cuda.RopeBackward(hRope, nCount, blobX.gpu_data, blobY.gpu_diff, blobX.mutable_gpu_diff);
+
+                blobVal.LoadFromNumpy(strPath + "mth0.3.xq1.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blobX, m_blobWork, true, 2e-08), "The Y blob data is different.");
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                if (hRope != 0)
+                    m_cuda.FreeRope(hRope);
+            }
+        }
+
+        private bool direct_compare(Blob<T> b1, Blob<T> b2)
+        {
+            float[] rg1 = convertF(b1.update_cpu_data());
+            float[] rg2 = convertF(b2.update_cpu_data());
+
+            for (int i = 0; i < rg1.Length; i++)
+            {
+                if (rg1[i] != rg2[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        public void TestForwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash)
+        {
+            string strPath = getTestDataLlamaPath("llama", "mth0.9.output.npy");
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "mh", Phase.TEST);
+            p.causal_self_attention_param.heads = nHeads;
+            p.causal_self_attention_param.embed = nDim;
+            p.causal_self_attention_param.block_size = nSeqLen;
+            p.causal_self_attention_param.attn_dropout = 0.0;
+            p.causal_self_attention_param.resid_dropout = 0.0;
+            p.causal_self_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.causal_self_attention_param.enable_rotary_positional_embedding = true;
+            p.causal_self_attention_param.bias_term = false;
+            Layer<T> layer = new CausalSelfAttentionLayer2<T>(m_cuda, m_log, p);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
+
+                m_blobInput.LoadFromNumpy(strPath + "mth0.1.x.npy");
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blobInput);
+
+                layer.Setup(BottomVec, TopVec);
+
+                layer.blobs[0].LoadFromNumpy(strPath + "mth0.1.wq.wt.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "mth0.1.wk.wt.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "mth0.1.wv.wt.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "mth0.1.wo.wt.npy");
+
+                layer.Forward(BottomVec, TopVec);
+
+                m_blobY.LoadFromNumpy(strPath + "mth0.9.output.npy");
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork), "The blobs are different.");
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash)
+        {
+            string strPath = getTestDataLlamaPath("llama", "mth0.9.output.npy");
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "mh", Phase.TEST);
+            p.causal_self_attention_param.heads = nHeads;
+            p.causal_self_attention_param.embed = nDim;
+            p.causal_self_attention_param.block_size = nSeqLen;
+            p.causal_self_attention_param.attn_dropout = 0.0;
+            p.causal_self_attention_param.resid_dropout = 0.0;
+            p.causal_self_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.causal_self_attention_param.enable_rotary_positional_embedding = true;
+            p.causal_self_attention_param.bias_term = false;
+            Layer<T> layer = new CausalSelfAttentionLayer2<T>(m_cuda, m_log, p);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
+
+                m_blobInput.LoadFromNumpy(strPath + "mth0.1.x.npy");
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blobInput);
+
+                layer.Setup(BottomVec, TopVec);
+
+                layer.blobs[0].LoadFromNumpy(strPath + "mth0.1.wq.wt.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "mth0.1.wk.wt.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "mth0.1.wv.wt.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "mth0.1.wo.wt.npy");
+
+                layer.Forward(BottomVec, TopVec);
+
+                m_blobY.LoadFromNumpy(strPath + "mth0.9.output.npy");
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork), "The blobs are different.");
+
+                //*** Backward Pass ***
+
+                TopVec[0].LoadFromNumpy(strPath + "mth0.9.output.grad.npy", true);
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                blobVal.LoadFromNumpy(strPath + "mth0.1.x.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(BottomVec[0], m_blobWork, true), "The blobs are different.");
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+                layer.Dispose();
             }
         }
     }
