@@ -523,7 +523,7 @@ class Memory
 		long FreeRope(long hHandle);
 		ropeHandle<T>* GetRope(long hHandle);
 		long RopeForward(long hRope, int n, long hXdata, long hYdata);
-		long RopeBackward(long hRope, int n, long hYdata, long hXdiff, long hYdiff);
+		long RopeBackward(long hRope, int n, long hXdata, long hXdiff, long hYdiff);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -2271,13 +2271,13 @@ inline long Memory<T>::RopeForward(long hRope, int n, long hYdata, long hXdata)
 }
 
 template <class T>
-inline long Memory<T>::RopeBackward(long hRope, int n, long hYdata, long hYdiff, long hXdiff)
+inline long Memory<T>::RopeBackward(long hRope, int n, long hXdata, long hYdiff, long hXdiff)
 {
 	ropeHandle<T>* pR = (ropeHandle<T>*)m_rope.GetData(hRope);
 	if (pR == NULL)
 		return ERROR_ROPE_NOT_INITIALIZED;
 
-	return pR->Backward(n, hYdata, hYdiff, hXdiff);
+	return pR->Backward(n, hXdata, hYdiff, hXdiff);
 }
 
 

@@ -86,7 +86,7 @@ public:
 	LONG UpdateToDevMemory(int nCount, T* pfYdev);
 
 	LONG Forward(int n, long hXdata, long hYdata);
-	LONG Backward(int n, long hYdata, long hYdiff, long hXdiff);
+	LONG Backward(int n, long hXdata, long hYdiff, long hXdiff);
 };
 
 
@@ -377,15 +377,58 @@ template LONG RopeData<float>::Forward(int n, long hXdata, long hYdata);
 
 
 template <class T>
-LONG RopeData<T>::Backward(int n, long hYdata, long hYdiff, long hXdiff)
+LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 {
 	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryCollection* pMemCol = m_pMem->GetMemoryCollection();
+
+	if (lErr = pMemCol->GetData(hXdiff, &pX))
+		return lErr;
+
+	if (lErr = pMemCol->GetData(hYdiff, &pY))
+		return lErr;
+
+	if (lErr = UpdateToHostMemory(n, (T*)pY->Data())) // y grads
+		return lErr;
+
+	for (int i = 0; i < n; i++)
+	{
+		if (i % 2 == 0)
+			m_pfXqr[i / 2] = m_pfX[i]; // y grads
+		else
+			m_pfXqi[i / 2] = m_pfX[i]; // y grads
+	}
+
+	int nDim = m_nDim / 2;
+	for (int i = 0; i < n / 2; i++)
+	{
+		int nIdx = (i / m_nDim) * nDim + i % nDim;
+		float fCos = m_pfFreqCos[nIdx];
+		float fSin = m_pfFreqSin[nIdx];
+
+		m_pfXq_out_r[i] = m_pfXqr[i] * fCos + m_pfXqi[i] * fSin; // y grads
+		m_pfXq_out_i[i] = -1.0 * (m_pfXqr[i] * fSin - m_pfXqi[i] * fCos); // y grads
+		nIdx = 0;
+	}
+
+	for (int i = 0; i < n; i++)
+	{
+		if (i % 2 == 0)
+			m_pfY[i] = m_pfXq_out_r[i / 2]; // x grads
+		else
+			m_pfY[i] = m_pfXq_out_i[i / 2]; // x grads
+	}
+
+	if (lErr = UpdateToDevMemory(n, (T*)pX->Data()))
+		return lErr;
 
 	return 0;
 }
 
-template LONG RopeData<double>::Backward(int n, long hYdata, long hYdiff, long hXdiff);
-template LONG RopeData<float>::Backward(int n, long hYdata, long hYdiff, long hXdiff);
+template LONG RopeData<double>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
+template LONG RopeData<float>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
 
 
 //=============================================================================
@@ -461,13 +504,13 @@ template long ropeHandle<float>::Forward(int n, long hXdata, long hYdata);
 
 
 template <class T>
-long ropeHandle<T>::Backward(int n, long hYdata, long hYdiff, long hXdiff)
+long ropeHandle<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 {
-	return m_pData->Backward(n, hYdata, hYdiff, hXdiff);
+	return m_pData->Backward(n, hXdata, hYdiff, hXdiff);
 }
 
-template long ropeHandle<double>::Backward(int n, long hYdata, long hYdiff, long hXdiff);
-template long ropeHandle<float>::Backward(int n, long hYdata, long hYdiff, long hXdiff);
+template long ropeHandle<double>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
+template long ropeHandle<float>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
 
 
 // end

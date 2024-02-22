@@ -4277,11 +4277,11 @@ inline long Device<T>::RopeBackward(long lInput, T* pfInput, long llInput, LONGL
 
 	long hRope = (long)plInput[0];
 	int nCount = (int)plInput[1];
-	long hYdata = (long)plInput[2];
-	long hXdiff = (long)plInput[3];
-	long hYdiff = (long)plInput[4];
+	long hXdata = (long)plInput[2];
+	long hYdiff = (long)plInput[3];
+	long hXdiff = (long)plInput[4];
 
-	if (lErr = m_memory.RopeBackward(hRope, nCount, hYdata, hXdiff, hYdiff))
+	if (lErr = m_memory.RopeBackward(hRope, nCount, hXdata, hYdiff, hXdiff))
 		return lErr;
 
 	return 0;

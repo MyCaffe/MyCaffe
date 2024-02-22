@@ -79,7 +79,7 @@ public:
 	long CleanUp();
 
 	long Forward(int n, long hXdata, long hYdata);
-	long Backward(int n, long hYdata, long hYdiff, long hXdiff);
+	long Backward(int n, long hXdata, long hYdiff, long hXdiff);
 };
 
 
