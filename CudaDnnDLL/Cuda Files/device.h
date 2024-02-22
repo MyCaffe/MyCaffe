@@ -398,6 +398,11 @@ class Device
 		long LayerNormForward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long LayerNormBackward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long CreateRope(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long FreeRope(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long RopeForward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long RopeBackward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 
 		//---------------------------------------------------------------------------
 		//	Math functions
@@ -4133,7 +4138,7 @@ inline long Device<T>::CreateLayerNorm(long lInput, T* pfInput, long llInput, LO
 
 	if (lErr = verifyInput(lInput, pfInput, 1, 1))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
@@ -4197,6 +4202,86 @@ inline long Device<T>::LayerNormBackward(long lInput, T* pfInput, long llInput, 
 	long hYdiff = (long)plInput[3];
 
 	if (lErr = m_memory.LayerNormBackward(hLayerNorm, hYdata, hXdiff, hYdiff))
+		return lErr;
+
+	return 0;
+}
+
+
+template <class T>
+inline long Device<T>::CreateRope(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int nGpuID = (int)plInput[0];
+	int nCount = (int)plInput[1];
+	int nBatch = (int)plInput[2];
+	int nSeqLen = (int)plInput[3];
+	int nDim = (int)plInput[4];
+	T fTheta = pfInput[0];
+
+	if (lErr = m_memory.CreateRope(nGpuID, nCount, nBatch, nSeqLen, nDim, fTheta, &m_math, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeRope(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeRope(hHandle);
+}
+
+template <class T>
+inline long Device<T>::RopeForward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+
+	long hRope = (long)plInput[0];
+	int nCount = (int)plInput[1];
+	long hXdata = (long)plInput[2];
+	long hYdata = (long)plInput[3];
+
+	if (lErr = m_memory.RopeForward(hRope, nCount, hXdata, hYdata))
+		return lErr;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::RopeBackward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	long hRope = (long)plInput[0];
+	int nCount = (int)plInput[1];
+	long hYdata = (long)plInput[2];
+	long hXdiff = (long)plInput[3];
+	long hYdiff = (long)plInput[4];
+
+	if (lErr = m_memory.RopeBackward(hRope, nCount, hYdata, hXdiff, hYdiff))
 		return lErr;
 
 	return 0;

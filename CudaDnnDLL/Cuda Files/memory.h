@@ -22,6 +22,7 @@
 #include "nccl.h"
 #include "ssd.h"
 #include "layernorm.h"
+#include "rope.h"
 #include "extension.h"
 #include <vector>
 #include <algorithm>
@@ -168,6 +169,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_ssd;
 		HandleCollection<MIN_HANDLES> m_cpd;
 		HandleCollection<MIN_HANDLES> m_layernorm;
+		HandleCollection<MIN_HANDLES> m_rope;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
@@ -516,6 +518,12 @@ class Memory
 		layernormHandle<T>* GetLayerNorm(long hHandle);
 		long LayerNormForward(long hLayerNorm, long hXdata, long hYdata);
 		long LayerNormBackward(long hLayerNorm, long hYdata, long hXdiff, long hYdiff);
+
+		long CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta, Math<T>* pMath, long* phHandle);
+		long FreeRope(long hHandle);
+		ropeHandle<T>* GetRope(long hHandle);
+		long RopeForward(long hRope, int n, long hXdata, long hYdata);
+		long RopeBackward(long hRope, int n, long hYdata, long hXdiff, long hYdiff);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -2192,6 +2200,84 @@ inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdata, long hYdi
 		return ERROR_LAYERNORM_NOT_INITIALIZED;
 
 	return pLn->Backward(hYdata, hYdiff, hXdiff);
+}
+
+
+template <class T>
+inline long Memory<T>::CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta, Math<T>* pMath, long* phHandle)
+{
+	LONG lErr;
+	ropeHandle<T>* r = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((r = new ropeHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = r->Update(this, pMath))
+	{
+		delete r;
+		return lErr;
+	}
+
+	if (lErr = r->Initialize(nGpuID, nCount, nBatch, nSeqLen, nDim, fTheta))
+	{
+		delete r;
+		return lErr;
+	}
+
+	long hHandle = m_rope.Allocate(r);
+	if (hHandle < 0)
+	{
+		delete r;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeRope(long hHandle)
+{
+	ropeHandle<T>* r = (ropeHandle<T>*)m_rope.Free(hHandle);
+
+	if (r != NULL && r->IsOwner())
+	{
+		r->CleanUp();
+
+		if (r->RefCount() == 0)
+			delete r;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline ropeHandle<T>* Memory<T>::GetRope(long hHandle)
+{
+	return (ropeHandle<T>*)m_rope.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::RopeForward(long hRope, int n, long hYdata, long hXdata)
+{
+	ropeHandle<T>* pR = (ropeHandle<T>*)m_rope.GetData(hRope);
+	if (pR == NULL)
+		return ERROR_ROPE_NOT_INITIALIZED;
+
+	return pR->Forward(n, hYdata, hXdata);
+}
+
+template <class T>
+inline long Memory<T>::RopeBackward(long hRope, int n, long hYdata, long hYdiff, long hXdiff)
+{
+	ropeHandle<T>* pR = (ropeHandle<T>*)m_rope.GetData(hRope);
+	if (pR == NULL)
+		return ERROR_ROPE_NOT_INITIALIZED;
+
+	return pR->Backward(n, hYdata, hYdiff, hXdiff);
 }
 
 

@@ -269,6 +269,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "LAYERNORM: The LayerNorm is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_ROPE:
+			_snprintf(szErr, lMaxErr, "ROPE: A general Rope error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_ROPE_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "ROPE: The Rope is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_RNN8:
 			_snprintf(szErr, lMaxErr, "RNN8: A general Rnn8 error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;

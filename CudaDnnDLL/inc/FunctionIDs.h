@@ -507,4 +507,9 @@ const int CUDA_FN_FREE_LAYERNORM = 971;
 const int CUDA_FN_LAYERNORM_FWD = 975;
 const int CUDA_FN_LAYERNORM_BWD = 976;
 
+const int CUDA_FN_CREATE_ROPE = 980;
+const int CUDA_FN_FREE_ROPE = 981;
+const int CUDA_FN_ROPE_FWD = 982;
+const int CUDA_FN_ROPE_BWD = 983;
+
 const int CUDA_FN_DEBUG = 1000;

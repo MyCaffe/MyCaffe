@@ -195,7 +195,10 @@ const int ERROR_SSD_MINEHARDEXAMPLES_NO_MATCHES = ERROR_SSD + 25;
 const int ERROR_LAYERNORM                       = ERROR_SSD + 40;     
 const int ERROR_LAYERNORM_NOT_INITIALIZED       = ERROR_LAYERNORM + 1;
 
-const int ERROR_RNN8							 = ERROR_LAYERNORM + 40;
+const int ERROR_ROPE                            = ERROR_LAYERNORM + 40;
+const int ERROR_ROPE_NOT_INITIALIZED            = ERROR_ROPE + 1;
+
+const int ERROR_RNN8							 = ERROR_ROPE + 40;
 const int ERROR_RNN8_NOT_INITIALIZED			 = ERROR_RNN8 + 1;
 const int ERROR_RNN8_INCOMPATIBLE_CUDNN_VER		 = ERROR_RNN8 + 2;
 const int ERROR_RNN8_INVALID_FILLER			     = ERROR_RNN8 + 3;

@@ -1139,6 +1139,18 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_LAYERNORM_BWD:
 			return m_device.LayerNormBackward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CREATE_ROPE:
+			return m_device.CreateRope(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_FREE_ROPE:
+			return m_device.FreeRope(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_ROPE_FWD:
+			return m_device.RopeForward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_ROPE_BWD:
+			return m_device.RopeBackward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_DEBUG:
 			return 0;
 
@@ -2307,6 +2319,18 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_LAYERNORM_BWD:
 		return "CUDA_FN_LAYERNORM_BWD";
+
+	case CUDA_FN_CREATE_ROPE:
+		return "CUDA_FN_CREATE_ROPE";
+
+	case CUDA_FN_FREE_ROPE:
+		return "CUDA_FN_FREE_ROPE";
+
+	case CUDA_FN_ROPE_FWD:
+		return "CUDA_FN_ROPE_FWD";
+
+	case CUDA_FN_ROPE_BWD:
+		return "CUDA_FN_ROPE_BWD";
 
 	case CUDA_FN_DEBUG:
 		return "******** CUDA_FN_DEBUG ********";
