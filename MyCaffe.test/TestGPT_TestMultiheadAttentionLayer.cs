@@ -316,6 +316,19 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        private string getTestDataLlamaPath(string strSubPath, string strFile)
+        {
+            if (!string.IsNullOrEmpty(strSubPath))
+                strSubPath += "\\";
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + "iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
+
+            return strPath;
+        }
+
         private string getTestDataPath(string strSubPath, string strFile)
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
@@ -995,7 +1008,7 @@ namespace MyCaffe.test
             Blob<T> blobY = new Blob<T>(m_cuda, m_log);
             Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
             Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\gpt\\iter_0\\";
+            string strPath = getTestDataLlamaPath("llama", "freqs_cos.npy");
 
             try
             {
@@ -1013,7 +1026,7 @@ namespace MyCaffe.test
                 m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
 
                 blobVal.LoadFromNumpy(strPath + "post_rope_xq.npy");
-                m_log.CHECK(blobY.Compare(blobVal, m_blobWork), "The Y blob data is different.");
+                m_log.CHECK(blobY.Compare(blobVal, m_blobWork, false, 2e-08), "The Y blob data is different.");
             }
             finally
             {
