@@ -22,6 +22,7 @@ namespace MyCaffe.layers.gpt
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class GeluLayer<T> : NeuronLayer<T>
     {
+        Blob<T> m_blobX;
         bool m_bEnableBertVersion;
 
         /// <summary>
@@ -34,7 +35,30 @@ namespace MyCaffe.layers.gpt
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.GELU;
+            m_blobX = new Blob<T>(cuda, log, false);
             m_bEnableBertVersion = p.gelu_param.enable_bert_version;
+        }
+
+        /// <summary>
+        /// Free all resources used by this layer.
+        /// </summary>
+        protected override void dispose()
+        {
+            dispose(ref m_blobX);
+            base.dispose();
+        }
+
+        /// <summary>
+        /// Reshape the bottom (input) and top (output) blobs.
+        /// </summary>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
+        public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            // Running in-place if the input is the same as the output.
+            if (colTop[0].gpu_data == colBottom[0].gpu_data)
+                m_blobX.ReshapeLike(colBottom[0]);
+            base.Reshape(colBottom, colTop);
         }
 
         /// <summary>
@@ -55,6 +79,12 @@ namespace MyCaffe.layers.gpt
             long hBottomData = colBottom[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
+
+            if (colTop[0].gpu_data == colBottom[0].gpu_data)
+            {
+                m_blobX.CopyFrom(colBottom[0], false, true);
+                hBottomData = m_blobX.gpu_data;
+            }
 
             m_cuda.gelu_fwd(nCount, hBottomData, hTopData, m_bEnableBertVersion);
         }
@@ -83,6 +113,9 @@ namespace MyCaffe.layers.gpt
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
             long hBottomData = colBottom[0].gpu_data;
             int nCount = colBottom[0].count();
+
+            if (hTopData == hBottomData)
+                hBottomData = m_blobX.gpu_data;
 
             m_cuda.gelu_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, m_bEnableBertVersion);
         }
