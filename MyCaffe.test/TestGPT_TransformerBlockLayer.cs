@@ -41,6 +41,43 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainLlama()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTrainLlama();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainLargeLM()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTrainLargeLM();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestInference()
         {
@@ -135,11 +172,13 @@ namespace MyCaffe.test
     interface ITransformerBlockLayerTest : ITest
     {
         void TestTrain();
+        void TestTrainLlama();
         void TestInference();
         void TestForward(string strModel);
         void TestBackward(string strModel);
         void TestGradient();
         void TestTestHuggingFaceImport();
+        void TestTrainLargeLM();
     }
 
     class TransformerBlockLayerTest : TestBase
@@ -834,7 +873,7 @@ namespace MyCaffe.test
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
-        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, double dfDropout, Phase phase)
+        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, double dfDropout, Phase phase, int nLayers = 1, bool bEnableLora = false, uint nHiddenDim = 0)
         {
             LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA);
             tok.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
@@ -857,6 +896,7 @@ namespace MyCaffe.test
             emb1.parameters.Add(new ParamSpec(1.0, 0.0));
             emb1.bottom.Add("tokdata");
             emb1.top.Add("tok_emb");
+            emb1.freeze_learning = bEnableLora;
             net.layer.Add(emb1);
 
             LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
@@ -868,6 +908,7 @@ namespace MyCaffe.test
             emb2.parameters.Add(new ParamSpec(1.0, 0.0));
             emb2.bottom.Add("pos");
             emb2.top.Add("tok_pos");
+            emb2.freeze_learning = bEnableLora;
             net.layer.Add(emb2);
 
             LayerParameter elt = new LayerParameter(LayerParameter.LayerType.ELTWISE);
@@ -877,10 +918,10 @@ namespace MyCaffe.test
             elt.bottom.Add("tok_emb");
             elt.bottom.Add("tok_pos");
             elt.top.Add("eltwise1");
+            elt.freeze_learning = bEnableLora;
             net.layer.Add(elt);
 
             string strEncBtm = "eltwise1";
-            int nLayers = 1;
             for (int i = 0; i < nLayers; i++)
             {
                 LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
@@ -888,6 +929,7 @@ namespace MyCaffe.test
                 enc.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
                 enc.transformer_block_param.heads = 1;
                 enc.transformer_block_param.embed = nEmbed;
+                enc.transformer_block_param.hidden_dim = nHiddenDim;
                 enc.transformer_block_param.block_size = nBlockSize;
                 enc.transformer_block_param.layers = (uint)nLayers;
                 enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
@@ -903,6 +945,7 @@ namespace MyCaffe.test
                 enc.parameters.Add(new ParamSpec(1, 0));
                 enc.bottom.Add(strEncBtm);
                 enc.top.Add(enc.name);
+                enc.freeze_learning = bEnableLora;
                 net.layer.Add(enc);
 
                 strEncBtm = enc.name;
@@ -913,6 +956,7 @@ namespace MyCaffe.test
             ln1.layer_norm_param.enable_cuda_impl = false;
             ln1.bottom.Add(strEncBtm);
             ln1.top.Add("ln1");
+            ln1.freeze_learning = bEnableLora;
             net.layer.Add(ln1);
 
             LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -924,6 +968,7 @@ namespace MyCaffe.test
             ip1.parameters.Add(new ParamSpec(1, 1));
             ip1.bottom.Add("ln1");
             ip1.top.Add("logits");
+            ip1.freeze_learning = bEnableLora;
             net.layer.Add(ip1);
 
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
@@ -933,6 +978,7 @@ namespace MyCaffe.test
             softmax.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.LOG;
             softmax.bottom.Add("logits");
             softmax.top.Add("prob");
+            softmax.freeze_learning = bEnableLora;
             net.layer.Add(softmax);
 
             if (phase != Phase.RUN)
@@ -1231,6 +1277,44 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test loading and training large multi-layer training cycle of the TransformerBlockLayer using the CausalSelfAttention.
+        /// </summary>
+        public void TestTrainLargeLM()
+        {
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+
+            try
+            {
+                NetParameter net_param = new NetParameter();
+                net_param.enable_lora_only_load = true;
+                net_param.enable_memory_stats = true;
+
+                string strSolver = buildSolver();
+                string strModel = buildModelEx(net_param, 1, 512, 2048, 32000, 0.0, Phase.TRAIN, 32, true, 11008);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                Blob<float> blobVal = mycaffe.CreateBlob("val");
+                Blob<float> blobWork = mycaffe.CreateBlob("work");
+
+                Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<float> solver = mycaffe.GetInternalSolver();
+
+                for (int i = 0; i < 1; i++)
+                {
+                    net.ClearParamDiffs();
+                    net.Forward();
+                    net.Backward();
+                    solver.ApplyUpdate(i);
+                }
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
 
         private string loadTestData3()
         {
@@ -1415,6 +1499,236 @@ namespace MyCaffe.test
                 if (blobInput != null)
                     blobInput.Dispose();
 
+                mycaffe.Dispose();
+            }
+        }
+
+        private string getTestDataLlamaPath(string strSubPath, string strFile)
+        {
+            if (!string.IsNullOrEmpty(strSubPath))
+                strSubPath += "\\";
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + "iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
+
+            return strPath;
+        }
+
+        private string getTestDataLlamaPathWt(string strSubPath, string strFile)
+        {
+            if (!string.IsNullOrEmpty(strSubPath))
+                strSubPath += "\\";
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + "weights\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
+
+            return strPath;
+        }
+
+        private string buildModelLlama(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nHeads, uint nEncVocabSize, double dfDropout, Phase phase, int nLayers = 1, bool bEnableLora = false)
+        {
+            LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
+            data.input_param.shape.Add(new BlobShape(new List<int>() { (int)nBatch, (int)nBlockSize }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { (int)nBatch, (int)nBlockSize }));
+            data.top.Add("x");
+            data.top.Add("y");
+            net.layer.Add(data);
+
+            LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb1.name = "wte";
+            emb1.embed_param.bias_term = false;
+            emb1.embed_param.input_dim = nEncVocabSize;
+            emb1.embed_param.num_output = nEmbed;
+            emb1.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            emb1.parameters.Add(new ParamSpec(1.0, 0.0));
+            emb1.bottom.Add("x");
+            emb1.top.Add("tok_emb");
+            emb1.freeze_learning = bEnableLora;
+            net.layer.Add(emb1);
+
+            string strEncBtm = "tok_emb";
+            for (int i = 0; i < nLayers; i++)
+            {
+                LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                enc.name = "tfb" + (i + 1).ToString();
+                enc.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION2;
+                enc.transformer_block_param.heads = nHeads;
+                enc.transformer_block_param.embed = nEmbed;
+                enc.transformer_block_param.hidden_dim = 0;
+                enc.transformer_block_param.block_size = nBlockSize;
+                enc.transformer_block_param.layers = (uint)nLayers;
+                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.SILU;
+                enc.transformer_block_param.attn_dropout = dfDropout;
+                enc.transformer_block_param.resid_dropout = dfDropout;
+                enc.transformer_block_param.bias_term = false;
+                enc.transformer_block_param.enable_rotary_positional_embedding = true;
+                enc.transformer_block_param.normalization_type = TransformerBlockParameter.NORMALIZATION.RMS_NORM;
+                enc.transformer_block_param.enable_llama_style_head = true;
+                enc.transformer_block_param.multiple_of = 2;
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.bottom.Add(strEncBtm);
+                enc.top.Add(enc.name);
+                enc.freeze_learning = bEnableLora;
+                net.layer.Add(enc);
+
+                strEncBtm = enc.name;
+            }
+
+            LayerParameter rms1 = new LayerParameter(LayerParameter.LayerType.RMSNORM);
+            rms1.name = "rms1";
+            rms1.rms_norm_param.axis = 2;
+            rms1.bottom.Add(strEncBtm);
+            rms1.top.Add("rms1");
+            rms1.freeze_learning = bEnableLora;
+            net.layer.Add(rms1);
+
+            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            ip1.name = "ip1";
+            ip1.inner_product_param.axis = 2;
+            ip1.inner_product_param.num_output = nEncVocabSize;
+            ip1.inner_product_param.bias_term = false;
+            ip1.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            ip1.parameters.Add(new ParamSpec(1, 1));
+            ip1.bottom.Add("rms1");
+            ip1.top.Add("logits");
+            ip1.freeze_learning = bEnableLora;
+            net.layer.Add(ip1);
+
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            softmax.name = "softmax";
+            softmax.softmax_param.axis = 2;
+            softmax.softmax_param.algorithm = SOFTMAX_ALGORITHM.ACCURATE;
+            softmax.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.LOG;
+            softmax.bottom.Add("logits");
+            softmax.top.Add("prob");
+            softmax.freeze_learning = bEnableLora;
+            net.layer.Add(softmax);
+
+            if (phase != Phase.RUN)
+            {
+                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
+                loss.name = "loss";
+                loss.nll_loss_param.axis = 2;
+                loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
+                loss.bottom.Add("prob");
+                loss.bottom.Add("y");
+                loss.top.Add("loss");
+                net.layer.Add(loss);
+
+                LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
+                accuracy.name = "accuracy";
+                accuracy.accuracy_param.axis = 2;
+                accuracy.bottom.Add("prob");
+                accuracy.bottom.Add("y");
+                accuracy.top.Add("accuracy");
+                net.layer.Add(accuracy);
+            }
+
+            return net.ToProto("root").ToString();
+        }
+
+        private string buildSolverLlama()
+        {
+            SolverParameter solver = new SolverParameter();
+            solver.base_lr = 5e-04;
+            solver.weight_decay = 0;
+            solver.adamw_decay = 0.1;
+            solver.momentum = 0.9;
+            solver.momentum2 = 0.95;
+            solver.delta = 1e-08;
+            solver.type = SolverParameter.SolverType.ADAMW;
+            solver.lr_policy = "fixed";
+            solver.test_initialization = false;
+
+            return solver.ToProto("root").ToString();
+        }
+
+        /// <summary>
+        /// Test the training cycle of the TransformerBlockLayer using the CausalSelfAttention.
+        /// </summary>
+        /// <remarks>
+        /// To regenerate test data, take the following steps:
+        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False, model_type = 'gpt_nano1'
+        /// 2.) main.py - run up to line 104 in trainer.py
+        /// 3.) test_transformer.py - run up to line 59.
+        /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
+        /// </remarks>
+        public void TestTrainLlama()
+        {
+            string strPath = getTestDataLlamaPath("llama", "mth0.9.output.npy");
+            string strPathWt = getTestDataLlamaPathWt("llama", "tok_embeddings.weight.npy");
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+
+            try
+            {
+                uint nDim = 8;
+                int nLayers = 1;
+                uint nHeads = 2;
+                uint nVocab_size = 16;
+                uint nSeqLen = 4;
+                float fDropout = 0.0f;
+                uint nBatch = 1;
+
+                NetParameter net_param = new NetParameter();
+                string strSolver = buildSolverLlama();
+                string strModel = buildModelLlama(net_param, nBatch, nSeqLen, nDim, nHeads, nVocab_size, fDropout, Phase.TRAIN, nLayers, false);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                Blob<float> blobVal = mycaffe.CreateBlob("val");
+                Blob<float> blobWork = mycaffe.CreateBlob("work");
+
+                Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<float> solver = mycaffe.GetInternalSolver();
+
+                net.learnable_parameters[0].LoadFromNumpy(strPathWt + "tok_embeddings.weight.npy");
+                net.learnable_parameters[1].LoadFromNumpy(strPathWt + "layers.0.attention_norm.weight.npy");
+                net.learnable_parameters[2].LoadFromNumpy(strPathWt + "layers.0.attention.wq.weight.npy");
+                net.learnable_parameters[3].LoadFromNumpy(strPathWt + "layers.0.attention.wk.weight.npy");
+                net.learnable_parameters[4].LoadFromNumpy(strPathWt + "layers.0.attention.wv.weight.npy");
+                net.learnable_parameters[5].LoadFromNumpy(strPathWt + "layers.0.attention.wo.weight.npy");
+                net.learnable_parameters[6].LoadFromNumpy(strPathWt + "layers.0.ffn_norm.weight.npy");
+                net.learnable_parameters[7].LoadFromNumpy(strPathWt + "layers.0.feed_forward.w1.weight.npy");
+                net.learnable_parameters[8].LoadFromNumpy(strPathWt + "layers.0.feed_forward.w3.weight.npy");
+                net.learnable_parameters[9].LoadFromNumpy(strPathWt + "layers.0.feed_forward.w2.weight.npy");
+                net.learnable_parameters[10].LoadFromNumpy(strPathWt + "norm.weight.npy");
+                net.learnable_parameters[11].LoadFromNumpy(strPathWt + "output.weight.npy");
+
+                Blob<float> blobX = net.FindBlob("x");
+                Blob<float> blobY = net.FindBlob("y");
+
+                blobX.LoadFromNumpy(strPath + "tfm.tokens.npy");
+                blobX.LoadFromNumpy(strPath + "tfm.targets.npy");
+
+                net.Forward();
+
+                Blob<float> blobLogits = net.FindBlob("logits");
+
+                blobVal.LoadFromNumpy(strPath + "tfm.logits.npy");
+                m_log.CHECK(blobVal.Compare(blobLogits, blobWork, false, 2e-08), "The logits do not match!");
+
+                //*** Backward Pass ***
+
+                blobLogits.LoadFromNumpy(strPath + "tfm.logits.grad.npy", true);
+
+                // Start at the logit Linear output layer.
+                int nLayerIdOutput = 5;
+                net.Backward(nLayerIdOutput);
+
+                blobX = net.FindBlob("tok_emb");
+                blobVal.LoadFromNumpy(strPath + "tfm.h_emb.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blobX, blobWork, true, 2e-07), "The tok_emb gradient does not match!");
+            }
+            finally
+            {
                 mycaffe.Dispose();
             }
         }
