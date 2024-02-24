@@ -51,6 +51,7 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobAttB;
         Blob<T> m_blobY;
         // The number of heads.
+        long m_hRope = 0;
         int m_nHeads;
         int m_nEmbed;
         int m_nBlockSize;
@@ -58,6 +59,8 @@ namespace MyCaffe.layers.gpt
         double m_dfResidDropout;
         long m_hCudnn = 0;
         long m_hFlashAttention = 0;
+        int[] m_rgYShape = new int[4];
+        int[] m_rgWorkShape = new int[4];
 
         int m_nSize;
         int m_nB;
@@ -89,9 +92,9 @@ namespace MyCaffe.layers.gpt
 
             // Query projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ", m_phase);
+            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ", m_phase, p.freeze_learning);
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnQ.inner_product_param.bias_term = true;            
+            ipAttnQ.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;            
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnQ.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -110,9 +113,9 @@ namespace MyCaffe.layers.gpt
 
             // Key projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK", m_phase);
+            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK", m_phase, p.freeze_learning);
             ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnK.inner_product_param.bias_term = true;
+            ipAttnK.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnK.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -131,9 +134,9 @@ namespace MyCaffe.layers.gpt
 
             // Value projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV", m_phase);
+            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV", m_phase, p.freeze_learning);
             ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnV.inner_product_param.bias_term = true;
+            ipAttnV.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnV.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -152,9 +155,9 @@ namespace MyCaffe.layers.gpt
 
             // Output projection.
             // input features = m_nEmbed
-            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj", m_phase);
+            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj", m_phase, p.freeze_learning);
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
-            ipProj.inner_product_param.bias_term = true;
+            ipProj.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipProj.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -174,31 +177,31 @@ namespace MyCaffe.layers.gpt
             // Regularization
             if (m_dfAttnDropout > 0)
             {
-                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.attn", m_phase);
+                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.attn", m_phase, p.freeze_learning);
                 dropoutAttn.dropout_param.dropout_ratio = m_dfAttnDropout;
                 m_attn_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutAttn, p), null);
             }
 
             if (m_dfResidDropout > 0)
             {
-                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.resid", m_phase);
+                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.resid", m_phase, p.freeze_learning);
                 dropoutResid.dropout_param.dropout_ratio = m_dfResidDropout;
                 m_resid_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutResid, p), null);
             }
 
             // Transpose
-            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".trans", m_phase);
+            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".trans", m_phase, p.freeze_learning);
             transpose.transpose_param.dim[1] = 2;
             transpose.transpose_param.dim[2] = 1;
             m_transpose = Layer<T>.Create(cuda, log, convertLayerParam(transpose, p), null);
 
-            LayerParameter transposeQ = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".transQ", m_phase);
+            LayerParameter transposeQ = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".transQ", m_phase, p.freeze_learning);
             transposeQ.transpose_param.dim[2] = 3;
             transposeQ.transpose_param.dim[3] = 2;
             m_transposeQ = Layer<T>.Create(cuda, log, convertLayerParam(transposeQ, p), null);
 
             // Softmax
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax", m_phase);
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax", m_phase, p.freeze_learning);
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
@@ -267,6 +270,12 @@ namespace MyCaffe.layers.gpt
             {
                 m_cuda.FreeAttn(m_hFlashAttention);
                 m_hFlashAttention = 0;
+            }
+
+            if (m_hRope != 0)
+            {
+                m_cuda.FreeRope(m_hRope);
+                m_hRope = 0;
             }
 
             if (m_hCudnn != 0)
@@ -377,9 +386,9 @@ namespace MyCaffe.layers.gpt
         {
             shareLayerBlob(m_blobX0, colBottom[0].shape());
             m_blobX0.ReshapeLike(colBottom[0]);
-            shareLayerBlob(m_blobX1, colBottom[0].shape());
+            shareLayerBlob(m_blobX1, colBottom[1].shape());
             m_blobX1.ReshapeLike(colBottom[1]);
-            shareLayerBlob(m_blobX2, colBottom[0].shape());
+            shareLayerBlob(m_blobX2, colBottom[2].shape());
             m_blobX2.ReshapeLike(colBottom[2]);
             
             m_nB = m_blobX0.num;         // batch size
@@ -395,11 +404,16 @@ namespace MyCaffe.layers.gpt
             m_c_attnV.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_attnQ.blobs[0]);
-            blobs.Add(m_c_attnQ.blobs[1]);
+            if (m_param.multihead_attention_param.bias_term)
+                blobs.Add(m_c_attnQ.blobs[1]);
+
             blobs.Add(m_c_attnK.blobs[0]);
-            blobs.Add(m_c_attnK.blobs[1]);
+            if (m_param.multihead_attention_param.bias_term)
+                blobs.Add(m_c_attnK.blobs[1]);
+
             blobs.Add(m_c_attnV.blobs[0]);
-            blobs.Add(m_c_attnV.blobs[1]);
+            if (m_param.multihead_attention_param.bias_term)
+                blobs.Add(m_c_attnV.blobs[1]);
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
@@ -425,6 +439,9 @@ namespace MyCaffe.layers.gpt
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
 
+            if (m_param.multihead_attention_param.enable_rotary_positional_embedding)
+                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nSize);
+
             if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
             {
                 m_hCudnn = m_cuda.CreateCuDNN();
@@ -444,18 +461,13 @@ namespace MyCaffe.layers.gpt
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_proj.blobs[0]);
-            blobs.Add(m_c_proj.blobs[1]);
+            if (m_param.multihead_attention_param.bias_term)
+                blobs.Add(m_c_proj.blobs[1]);
 
             if (m_resid_dropout != null)
             {
                 addInternal(colTop[0], colTop[0]);
                 m_resid_dropout.Setup(m_colInternalBottom, m_colInternalTop);
-            }
-
-            foreach (Blob<T> blob in blobs)
-            {
-                if (!blob.Name.StartsWith(m_param.name + "_"))
-                    blob.Name = m_param.name + "_" + blob.Name;
             }
         }
 
@@ -582,6 +594,13 @@ namespace MyCaffe.layers.gpt
             m_blobK.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
             m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
 
+            // When using rope, apply the rotary positional embedding.
+            if (m_hRope != 0)
+            {
+                m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data);
+                m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data);
+            }
+
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             addInternal(m_blobK, m_blobKt);
@@ -607,7 +626,7 @@ namespace MyCaffe.layers.gpt
                 m_blobAttA.scale_data(dfScale);
 
                 // Apply mask to attention matrix
-                // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+                // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
                 float fInf = 1e+29f;
                 m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1 * fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
@@ -635,6 +654,7 @@ namespace MyCaffe.layers.gpt
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
             addInternal(m_blobWork, m_blobY);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop);
+
             m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
 
             // Apply output projection.
@@ -648,6 +668,16 @@ namespace MyCaffe.layers.gpt
                 addInternal(colTop[0], colTop[0]);
                 m_resid_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
+
+            m_rgYShape[0] = m_blobY.num;
+            m_rgYShape[1] = m_blobY.channels;
+            m_rgYShape[2] = m_blobY.height;
+            m_rgYShape[3] = m_blobY.width;
+
+            m_rgWorkShape[0] = m_blobWork.num;
+            m_rgWorkShape[1] = m_blobWork.channels;
+            m_rgWorkShape[2] = m_blobWork.height;
+            m_rgWorkShape[3] = m_blobWork.width;
         }
 
         /// <summary>
@@ -663,6 +693,9 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            m_blobY.Reshape(m_rgYShape);
+            m_blobWork.Reshape(m_rgWorkShape);
+
             // Gradient with respect to state then data.
             if (rgbPropagateDown[0])
             {
@@ -737,12 +770,34 @@ namespace MyCaffe.layers.gpt
                 // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
                 // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
                 // v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+                m_blobQ.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+                m_blobK.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+                m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+
                 addInternal(m_blobQ, m_blobQt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobK, m_blobKt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+
+                // When using rope, handle the rotary positional embedding.
+                if (m_hRope != 0)
+                {
+                    m_cuda.RopeBackward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.gpu_diff, m_blobQ.mutable_gpu_diff);
+                    m_cuda.RopeBackward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.gpu_diff, m_blobK.mutable_gpu_diff);
+                }
+
+                m_rgShape[0] = m_nB;
+                m_rgShape[1] = m_nT;
+                m_rgShape[2] = m_nHeads * m_nSize;
+                m_rgShape.RemoveAt(3);
+
+                m_blobQ.Reshape(m_rgShape);
+                m_blobK.Reshape(m_rgShape);
+                m_blobV.Reshape(m_rgShape);
+
+                m_rgShape.Add(1);
 
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // q = self.c_attnQ(x1)
