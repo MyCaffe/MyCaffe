@@ -43,9 +43,6 @@ namespace MyCaffe.layers.lnn
                 case LayerParameter.LayerType.LECUN:
                     return new LeCunLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.SILU:
-                    return new SiLULayer<double>(cuda, log, p);
-
                 case LayerParameter.LayerType.SOFTPLUS:
                     return new SoftPlusLayer<double>(cuda, log, p);
 
@@ -78,9 +75,6 @@ namespace MyCaffe.layers.lnn
 
                 case LayerParameter.LayerType.LECUN:
                     return new LeCunLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.SILU:
-                    return new SiLULayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.SOFTPLUS:
                     return new SoftPlusLayer<float>(cuda, log, p);
