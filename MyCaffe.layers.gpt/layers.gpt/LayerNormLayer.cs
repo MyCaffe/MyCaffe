@@ -286,29 +286,29 @@ namespace MyCaffe.layers.gpt
             // Multiply previous dx by dy (grad) 
             // dx1 = dx * dy
             m_blobWork.ReshapeLike(colTop[0]);
-            m_cuda.mul(m_nCount, colTop[0].gpu_data, colTop[0].gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.mul(m_nCount, colTop[0].gpu_data, colTop[0].gpu_diff, m_blobWork.mutable_gpu_data);
 
             // Average (dx * dy) across channel, dx1 = dx1.mean()
-            m_cuda.channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobWork.gpu_diff, m_blobVar.mutable_gpu_diff);
+            m_cuda.channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobWork.gpu_data, m_blobVar.mutable_gpu_diff);
 
             // Average dy across channel, dx2 = dy.mean()
             m_cuda.channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, colTop[0].gpu_diff, m_blobStdev.mutable_gpu_diff);
 
             // Multiply previous dx with dx1 (average across channel of dx * dy)
             m_cuda.channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobVar.gpu_diff, m_blobStdevFull.mutable_gpu_diff, DIR.FWD);
-            m_cuda.mul(m_nCount, colTop[0].gpu_data, m_blobStdevFull.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.mul(m_nCount, colTop[0].gpu_data, m_blobStdevFull.gpu_diff, m_blobWork.mutable_gpu_data);
 
             // Add in dy average dx2
             m_cuda.channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobStdev.gpu_diff, m_blobStdevFull.mutable_gpu_diff, DIR.FWD);
-            m_cuda.add(m_nCount, m_blobWork.gpu_diff, m_blobStdevFull.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.add(m_nCount, m_blobWork.gpu_data, m_blobStdevFull.gpu_diff, m_blobWork.mutable_gpu_data);
 
             // Subtract from original dy gradient
             // dy - ((dx * dx1) + dx2)
-            m_cuda.sub(m_nCount, colTop[0].gpu_diff, m_blobWork.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.sub(m_nCount, colTop[0].gpu_diff, m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
 
             // Divide by the original stdev std, dx = (dy - ((dx * dx1) + dx2))/std
             m_blobStdevFull.add_scalar(m_param.layer_norm_param.epsilon);
-            m_cuda.div(m_nCount, m_blobWork.gpu_diff, m_blobStdevFull.gpu_data, colBottom[0].mutable_gpu_diff);
+            m_cuda.div(m_nCount, m_blobWork.gpu_data, m_blobStdevFull.gpu_data, colBottom[0].mutable_gpu_diff);
         }
     }
 }
