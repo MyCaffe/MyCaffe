@@ -82,6 +82,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.SERF:
                     return new SerfLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.SILU:
+                    return new SiLULayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.TEXT_DATA:
                     return new TextDataLayer<double>(cuda, log, p);
 
@@ -177,6 +180,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.SERF:
                     return new SerfLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.SILU:
+                    return new SiLULayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.TEXT_DATA:
                     return new TextDataLayer<float>(cuda, log, p);
