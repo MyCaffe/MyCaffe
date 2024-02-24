@@ -27,7 +27,7 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobNorm2;
         Blob<T> m_blobAttn2 = null;
         Blob<T> m_blobNorm3 = null;
-        Blob<T> m_blobMlp;
+        Blob<T> m_blobMlp1;
         Blob<T> m_blobMlpOut;
         Blob<T> m_blobX = null;
         Layer<T> m_norm1;          // Input layer normalization.
@@ -36,7 +36,7 @@ namespace MyCaffe.layers.gpt
         Layer<T> m_attn2 = null; // Attention block used with decoder only.
         Layer<T> m_norm3 = null;   // Layer normalization after second attention block, used with decoder only.
         // MLP block
-        Layer<T> m_fc;      // initial linear
+        Layer<T> m_fc1;      // initial linear
         Layer<T> m_proj;    // projection
         Layer<T> m_act;     // activation
         Layer<T> m_dropout = null; // resid dropout
@@ -59,17 +59,17 @@ namespace MyCaffe.layers.gpt
             m_type = LayerParameter.LayerType.TRANSFORMER_BLOCK;
 
             m_blobNorm1 = new Blob<T>(cuda, log);
-            m_blobNorm1.Name = m_param.name + " norm1";
+            m_blobNorm1.Name = m_param.name + ".norm1";
             m_blobAttn1 = new Blob<T>(cuda, log);
-            m_blobAttn1.Name = m_param.name + " attn1";
+            m_blobAttn1.Name = m_param.name + ".attn1";
             m_blobNorm2 = new Blob<T>(cuda, log);
-            m_blobNorm2.Name = m_param.name + " norm2";
-            m_blobMlp = new Blob<T>(cuda, log);
-            m_blobMlp.Name = m_param.name + " mlp";
+            m_blobNorm2.Name = m_param.name + ".norm2";
+            m_blobMlp1 = new Blob<T>(cuda, log);
+            m_blobMlp1.Name = m_param.name + ".mlp";
             m_blobMlpOut = new Blob<T>(cuda, log);
-            m_blobMlpOut.Name = m_param.name + " mlp_out";
+            m_blobMlpOut.Name = m_param.name + ".mlp_out";
             m_blobX = new Blob<T>(cuda, log);
-            m_blobX.Name = m_param.name + " xB";
+            m_blobX.Name = m_param.name + ".xB";
 
             if (p.transformer_block_param.normalization_type == TransformerBlockParameter.NORMALIZATION.RMS_NORM)
             {
@@ -159,23 +159,23 @@ namespace MyCaffe.layers.gpt
                 throw new Exception("The block type '" + p.transformer_block_param.block_type.ToString() + "' is not supported!");
             }
 
-            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".fc");
-            fc.inner_product_param.axis = 2;
-            fc.inner_product_param.bias_term = true;
-            fc.inner_product_param.num_output = (uint)(p.transformer_block_param.embed * 4);
+            LayerParameter fc1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".fc1");
+            fc1.inner_product_param.axis = 2;
+            fc1.inner_product_param.bias_term = true;
+            fc1.inner_product_param.num_output = (uint)(p.transformer_block_param.embed * 4);
             if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
-                fc.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
-                fc.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+                fc1.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+                fc1.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             else
             {
-                fc.inner_product_param.weight_filler = new FillerParameter("xavier");
-                fc.inner_product_param.bias_filler = new FillerParameter("xavier");
+                fc1.inner_product_param.weight_filler = new FillerParameter("xavier");
+                fc1.inner_product_param.bias_filler = new FillerParameter("xavier");
             }
-            fc.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
-            fc.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
-            m_fc = Layer<T>.Create(cuda, log, convertLayerParam(fc, p), evtCancel);
+            fc1.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            fc1.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
+            m_fc1 = Layer<T>.Create(cuda, log, convertLayerParam(fc1, p), evtCancel);
 
             LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".proj");
             proj.inner_product_param.axis = 2;
@@ -239,7 +239,7 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobNorm2);
             dispose(ref m_blobAttn2);
             dispose(ref m_blobNorm3);
-            dispose(ref m_blobMlp);
+            dispose(ref m_blobMlp1);
             dispose(ref m_blobMlpOut);
             dispose(ref m_blobX);
 
@@ -248,7 +248,7 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_norm2);
             dispose(ref m_attn2);
             dispose(ref m_norm3);
-            dispose(ref m_fc);
+            dispose(ref m_fc1);
             dispose(ref m_proj);
             dispose(ref m_act);
             dispose(ref m_dropout);
@@ -270,7 +270,7 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobX);
             if (m_blobNorm3 != null)
                 col.Add(m_blobNorm3);
-            col.Add(m_blobMlp);
+            col.Add(m_blobMlp1);
             col.Add(m_blobMlpOut);
 
             col.Add(m_norm1.internal_blobs);
@@ -280,7 +280,7 @@ namespace MyCaffe.layers.gpt
                 col.Add(m_attn2.internal_blobs);
             if (m_norm3 != null)
                 col.Add(m_norm3.internal_blobs);
-            col.Add(m_fc.internal_blobs);
+            col.Add(m_fc1.internal_blobs);
             col.Add(m_act.internal_blobs);
             col.Add(m_proj.internal_blobs);
             if (m_dropout != null)
@@ -340,7 +340,7 @@ namespace MyCaffe.layers.gpt
                 m_attn2.ReInitializeParameters(target);
             if (m_norm3 != null)
                 m_norm3.ReInitializeParameters(target);
-            m_fc.ReInitializeParameters(target);
+            m_fc1.ReInitializeParameters(target);
             m_proj.ReInitializeParameters(target);
 
             return true;
@@ -409,8 +409,8 @@ namespace MyCaffe.layers.gpt
                 m_blobNorm3.ReshapeLike(colBottom[0]);
             }
 
-            shareLayerBlob(m_blobMlp, colBottom[0].shape());
-            m_blobMlp.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobMlp1, colBottom[0].shape());
+            m_blobMlp1.ReshapeLike(colBottom[0]);
             shareLayerBlob(m_blobMlpOut, colBottom[0].shape());
             m_blobMlpOut.ReshapeLike(colBottom[0]);
 
@@ -455,13 +455,13 @@ namespace MyCaffe.layers.gpt
                 blobLn = m_blobNorm3;
             }
 
-            addInternal(blobLn, m_blobMlp);
-            m_fc.LayerSetUp(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobNorm2, m_blobMlp);
-            m_fc.Reshape(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlp);
+            addInternal(blobLn, m_blobMlp1);
+            m_fc1.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+            addInternal(m_blobNorm2, m_blobMlp1);
+            m_fc1.Reshape(m_colInternalBottom, m_colInternalTop);
+            addInternal(m_blobMlp1, m_blobMlp1);
             m_act.LayerSetUp(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlpOut);
+            addInternal(m_blobMlp1, m_blobMlpOut);
             m_proj.LayerSetUp(m_colInternalBottom, m_colInternalTop);
 
             if (m_dropout != null)
@@ -475,7 +475,7 @@ namespace MyCaffe.layers.gpt
             blobs.Add(m_attn1.blobs);
             if (m_attn2 != null)
                 blobs.Add(m_attn2.blobs);
-            blobs.Add(m_fc.blobs);
+            blobs.Add(m_fc1.blobs);
             blobs.Add(m_proj.blobs);
 
             foreach (Blob<T> blob in blobs)
@@ -505,7 +505,7 @@ namespace MyCaffe.layers.gpt
             if (m_blobNorm3 != null)
                 m_blobNorm3.ReshapeLike(colBottom[0]);
 
-            m_blobMlp.ReshapeLike(colBottom[0]);
+            m_blobMlp1.ReshapeLike(colBottom[0]);
             m_blobMlpOut.ReshapeLike(colBottom[0]);
             
             addInternal(colBottom[0], m_blobNorm1);
@@ -549,11 +549,11 @@ namespace MyCaffe.layers.gpt
                 blobLn = m_blobNorm3;
             }
 
-            addInternal(blobLn, m_blobMlp);
-            m_fc.Reshape(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlp);
+            addInternal(blobLn, m_blobMlp1);
+            m_fc1.Reshape(m_colInternalBottom, m_colInternalTop);
+            addInternal(m_blobMlp1, m_blobMlp1);
             m_act.Reshape(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlpOut);
+            addInternal(m_blobMlp1, m_blobMlpOut);
             m_proj.Reshape(m_colInternalBottom, m_colInternalTop);
 
             if (m_dropout != null)
@@ -686,11 +686,11 @@ namespace MyCaffe.layers.gpt
 
             // CSA | ENCODER: ff = self.mlpf(self.ln_2(x_2)),
             // DECODER:       ff = self.mlpf(self.ln_3(x_3))
-            addInternal(blobLn, m_blobMlp);
-            m_fc.Forward(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlp);
+            addInternal(blobLn, m_blobMlp1);
+            m_fc1.Forward(m_colInternalBottom, m_colInternalTop);
+            addInternal(m_blobMlp1, m_blobMlp1);
             m_act.Forward(m_colInternalBottom, m_colInternalTop);
-            addInternal(m_blobMlp, m_blobMlpOut);
+            addInternal(m_blobMlp1, m_blobMlpOut);
             m_proj.Forward(m_colInternalBottom, m_colInternalTop);
 
             if (m_dropout != null)
@@ -751,14 +751,14 @@ namespace MyCaffe.layers.gpt
                 }
 
                 // Gradient for MLP
-                addInternal(m_blobMlp, m_blobMlpOut);
+                addInternal(m_blobMlp1, m_blobMlpOut);
                 m_proj.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                addInternal(m_blobMlp, m_blobMlp);
+                addInternal(m_blobMlp1, m_blobMlp1);
                 m_act.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 Blob<T> blobLn = (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER) ? m_blobNorm3 : m_blobNorm2;
                 // ff -> x_3 (decoder), otherwise x_2 (encoder)
-                addInternal(blobLn, m_blobMlp);
-                m_fc.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                addInternal(blobLn, m_blobMlp1);
+                m_fc1.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
                 {
