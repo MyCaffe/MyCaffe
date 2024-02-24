@@ -20,7 +20,7 @@ namespace MyCaffe.param.gpt
     public class RMSNormParameter : LayerParameterBase 
     {
         int m_nAxis = 2;
-        double m_dfEpsilon = 1e-10;
+        double m_dfEpsilon = 1e-5;
 
         /** @copydoc LayerParameterBase */
         public RMSNormParameter()
@@ -28,9 +28,9 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies the epsilon value used to avoid invalid values (default = 1e-10).
+        /// Specifies the epsilon value used to avoid invalid values (default = 1e-5).
         /// </summary>
-        [Description("Specifies the epsilon value used to avoid invalid values (default = 1e-10).")]
+        [Description("Specifies the epsilon value used to avoid invalid values (default = 1e-5).")]
         public double epsilon
         {
             get { return m_dfEpsilon; }
