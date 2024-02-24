@@ -26,6 +26,8 @@ namespace MyCaffe.param.gpt
         OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
         OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
         bool m_bEnableFlashScaledDotProductAttention = false;
+        bool m_bEnableRotaryPositionalEmbedding = false;
+        bool m_bBiasTerm = true;
 
         /// <summary>
         /// Defines the weight initialization strategy.
@@ -65,6 +67,26 @@ namespace MyCaffe.param.gpt
         {
             get { return m_bEnableFlashScaledDotProductAttention; }
             set { m_bEnableFlashScaledDotProductAttention = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to enable the rotary positional embedding.
+        /// </summary>
+        [Description("Specifies whether or not to enable the rotary positional embedding.")]
+        public bool enable_rotary_positional_embedding
+        {
+            get { return m_bEnableRotaryPositionalEmbedding; }
+            set { m_bEnableRotaryPositionalEmbedding = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to use a bias term on wq, wk, wv, and wo.
+        /// </summary>
+        [Description("Specifies whether or not to use a bias term on wq, wk, wv, and wo.")]
+        public bool bias_term
+        {
+            get { return m_bBiasTerm; }
+            set { m_bBiasTerm = value; }
         }
 
         /// <summary>
@@ -191,6 +213,8 @@ namespace MyCaffe.param.gpt
             m_output_adapter_v = p.output_adapter_v.Clone();
             m_output_adapter_out = p.output_adapter_out.Clone();
             m_bEnableFlashScaledDotProductAttention = p.enable_flash_scaled_dot_product_attention;
+            m_bEnableRotaryPositionalEmbedding = p.enable_rotary_positional_embedding;
+            m_bBiasTerm = p.bias_term;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -218,6 +242,8 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
             rgChildren.Add("weight_init", weight_init.ToString());
             rgChildren.Add("enable_flash_scaled_dot_product_attention", enable_flash_scaled_dot_product_attention.ToString());
+            rgChildren.Add("enable_rotary_positional_embedding", enable_rotary_positional_embedding.ToString());
+            rgChildren.Add("bias_term", bias_term.ToString());
             rgChildren.Add(output_adapter_q.ToProto("output_adapter_q"));
             rgChildren.Add(output_adapter_k.ToProto("output_adapter_k"));
             rgChildren.Add(output_adapter_v.ToProto("output_adapter_v"));
@@ -266,6 +292,12 @@ namespace MyCaffe.param.gpt
             
             if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
                 p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
+                p.enable_rotary_positional_embedding = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("bias_term")) != null)
+                p.bias_term = bool.Parse(strVal);
 
             RawProto rp1 = rp.FindChild("output_adapter_q");
             if (rp1 != null)
