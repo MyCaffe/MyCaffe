@@ -6051,12 +6051,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsDouble(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsDouble(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsFloat(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, 0));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsFloat(fEps), m_param.AsLong(nGpuID, nCount, nOuterNum, nChannels, nInnerNum));
                 return (long)rg[0];
             }
         }
@@ -6159,15 +6159,15 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hRope">Specifies the handle to the Rope instance.</param>
         /// <param name="n">Specifies the number of items in hYdata, hYdiff and hXdiff.</param>
-        /// <param name="hYdata">Specifies the rope augmented output data.</param>
+        /// <param name="hXdata">Specifies the rope augmented X input sent to the Forward pass.</param>
         /// <param name="hYdiff">Specifies the input diff to be un-roped.</param>
         /// <param name="hXdiff">Specifies the un-roped output diff.</param>
-        public void RopeBackward(long hRope, int n, long hYdata, long hYdiff, long hXdiff)
+        public void RopeBackward(long hRope, int n, long hXdata, long hYdiff, long hXdiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hYdata, hYdiff, hXdiff));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hXdata, hYdiff, hXdiff));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hYdata, hYdiff, hXdiff));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hXdata, hYdiff, hXdiff));
         }
 
         #endregion
