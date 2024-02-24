@@ -6117,12 +6117,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsDouble(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nDim, 0));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsDouble(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nDim));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsFloat(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nDim, 0));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsFloat(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nDim));
                 return (long)rg[0];
             }
         }

@@ -4216,7 +4216,7 @@ inline long Device<T>::CreateRope(long lInput, T* pfInput, long llInput, LONGLON
 
 	if (lErr = verifyInput(lInput, pfInput, 1, 1))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
