@@ -46,7 +46,6 @@ namespace MyCaffe.layers.gpt
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.RMSNORM;
-            setup_internal_blobs(m_colInternalBlobs);
 
             m_blobX1 = new Blob<T>(cuda, log);
             m_blobX1.Name = m_param.name + ".x1";
@@ -58,6 +57,7 @@ namespace MyCaffe.layers.gpt
             m_blobX4.Name = m_param.name + ".x4";
             m_blobX5 = new Blob<T>(cuda, log);
             m_blobX5.Name = m_param.name + ".x5";
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
