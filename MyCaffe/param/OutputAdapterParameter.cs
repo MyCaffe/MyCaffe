@@ -16,6 +16,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// When present and enabled, the output adapters are run right after the forward pass of each layer, and before the backward pass of each layer.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class OutputAdapterParameter : BaseParameter, ICloneable
     {
         string m_strName;
