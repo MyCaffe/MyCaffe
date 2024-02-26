@@ -23,7 +23,7 @@ namespace MyCaffe.layers.gpt
         InputData m_data;
         Blob<T> m_blobX = null;
         Blob<T> m_blobY = null;
-        Random m_random = new Random();
+        Random m_random;
         Layer<T> m_softmax = null;
         bool m_bEnableEos = false;
         bool m_bEnableBos = false;
@@ -54,6 +54,11 @@ namespace MyCaffe.layers.gpt
         {
             m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.TOKENIZED_DATA;
+
+            if (p.tokenized_data_param.seed.HasValue)
+                m_random = new Random(p.tokenized_data_param.seed.Value);
+            else
+                m_random = new Random();
 
             m_blobX = new Blob<T>(m_cuda, m_log);
         }
@@ -317,7 +322,7 @@ namespace MyCaffe.layers.gpt
 
             string strInput = customInput.GetProperty("InputData");
             if (string.IsNullOrEmpty(strInput))
-                throw new Exception("Could not find 'InputData' property!");
+                strInput = " ";
 
             int[] rgShape = new int[2];
             rgShape[0] = 1;
