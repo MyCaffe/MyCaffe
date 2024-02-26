@@ -19,9 +19,12 @@ namespace MyCaffe.layers.gpt
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CausalSelfAttentionLayer2<T> : Layer<T>
     {
+        List<int> m_rgShape = new List<int>() { 1, 1, 1, 1 };
         // Causal mask to ensure that atttention is only applied to the left in the input sequence.
-        Blob<T> m_blobMask;
         Layer<T> m_mh_att = null;
+        Blob<T> m_blobMask;
+
+        int m_nT = 0;
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -59,9 +62,8 @@ namespace MyCaffe.layers.gpt
             m_blobMask.Name = m_param.name + " mask";
 
             List<int> rgShape = new List<int>() { 1, 1, (int)p.causal_self_attention_param.block_size, (int)p.causal_self_attention_param.block_size };
-            shareLayerBlob(m_blobMask, rgShape);
             m_blobMask.Reshape(rgShape);
-            fillMask(m_blobMask, p.causal_self_attention_param.block_size);
+            fillMask(m_blobMask);
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -82,27 +84,24 @@ namespace MyCaffe.layers.gpt
                 return;
 
             col.Add(m_blobMask);
-
             col.Add(m_mh_att.internal_blobs);
         }
 
-        private void fillMask(Blob<T> b, uint nSeqLen, float fInf = float.NegativeInfinity)
+        private void fillMask(Blob<T> b)
         {
-            float[] rg = new float[nSeqLen * nSeqLen];
+            b.SetData(1.0);
 
-            for (int i = 0; i < nSeqLen; i++)
+            float[] rgMaskData = convertF(b.mutable_cpu_data);
+
+            for (int i = 0; i < b.height; i++)
             {
-                for (int j = 0; j < nSeqLen; j++)
+                for (int j = i + 1; j < b.width; j++)
                 {
-                    if (j > i)
-                        rg[i * nSeqLen + j] = 0; // converted to -inf in forward pass of MultiHeadAttentionLayer
-                    else
-                        rg[i * nSeqLen + j] = 1;
+                    rgMaskData[i * b.width + j] = 0;
                 }
             }
 
-            b.Reshape(1, 1, (int)nSeqLen, (int)nSeqLen);
-            b.mutable_cpu_data = convert(rg);
+            b.mutable_cpu_data = convert(rgMaskData);
         }
 
         /// <summary>
@@ -167,15 +166,9 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobX = colBottom[0];
 
             addInternal(new List<Blob<T>> { blobX, blobX, blobX, m_blobMask }, colTop[0]);
-            m_mh_att.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+            m_mh_att.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_mh_att.blobs);
-
-            foreach (Blob<T> blob in blobs)
-            {
-                if (!blob.Name.StartsWith(m_param.name + "_"))
-                    blob.Name = m_param.name + "_" + blob.Name;
-            }
         }
 
         /// <summary>
@@ -186,6 +179,14 @@ namespace MyCaffe.layers.gpt
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobX = colBottom[0];
+            m_nT = blobX.channels;    // sequence length
+
+            if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
+            {
+                List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
+                m_blobMask.Reshape(rgShape);
+                fillMask(m_blobMask);
+            }
 
             addInternal(new List<Blob<T>> { blobX, blobX, blobX, m_blobMask }, colTop[0]);
             m_mh_att.Reshape(m_colInternalBottom, m_colInternalTop);
@@ -226,7 +227,6 @@ namespace MyCaffe.layers.gpt
             if (rgbPropagateDown[0])
             {
                 List<bool> rgbPropagate = new List<bool>() { true, true };
-
                 Blob<T> blobX = colBottom[0];
 
                 addInternal(new List<Blob<T>> { blobX, blobX, blobX, m_blobMask }, colTop[0]);
