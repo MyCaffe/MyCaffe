@@ -266,10 +266,14 @@ namespace MyCaffe.solvers
             m_nIter = state.iter;
             m_nCurrentStep = state.current_step;
 
-            m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of state history blobs.");
+            if (!TrainingNet.net_param.enable_lora || state.history.Count > m_colHistory.Count)
+            {
+                if (state.history.Count != m_colHistory.Count)
+                    m_log.WriteLine("WARNING: The number of blobs in the state history (" + state.history.Count.ToString() + ") does not match the number of blobs in the solver history (" + m_colHistory.Count.ToString() + ").  The state history will be truncated to match the solver history.");
+            }
             m_log.WriteLine("SGDSolver: restoring state history.");
 
-            for (int i = 0; i < m_colHistory.Count; i++)
+            for (int i = 0; i < Math.Min(m_colHistory.Count, state.history.Count); i++)
             {
                 m_colHistory[i].FromProto(state.history[i]);
             }

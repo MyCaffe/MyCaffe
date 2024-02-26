@@ -29,6 +29,7 @@ namespace MyCaffe.output_adapters
         Blob<T> m_blobWork;
         double m_dfScale = 1.0;
         int[] m_rgShape = new int[] { 1, 1, 1, 1 };
+        int[] m_rgShapeOg = new int[] { 1, 1, 1 };
 
         /// <summary>
         /// Constructor.
@@ -209,8 +210,21 @@ namespace MyCaffe.output_adapters
             Blob<T> blobBtm = colBottom[0];
             int nNumAxes = blobBtm.num_axes;
 
-            if (nNumAxes < 4)
-                blobBtm.Unsqueeze(4);
+            if (nNumAxes < 3 || nNumAxes > 4)
+                throw new Exception("The LoRA output adapter currently only supports 3D or 4D data.");
+
+            if (nNumAxes == 3)
+            {
+                m_rgShapeOg[0] = blobBtm.num;
+                m_rgShapeOg[1] = blobBtm.channels;
+                m_rgShapeOg[2] = blobBtm.height;
+
+                m_rgShape[0] = blobBtm.num;
+                m_rgShape[1] = blobBtm.channels;
+                m_rgShape[2] = 1;
+                m_rgShape[3] = blobBtm.height;
+                blobBtm.Reshape(m_rgShape);
+            }
 
             if (m_dropout != null)
             {
@@ -230,7 +244,7 @@ namespace MyCaffe.output_adapters
             m_cuda.add(colTop[0].count(), colTop[0].gpu_data, m_blobxAB.gpu_data, colTop[0].mutable_gpu_data);
 
             if (nNumAxes < 4)
-                blobBtm.Squeeze(nNumAxes);
+                blobBtm.Reshape(m_rgShapeOg);
         }
 
         /// <summary>
@@ -247,8 +261,21 @@ namespace MyCaffe.output_adapters
         {
             int nNumAxes = colTop[0].num_axes;
 
-            if (nNumAxes < 4)
-                colTop[0].Unsqueeze(4);
+            if (nNumAxes < 3 || nNumAxes > 4)
+                throw new Exception("The LoRA output adapter currently only supports 3D or 4D data.");
+
+            if (nNumAxes == 3)
+            {
+                m_rgShapeOg[0] = colTop[0].num;
+                m_rgShapeOg[1] = colTop[0].channels;
+                m_rgShapeOg[2] = colTop[0].height;
+
+                m_rgShape[0] = colTop[0].num;
+                m_rgShape[1] = colTop[0].channels;
+                m_rgShape[2] = 1;
+                m_rgShape[3] = colTop[0].height;
+                colTop[0].Reshape(m_rgShape);
+            }
 
             m_cuda.scale(colTop[0].count(), m_dfScale, colTop[0].gpu_diff, m_blobxAB.mutable_gpu_diff);
 
@@ -261,7 +288,7 @@ namespace MyCaffe.output_adapters
             m_cuda.add(colTop[0].count(), colTop[0].gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
 
             if (nNumAxes < 4)
-                colTop[0].Squeeze(nNumAxes);
+                colTop[0].Reshape(m_rgShapeOg);
         }
     }
 }

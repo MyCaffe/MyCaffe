@@ -130,6 +130,7 @@ namespace MyCaffe.common
         string m_strDataSource = null;
         Layer<T> m_labelMappingLayer = null;
         bool m_bFirstForwardInputWarning = true;
+        Dictionary<LayerParameter.LayerType, BlobCollection<T>> m_rgSharedIntraLayerBlobs = new Dictionary<LayerParameter.LayerType, BlobCollection<T>>();
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -196,6 +197,11 @@ namespace MyCaffe.common
             {
                 if (layer is DataLayer<T>)
                     ((DataLayer<T>)layer).Disconnect();
+            }
+
+            foreach (KeyValuePair<LayerParameter.LayerType, BlobCollection<T>> kv in m_rgSharedIntraLayerBlobs)
+            {
+                kv.Value.Dispose();
             }
 
             m_rgConnectedLayers.Clear();
@@ -311,6 +317,9 @@ namespace MyCaffe.common
                     m_phase = p.state.phase;
                 }
 
+                if (m_param.enable_memory_stats)
+                    m_log.WriteLine("WARNING: Memory stats are enabled, this will slow down the network initialization.", true);
+
                 m_phaseOriginal = m_phase;
 
                 scanForRecommendations(p);
@@ -390,7 +399,17 @@ namespace MyCaffe.common
                     if (m_sharedNet != null)
                     {
                         Layer<T> sharedLayer = m_sharedNet.FindLayer(layer_param.type, layer_param.name);
-                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_sharedNet.parameters, m_sharedNet.learnable_adapted_parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer);
+                        if (!m_rgSharedIntraLayerBlobs.ContainsKey(layer_param.type))
+                            m_rgSharedIntraLayerBlobs.Add(layer_param.type, new BlobCollection<T>());
+
+                        layer_paramEx = new LayerParameterExFull<T>(layer_param, m_sharedNet.parameters, m_sharedNet.learnable_adapted_parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer, m_param.enable_lora, m_param.enable_lora_only_load, m_rgSharedIntraLayerBlobs[layer_param.type]);
+                    }
+                    else
+                    {
+                        if (!m_rgSharedIntraLayerBlobs.ContainsKey(layer_param.type))
+                            m_rgSharedIntraLayerBlobs.Add(layer_param.type, new BlobCollection<T>());
+
+                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_param.enable_lora, m_param.enable_lora_only_load, m_rgSharedIntraLayerBlobs[layer_param.type]);
                     }
 
                     layer_paramEx.solver_count = m_param.solver_count;
@@ -550,6 +569,16 @@ namespace MyCaffe.common
                             int nIdx = m_rgrgnTopIdVecs[layer_id][top_id];
                             m_rgbBlobNeedBackward[nIdx] = true;
                         }
+                    }
+
+                    if (m_param.enable_memory_stats)
+                    {
+                        double dfFree;
+                        double dfUsed;
+                        bool bCudaCallUsed;
+                        m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
+
+                        m_log.WriteLine("Layer " + layer_id.ToString() + ", " + layer_param.name + " - Memory used: " + dfUsed.ToString() + " GB", true);
                     }
                 }
 
@@ -1388,7 +1417,8 @@ namespace MyCaffe.common
                 m_rgdfAllParamsLr.Add(param_spec.lr_mult);
                 m_rgdfAllParamsWeightDecay.Add(param_spec.decay_mult);
 
-                m_colAllLearnableParams.Add(m_colParams[net_param_id]);
+                if (!m_param.enable_lora_only_load)
+                    m_colAllLearnableParams.Add(m_colParams[net_param_id]);
             }
             else
             {
