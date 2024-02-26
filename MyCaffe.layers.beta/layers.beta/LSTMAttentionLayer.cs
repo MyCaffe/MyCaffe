@@ -433,10 +433,10 @@ namespace MyCaffe.layers
                 attentionParam.attention_param.weight_filler = m_param.lstm_attention_param.weight_filler;
                 attentionParam.attention_param.bias_filler = m_param.lstm_attention_param.bias_filler;
 
-                if (m_param is LayerParameterEx<T>)
+                if (m_param is LayerParameterExFull<T>)
                 {
-                    LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                    attentionParam = new LayerParameterEx<T>(attentionParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                    LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
+                    attentionParam = new LayerParameterExFull<T>(attentionParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
                 }
 
                 m_attention = new AttentionLayer<T>(m_cuda, m_log, attentionParam);

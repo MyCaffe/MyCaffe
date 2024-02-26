@@ -81,10 +81,10 @@ namespace MyCaffe.layers
             ipUaParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;            
             ipUaParam.inner_product_param.bias_filler = m_param.attention_param.bias_filler;
 
-            if (m_param is LayerParameterEx<T>)
+            if (m_param is LayerParameterExFull<T>)
             {
-                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipUaParam = new LayerParameterEx<T>(ipUaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
+                ipUaParam = new LayerParameterExFull<T>(ipUaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
             }
 
             m_ipUa = new InnerProductLayer<T>(cuda, log, ipUaParam);
@@ -96,10 +96,10 @@ namespace MyCaffe.layers
             ipWaParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
             ipWaParam.inner_product_param.bias_filler = m_param.attention_param.bias_filler;
 
-            if (m_param is LayerParameterEx<T>)
+            if (m_param is LayerParameterExFull<T>)
             {
-                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipWaParam = new LayerParameterEx<T>(ipWaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
+                ipWaParam = new LayerParameterExFull<T>(ipWaParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
             }
 
             m_ipWa = new InnerProductLayer<T>(cuda, log, ipWaParam);
@@ -123,10 +123,10 @@ namespace MyCaffe.layers
             ipVParam.inner_product_param.bias_term = false;
             ipVParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
 
-            if (m_param is LayerParameterEx<T>)
+            if (m_param is LayerParameterExFull<T>)
             {
-                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                ipVParam = new LayerParameterEx<T>(ipVParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
+                ipVParam = new LayerParameterExFull<T>(ipVParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
             }
 
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
