@@ -27,6 +27,9 @@ namespace MyCaffe.param
         int m_nProjectID = 0;
         int m_nSolverCount = 1;
         int m_nSolverRank = 0;
+        bool m_bEnableMemoryStats = false;
+        bool m_bEnableLoraOnlyLoad = false;
+        bool m_bEnableLora = false;
 
         /** @copydoc BaseParameter */
         public NetParameter()
@@ -90,6 +93,26 @@ namespace MyCaffe.param
         {
             get { return m_strName; }
             set { m_strName = value; }
+        }
+
+        /// <summary>
+        /// When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory.
+        /// </summary>
+        [Description("When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory.")]
+        public bool enable_lora_only_load
+        {
+            get { return m_bEnableLoraOnlyLoad; }
+            set { m_bEnableLoraOnlyLoad = value; }
+        }
+
+        /// <summary>
+        /// When using enabled, all enabled output adapters are run on each layer using them.
+        /// </summary>
+        [Description("When using enabled, all enabled output adapters are run on each layer using them.")]
+        public bool enable_lora
+        {
+            get { return m_bEnableLora; }
+            set { m_bEnableLora = value; }
         }
 
         /// <summary>
@@ -172,6 +195,16 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// When enabled, memory use is output to the debug window (only recommended for debugging).
+        /// </summary>
+        [Browsable(false)]
+        public bool enable_memory_stats
+        {
+            get { return m_bEnableMemoryStats; }
+            set { m_bEnableMemoryStats = value; }
+        }
+
+        /// <summary>
         /// Specifies the number of solvers used in a multi-gpu training session.
         /// </summary>
         [Browsable(false)]
@@ -231,6 +264,10 @@ namespace MyCaffe.param
                 rgChildren.Add(lp.ToProto("layer"));
             }
 
+            rgChildren.Add("enable_memory_stats", enable_memory_stats.ToString());
+            rgChildren.Add("enable_lora", enable_lora.ToString());
+            rgChildren.Add("enable_lora_only_load", enable_lora_only_load.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -272,6 +309,15 @@ namespace MyCaffe.param
             {
                 p.layer.Add(LayerParameter.FromProto(rpChild));
             }
+
+            if ((strVal = rp.FindValue("enable_memory_stats")) != null)
+                p.enable_memory_stats = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_lora")) != null)
+                p.enable_lora = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_lora_only_load")) != null)
+                p.enable_lora_only_load = bool.Parse(strVal);
 
             return p;
         }
@@ -335,6 +381,9 @@ namespace MyCaffe.param
 
             p.m_nSolverCount = nSolverCount.Value;
             p.m_nSolverRank = nSolverRank.Value;
+            p.m_bEnableMemoryStats = m_bEnableMemoryStats;
+            p.m_bEnableLora = m_bEnableLora;
+            p.m_bEnableLoraOnlyLoad = m_bEnableLoraOnlyLoad;
 
             return p;
         }
