@@ -485,6 +485,10 @@ namespace MyCaffe.common
         /// Query a GPU board group ID.
         /// </summary>
         MULTIGPUBOARDGROUPID = 3,
+        /// <summary>
+        /// Query the GPU compute level for the given GPU.
+        /// </summary>
+        COMPUTELEVEL = 4
     }
 
     /// <summary>
@@ -2190,6 +2194,34 @@ namespace MyCaffe.common
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        /// <summary>
+        /// Query the current Gpu Compute Level
+        /// </summary>
+        /// <returns>The major, minor compute level is returned.</returns>
+        public int[] GetComputeLevel(int nDeviceID = -1)
+        {
+            if (m_cuda == null || m_hKernel <= 0)
+                return null;
+
+            try
+            {
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsDouble(nDeviceID, (int)DEVPROP.COMPUTELEVEL));
+                    return new int[] { (int)rg[0], (int)rg[1] };
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsFloat(nDeviceID, (int)DEVPROP.COMPUTELEVEL));
+                    return new int[] { (int)rg[0], (int)rg[1] };
+                }
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -9089,9 +9121,9 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items in the bottom data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="hWeight">Specifies a handle to the weight data in GPU memory.</param>
-        /// <param name="nM"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nN"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nK"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nM">Specifies the input items.</param>
+        /// <param name="nN">Specifies the embedding space.</param>
+        /// <param name="nK">Specifies the number of indexes per slot.  For example, when using a vocabulary of 4 elements (0-3), K = 4.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         public void embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData)
         {
@@ -9107,16 +9139,17 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items in the bottom data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
-        /// <param name="nM"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nN"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nK"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nM">Specifies the input items.</param>
+        /// <param name="nN">Specifies the embedding space.</param>
+        /// <param name="nK">Specifies the number of indexes per slot.  For example, when using a vocabulary of 4 elements (0-3), K = 4.</param>
         /// <param name="hWeightDiff">Specifies a handle to the weight diff in GPU memory.</param>
-        public void embed_bwd(int nCount, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff)
+        /// <param name="nMajorVer">Optionally, specifies the major compute version.  Compute >= 6.0 use system-wide atomic add which is more stable (default = 0, which supports all compute levels).</param>
+        public void embed_bwd(int nCount, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff, int nMajorVer = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, null, m_param.AsLong(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, null, m_param.AsLong(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff, nMajorVer));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, null, m_param.AsLong(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, null, m_param.AsLong(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff, nMajorVer));
         }
 
         /// <summary>
