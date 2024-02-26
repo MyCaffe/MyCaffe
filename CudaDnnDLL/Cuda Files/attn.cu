@@ -160,8 +160,6 @@ template LONG blob<float>::set(long hData, long hDiff, int nN, int nC, int nH, i
 template <class T>
 LONG blob<T>::copy_from(blob<T>& src, bool bDiff)
 {
-	LONG lErr;
-
 	reshape(src.n(), src.c(), src.h(), src.w());
 
 	long hDst = (bDiff) ? m_hDiff : m_hData;
@@ -304,8 +302,6 @@ template LONG blob<float>::apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_
 template <class T>
 LONG blob<T>::apply_mask(blob<T>& blobMask)
 {
-	LONG lErr;
-
 	if (m_nN != blobMask.n() || m_nH != blobMask.c())
 		return ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE;
 
