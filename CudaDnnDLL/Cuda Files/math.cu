@@ -156,7 +156,7 @@ inline __device__ float math_atomic_add(const float val, float* address)
 template<>
 inline __device__ double math_atomic_add(const double val, double* address)
 {
-	unsigned long long int* address_as_ull = (unsigned long long int*)address;
+	unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
 	unsigned long long int old = *address_as_ull;
 	unsigned long long int assumed;
 
@@ -171,6 +171,9 @@ inline __device__ double math_atomic_add(const double val, double* address)
 
 	return __longlong_as_double(old);
 }
+
+template<typename T>
+inline __device__ T math_atomic_add_6(const T val, T* address);
 
 
 template<typename T>
@@ -8510,6 +8513,8 @@ long Math<double>::rng_uniform(int n, double fMin, double fMax, double* pMem)
 	if ((curand = GetCurandHandle()) == NULL)
 		return ERROR_CUBLAS_NULL;
 
+	
+
 	if (lErr = curandGenerateUniformDouble(curand, pMem, n))
 		return lErr;
 
@@ -8945,7 +8950,6 @@ long Math<T>::embed_fwd(int n, long hBottomData, long hWeight, int nM, int nN, i
 template long Math<double>::embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
 template long Math<float>::embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
 
-
 template<typename T>
 __global__ void embed_bwd_kernel(int nCount, const T* bottom_data, const T* top_diff, int M, int N, int K, T* weight_diff)
 {
@@ -8956,11 +8960,68 @@ __global__ void embed_bwd_kernel(int nCount, const T* bottom_data, const T* top_
 		const int index = (int)bottom_data[n];
 		const int weight_index = index * N + d;
 		math_atomic_add(top_diff[top_index], weight_diff + weight_index);
+		__syncwarp();
 	}
 }
 
+template<typename T>
+__global__ void embed_bwd_kernel_1(const int n, const T* bottom_data, const T* top_diff, int N, T* weight_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < N && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int index = (int)bottom_data[n];
+		const int weight_index = index * N + i;
+		const int top_index = n * N + i;
+		weight_diff[weight_index] += top_diff[top_index];
+	}
+}
+
+template<typename T>
+long embed_bwd_kernel_cpu(int nCount, const T* bottom_data, const T* top_diff, int M, int N, int K, T* weight_diff)
+{
+	LONG lErr;
+	T* weight_diff_cpu;
+	T* bottom_data_cpu;
+	T* top_diff_cpu;
+
+	if (lErr = cudaMallocHost(&weight_diff_cpu, sizeof(T) * K * N))
+		return lErr;
+	if (lErr = cudaMemcpy(weight_diff_cpu, weight_diff, sizeof(T) * K * N, cudaMemcpyDeviceToHost))
+		return lErr;
+
+	if (lErr = cudaMallocHost(&bottom_data_cpu, sizeof(T) * M))
+		return lErr;
+	if (lErr = cudaMemcpy(bottom_data_cpu, bottom_data, sizeof(T) * M, cudaMemcpyDeviceToHost))
+		return lErr;
+
+	if (lErr = cudaMallocHost(&top_diff_cpu, sizeof(T) * nCount))
+		return lErr;
+	if (lErr = cudaMemcpy(top_diff_cpu, top_diff, sizeof(T) * nCount, cudaMemcpyDeviceToHost))
+		return lErr;
+
+	for (int n=0; n<M; n++)
+	{
+		const int index = (int)bottom_data_cpu[n];
+
+		for (int i = 0; i < N; i++)
+		{
+			const int weight_index = index * N + i;
+			weight_diff_cpu[weight_index] += top_diff_cpu[n * N + i];
+		}
+	}
+
+	if (lErr = cudaMemcpy(weight_diff, weight_diff_cpu, sizeof(T) * K * N, cudaMemcpyHostToDevice))
+		return lErr;
+
+	cudaFreeHost(weight_diff_cpu);
+	cudaFreeHost(bottom_data_cpu);
+	cudaFreeHost(top_diff_cpu);
+
+	return 0;
+}
+
 template <class T>
-long Math<T>::embed_bwd(int n, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff)
+long Math<T>::embed_bwd(int n, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff, int nMajorVer)
 {
 	LONG lErr;
 	MemoryItem* pBottomData;
@@ -8980,13 +9041,30 @@ long Math<T>::embed_bwd(int n, long hBottomData, long hTopDiff, int nM, int nN, 
 	T* top_diff = (T*)pTopDiff->Data();
 	T* weight_diff = (T*)pWeightDiff->Data();
 
-	embed_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_diff, nM, nN, nK, weight_diff);
+	// CPU version is very slow and only used for testing.
+	if (nMajorVer == -1)
+	{
+		if (lErr = embed_bwd_kernel_cpu(n, bottom_data, top_diff, nM, nN, nK, weight_diff))
+			return lErr;
+	}
+	else if (nMajorVer == 1 || nMajorVer >= 6)
+	{
+		for (int i = 0; i < nM; i++)
+		{
+			embed_bwd_kernel_1<T> << <CAFFE_GET_BLOCKS(nN), CAFFE_CUDA_NUM_THREADS >> > (i, bottom_data, top_diff, nN, weight_diff);
+			cudaStreamSynchronize(0);
+		}
+	}
+	else
+	{
+		embed_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_diff, nM, nN, nK, weight_diff);
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::embed_bwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
-template long Math<float>::embed_bwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
+template long Math<double>::embed_bwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData, int nMajorVer);
+template long Math<float>::embed_bwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData, int nMajorVer);
 
 
 template<typename T>

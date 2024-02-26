@@ -296,7 +296,7 @@ class Math
 		long batchreidx_bwd(int nCount, int nInnerDim, long hTopDiff, long hTopIdx, long hBegin, long hCounts, long hBottomDiff);
 
 		long embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
-		long embed_bwd(int nCount, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff);
+		long embed_bwd(int nCount, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff, int nMajorVer = 0);
 
 		long pooling_fwd(int nMethod, int nCount, long hBottomData, int nNum, int nChannels, int h, int w, int hPooled, int wPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hTopData, long hMask, long hTopMask);
 		long pooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hPooled, int wPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hMask, long hTopMask);
