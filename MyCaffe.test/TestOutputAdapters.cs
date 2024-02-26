@@ -87,6 +87,43 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestLayerForwardLoRAEnabledAtSize()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerForward("lora", SolverParameter.SolverType.ADAM, 64, 128, 192, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLayerForwardLoRAEnabledAtSizeGradient()
+        {
+            OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IOutputAdapterTest t in test.Tests)
+                {
+                    t.TestLayerGradient("lora", SolverParameter.SolverType.ADAM, 64, 128, 192, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestLayerGradientLoRAEnabled_ADAMW()
         {
             OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
@@ -200,6 +237,8 @@ namespace MyCaffe.test
     {
         void TestLayerForward(bool bEnabled, string strType, SolverParameter.SolverType type);
         void TestLayerGradient(bool bEnabled, string strType, SolverParameter.SolverType type);
+        void TestLayerForward(string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW);
+        void TestLayerGradient(string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW);
     }
 
     class OutputAdapterTest : TestBase
@@ -249,7 +288,7 @@ namespace MyCaffe.test
             return solverParam.ToProto("root").ToString();
         }
 
-        private string buildModel(bool bEnableLoRA, string strLoRAType, int nN, int nC, int nH, int nW, bool bFwdAndBwd)
+        private string buildModel(bool bEnableLoRA, string strLoRAType, int nN, int nC, int nH, int nW, bool bFwdAndBwd, int nAxis = 2, int nNumOut = 1)
         {
             NetParameter pNet = new NetParameter();
             pNet.name = "lora_test";
@@ -266,9 +305,9 @@ namespace MyCaffe.test
             pNet.layer.Add(data);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip");
-            p.inner_product_param.num_output = 1;
+            p.inner_product_param.num_output = (uint)nNumOut;
             p.inner_product_param.bias_term = true;
-            p.inner_product_param.axis = 2;
+            p.inner_product_param.axis = nAxis;
             p.freeze_learning = bEnableLoRA;
             p.output_adapter.type = strLoRAType;
             p.output_adapter.alpha = 1.0;
@@ -464,6 +503,85 @@ namespace MyCaffe.test
                 {
                     double dfDiff = Math.Abs(rgTarget[j] - rgLastTop[j]);
                     m_log.CHECK_LT(dfDiff, 1e-03, "The top difference is too small.");
+                }
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
+
+        public void TestLayerForward(string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW)
+        {
+            CancelEvent evtCancel = new CancelEvent();
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+
+            try
+            {
+                string strSolver = buildSolver(type);
+                string strModel = buildModel(true, strType, nN, nC, nH, nW, false, 2, nH);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Blob<T> blobX = net.FindBlob("x");
+                m_filler.Fill(blobX);
+
+                BlobCollection<T> colTop = net.Forward();
+                float[] rgTop = convertF(colTop[0].mutable_cpu_data);
+
+                for (int i = 0; i < rgTop.Length; i++)
+                {
+                    m_log.CHECK(!float.IsNaN(rgTop[i]) && !float.IsInfinity(rgTop[i]), "The top value at " + i.ToString() + " is NaN!");
+                }
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
+
+        public void TestLayerGradient(string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW)
+        {
+            CancelEvent evtCancel = new CancelEvent();
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+
+            try
+            {
+                string strSolver = buildSolver(type);
+                string strModel = buildModel(true, strType, nN, nC, nH, nW, true, 2, nH);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
+
+                Solver<T> solver = mycaffe.GetInternalSolver();
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Blob<T> blobX = net.FindBlob("x");
+                m_filler.Fill(blobX);
+
+                BlobCollection<T> colTop = net.Forward();
+                float[] rgTop = convertF(colTop[0].mutable_cpu_data);
+
+                for (int i = 0; i < rgTop.Length; i++)
+                {
+                    m_log.CHECK(!float.IsNaN(rgTop[i]) && !float.IsInfinity(rgTop[i]), "The top value at " + i.ToString() + " is NaN!");
+                }
+
+                Blob<T> blobLoss = net.FindBlob("loss");
+                blobLoss.SetDiff(1.0);
+
+                net.Backward();
+                solver.ApplyUpdate(1);
+
+                colTop = net.Forward();
+                rgTop = convertF(colTop[0].mutable_cpu_data);
+
+                for (int i = 0; i < rgTop.Length; i++)
+                {
+                    m_log.CHECK(!float.IsNaN(rgTop[i]) && !float.IsInfinity(rgTop[i]), "The top value at " + i.ToString() + " is NaN!");
                 }
             }
             finally
