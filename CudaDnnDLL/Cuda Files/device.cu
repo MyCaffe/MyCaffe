@@ -473,7 +473,6 @@ long Device<T>::GetDeviceProperty(long lInput, T* pfInput, long llInput, LONGLON
 
 	int nDeviceID = (int)pfInput[0];
 	int nPropID = (int)pfInput[1];
-	T fVal = 0;
 
 	if (nDeviceID < 0)
 		nDeviceID = 0;

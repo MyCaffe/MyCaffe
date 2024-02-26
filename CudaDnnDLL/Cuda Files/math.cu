@@ -6697,7 +6697,6 @@ __global__ void channel_sum_kernel_acrosschannels_bwd(const int num, const int c
 		const int n = i / spatial_dim;
 		const int s = i % spatial_dim;
 		const int offset = n * channels;
-		double val = 0;
 
 		for (int c = 0; c < channels; c++)
 		{

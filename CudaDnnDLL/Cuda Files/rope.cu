@@ -131,8 +131,8 @@ LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, in
 	for (int i= 0; i < m_nDim; i+=2)
 	{
 		T fPower = (T)(i / (T)m_nDim);
-		fPower = powf(fTheta, fPower);
-		pfFreq[nIdx] = 1.0 / fPower;
+		fPower = (T)powf(fTheta, fPower);
+		pfFreq[nIdx] = T(1.0) / fPower;
 		nIdx++;
 	}
 
@@ -142,8 +142,8 @@ LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, in
 		{
 			T fPos = pfFreq[i] * pos;
 			int nIdx = pos * nDim + i;
-			m_pfFreqCos[nIdx] = cosf(fPos);
-			m_pfFreqSin[nIdx] = sinf(fPos);
+			m_pfFreqCos[nIdx] = (T)cosf(fPos);
+			m_pfFreqSin[nIdx] = (T)sinf(fPos);
 		}
 	}
 
@@ -409,7 +409,7 @@ LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 		T fSin = m_pfFreqSin[nIdx];
 
 		m_pfXq_out_r[i] = m_pfXqr[i] * fCos + m_pfXqi[i] * fSin; // y grads
-		m_pfXq_out_i[i] = -1.0 * (m_pfXqr[i] * fSin - m_pfXqi[i] * fCos); // y grads
+		m_pfXq_out_i[i] = T(- 1.0) * (m_pfXqr[i] * fSin - m_pfXqi[i] * fCos); // y grads
 		nIdx = 0;
 	}
 
