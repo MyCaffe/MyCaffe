@@ -461,6 +461,71 @@ template long Device<float>::DisablePeerAccess(long lInput, float* pfInput, long
 
 
 template <class T>
+long Device<T>::GetDeviceProperty(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	long lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int nDeviceID = (int)pfInput[0];
+	int nPropID = (int)pfInput[1];
+	T fVal = 0;
+
+	if (nDeviceID < 0)
+		nDeviceID = 0;
+
+	// ppfOutput has MAX_OUTPUT(16) pre-allocated items.
+	T* pfOutput = *ppfOutput;
+	*plOutput = 1;
+
+	if (nPropID == DEVPROP_DEVICECOUNT)
+	{
+		int nCount = 0;
+
+		if (lErr = cudaGetDeviceCount(&nCount))
+			return lErr;
+
+		pfOutput[0] = (T)nCount;
+	}
+	else
+	{
+		cudaDeviceProp prop;
+
+		if (lErr = cudaGetDeviceProperties(&prop, nDeviceID))
+			return lErr;
+
+		m_nMajor = prop.major;
+		m_nMinor = prop.minor;
+
+		switch (nPropID)
+		{
+			case DEVPROP_MULTIGPUBOARDGROUPID:
+				pfOutput[0] = (T)prop.multiGpuBoardGroupID;
+				break;
+
+			case DEVPROP_COMPUTELEVEL:
+				pfOutput[0] = (T)prop.major;
+				pfOutput[1] = (T)prop.minor;
+				*plOutput = 2;
+				break;
+
+			default:
+				return ERROR_PARAM_OUT_OF_RANGE;
+		}
+	}
+
+	return 0;
+}
+
+template long Device<double>::GetDeviceProperty(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetDeviceProperty(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::GetDeviceName(int nDevice, LPTSTR* pszDevice)
 {
 	USES_CONVERSION_SIMPLE;

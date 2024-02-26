@@ -24,6 +24,7 @@ const int DEVINIT_RESETDEVICE = 0x0008;
 const int DEVPROP_DEVICECOUNT			= 1;
 const int DEVPROP_NAME					= 2;
 const int DEVPROP_MULTIGPUBOARDGROUPID	= 3;
+const int DEVPROP_COMPUTELEVEL			= 4;
 
 const int MAX_ARG = 4096 * 10;
 const int MAX_DIM = 4096 * 10;
@@ -873,54 +874,6 @@ inline long Device<T>::SynchronizeDevice(long lInput, T* pfInput, long llInput, 
 {
 	SynchronizeDevice();
 	return 0;
-}
-
-template <class T>
-inline long Device<T>::GetDeviceProperty(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
-{
-	long lErr;
-
-	if (lErr = verifyInput(lInput, pfInput, 2, 2))
-		return lErr;
-
-	if (lErr = verifyOutput(plOutput, ppfOutput))
-		return lErr;
-
-	int nDeviceID = (int)pfInput[0];
-	int nPropID = (int)pfInput[1];
-	T fVal = 0;
-
-	if (nPropID == DEVPROP_DEVICECOUNT)
-	{
-		int nCount = 0;
-
-		if (lErr = cudaGetDeviceCount(&nCount))
-			return lErr;
-
-		fVal = (T)nCount;
-	}
-	else
-	{
-		cudaDeviceProp prop;
-
-		if (lErr = cudaGetDeviceProperties(&prop, nDeviceID))
-			return lErr;
-
-		m_nMajor = prop.major;
-		m_nMinor = prop.minor;
-
-		switch (nPropID)
-		{
-			case DEVPROP_MULTIGPUBOARDGROUPID:
-				fVal = (T)prop.multiGpuBoardGroupID;
-				break;
-
-			default:
-				return ERROR_PARAM_OUT_OF_RANGE;
-		}
-	}
-
-	return setOutput(fVal, plOutput, ppfOutput);
 }
 
 template <class T>
@@ -2726,7 +2679,7 @@ inline long Device<T>::cuda_embed_bwd(long lInput, T* pfInput, long llInput, LON
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 8))
 		return lErr;
 
 	int nCount = (int)plInput[0];
@@ -2736,8 +2689,12 @@ inline long Device<T>::cuda_embed_bwd(long lInput, T* pfInput, long llInput, LON
 	int nN = (int)plInput[4];
 	int nK = (int)plInput[5];
 	long hWeightDiff = (long)plInput[6];
+	int nMajorVer = 0;
 
-	return m_math.embed_bwd(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff);
+	if (llInput > 7)
+		nMajorVer = (int)plInput[7];
+
+	return m_math.embed_bwd(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff, nMajorVer);
 }
 
 
