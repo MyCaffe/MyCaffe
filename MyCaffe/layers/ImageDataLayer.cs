@@ -199,7 +199,7 @@ namespace MyCaffe.layers
             }
             else if (m_param.image_data_param.rand_skip == 0)
             {
-                LayerParameterEx<T> layer_param = m_param as LayerParameterEx<T>;
+                LayerParameterExFull<T> layer_param = m_param as LayerParameterExFull<T>;
                 if (layer_param != null && layer_param.solver_rank > 0)
                     m_log.WriteLine("WARNING: Shuffling or skipping recommended for multi-GPU.");
             }

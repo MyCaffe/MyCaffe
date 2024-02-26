@@ -168,17 +168,17 @@ namespace MyCaffe.layers
             m_dfBiasGradScale = m_param.inner_product_param.bias_grad_scale;
             m_nN = nNumOutput;
 
+            int nAxis = colBottom[0].CanonicalAxisIndex(m_param.inner_product_param.axis);
+
             List<int> rgShape = colBottom[0].shape();
             int nShapeCount = rgShape.Count;
-            for (int i = nShapeCount; i <= m_param.inner_product_param.axis; i++)
+            for (int i = nShapeCount; i <= nAxis; i++)
             {
                 rgShape.Add(1);
             }
 
             if (nShapeCount != rgShape.Count)
                 colBottom[0].Reshape(rgShape);
-
-            int nAxis = colBottom[0].CanonicalAxisIndex(m_param.inner_product_param.axis);
 
             // Dimensions starting from 'axis' are 'flattened' into a single
             // length K_ vector. For example, if bottom[0]'s shape is (N, C, H, W),
@@ -207,7 +207,7 @@ namespace MyCaffe.layers
                 }
 
                 double dfNoiseRange = 1.0 / Math.Sqrt(rgWeightShape[1]);
-                Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobWeight = new Blob<T>(m_cuda, m_log, !layer_param.freeze_learning);
                 blobWeight.Name = m_param.name + " weights";
                 blobWeight.blob_type = BLOB_TYPE.IP_WEIGHT;
 
@@ -226,7 +226,7 @@ namespace MyCaffe.layers
                 if (m_bBiasTerm)
                 {
                     List<int> rgBiasShape = Utility.Create<int>(1, m_nN);
-                    Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
+                    Blob<T> blobBias = new Blob<T>(m_cuda, m_log, !layer_param.freeze_learning);
                     blobBias.Name = m_param.name + " bias";
                     blobBias.blob_type = BLOB_TYPE.IP_WEIGHT;
 
@@ -250,7 +250,7 @@ namespace MyCaffe.layers
                     fp.max = 1;
                     m_fillerEpsilon = Filler<T>.Create(m_cuda, m_log, fp);
 
-                    Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log);
+                    Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log, !layer_param.freeze_learning);
                     blobSigmaWeight.Name = m_param.name + " sigma_wt";
                     blobSigmaWeight.blob_type = BLOB_TYPE.WEIGHT;
                     blobSigmaWeight.ReshapeLike(m_colBlobs[0]);
@@ -260,7 +260,7 @@ namespace MyCaffe.layers
 
                     if (m_bBiasTerm)
                     {
-                        Blob<T> blobSigmaBias = new Blob<T>(m_cuda, m_log);
+                        Blob<T> blobSigmaBias = new Blob<T>(m_cuda, m_log, !layer_param.freeze_learning);
                         blobSigmaBias.Name = m_param.name + " sigma_bias";
                         blobSigmaBias.blob_type = BLOB_TYPE.WEIGHT;
                         blobSigmaBias.ReshapeLike(m_colBlobs[1]);
@@ -414,7 +414,7 @@ namespace MyCaffe.layers
             long hTopDiff = colTop[0].gpu_diff;
 
             // Gradient with respect to weight.
-            if (m_rgbParamPropagateDown[0])
+            if (m_rgbParamPropagateDown[0] && !layer_param.freeze_learning)
             {
                 long hBottomData = colBottom[0].gpu_data;
 
@@ -425,7 +425,7 @@ namespace MyCaffe.layers
             }
 
             // Gradient with respect to bias.
-            if (m_bBiasTerm && m_rgbParamPropagateDown[1])
+            if (m_bBiasTerm && m_rgbParamPropagateDown[1] && !layer_param.freeze_learning)
             {
                 if (m_dfBiasGradScale != 1)
                     m_blobBiasMultiplier.scale_data(m_dfBiasGradScale);
@@ -449,7 +449,7 @@ namespace MyCaffe.layers
                     m_cuda.gemm(false, false, m_nM, m_nK, m_nN, m_tOne, hTopDiff, m_colBlobs[0].gpu_data, m_tZero, colBottom[0].mutable_gpu_diff);
             }
 
-            if (m_bEnableNoise && m_phase == Phase.TRAIN)
+            if (m_bEnableNoise && m_phase == Phase.TRAIN && !layer_param.freeze_learning)
             {
                 int nSigmaWtIdx = (m_bBiasTerm) ? 2 : 1;
 

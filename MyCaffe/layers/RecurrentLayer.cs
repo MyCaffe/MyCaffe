@@ -807,9 +807,9 @@ namespace MyCaffe.layers
 
             // Create the unrolled net.
             Net<T> sharedNet = null;
-            if (m_param is LayerParameterEx<T>)
+            if (m_param is LayerParameterExFull<T>)
             {
-                RecurrentLayer<T> sharedLayer = ((LayerParameterEx<T>)m_param).SharedLayer as RecurrentLayer<T>;
+                RecurrentLayer<T> sharedLayer = ((LayerParameterExFull<T>)m_param).SharedLayer as RecurrentLayer<T>;
                 if (sharedLayer != null)
                     sharedNet = sharedLayer.m_unrolledNet;
             }
