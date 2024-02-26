@@ -36,12 +36,12 @@ namespace MyCaffe.layers.gpt
         Layer<T> m_transposeQ;
         // Softmax
         Layer<T> m_softmax = null;
-        Blob<T> m_blobX0;
-        Blob<T> m_blobX1;
-        Blob<T> m_blobX2;
-        Blob<T> m_blobQ;
-        Blob<T> m_blobK;
-        Blob<T> m_blobV;
+        Blob<T> m_blobX0 = null;
+        Blob<T> m_blobX1 = null;
+        Blob<T> m_blobX2 = null;
+        Blob<T> m_blobQ = null;
+        Blob<T> m_blobK = null;
+        Blob<T> m_blobV = null;
         Blob<T> m_blobQt;
         Blob<T> m_blobKt;
         Blob<T> m_blobKt1;
@@ -50,15 +50,16 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobAttA;
         Blob<T> m_blobAttB;
         Blob<T> m_blobY;
-        // The number of heads.
         long m_hRope = 0;
+        long m_hCudnn = 0;
+        long m_hFlashAttention = 0;
+        // The number of heads.
         int m_nHeads;
         int m_nEmbed;
         int m_nBlockSize;
         double m_dfAttnDropout;
         double m_dfResidDropout;
-        long m_hCudnn = 0;
-        long m_hFlashAttention = 0;
+        double m_dfIgnoreVal = -1e+29;
         int[] m_rgYShape = new int[4];
         int[] m_rgWorkShape = new int[4];
 
@@ -94,7 +95,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nHeads
             LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ", m_phase, p.freeze_learning);
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnQ.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;            
+            ipAttnQ.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnQ.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -157,7 +158,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nEmbed
             LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj", m_phase, p.freeze_learning);
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
-            ipProj.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
+            ipProj.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipProj.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -203,7 +204,7 @@ namespace MyCaffe.layers.gpt
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax", m_phase, p.freeze_learning);
             softmax.softmax_param.axis = -1;
-            softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
+            softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             m_blobX0 = new Blob<T>(cuda, log);
@@ -311,6 +312,7 @@ namespace MyCaffe.layers.gpt
             col.Add(m_c_attnQ.internal_blobs);
             col.Add(m_c_attnK.internal_blobs);
             col.Add(m_c_attnV.internal_blobs);
+
             col.Add(m_transpose.internal_blobs);
             col.Add(m_transposeQ.internal_blobs);
             col.Add(m_softmax.internal_blobs);
@@ -384,17 +386,18 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_nB = colBottom[0].num;         // batch size
+            m_nT = colBottom[0].channels;    // sequence length
+
+            m_nC = colBottom[0].height;      // embedding dim (m_nEmbed)
+            m_nSize = m_nC / m_nHeads;
+
             shareLayerBlob(m_blobX0, colBottom[0].shape());
             m_blobX0.ReshapeLike(colBottom[0]);
             shareLayerBlob(m_blobX1, colBottom[1].shape());
             m_blobX1.ReshapeLike(colBottom[1]);
             shareLayerBlob(m_blobX2, colBottom[2].shape());
             m_blobX2.ReshapeLike(colBottom[2]);
-            
-            m_nB = m_blobX0.num;         // batch size
-            m_nT = m_blobX0.channels;    // sequence length
-            m_nC = m_blobX0.height;      // embedding dim (m_nEmbed)
-            m_nSize = m_nC / m_nHeads;
 
             addInternal(m_blobX0, m_blobQ);
             m_c_attnQ.Setup(m_colInternalBottom, m_colInternalTop);
@@ -403,17 +406,9 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobX2, m_blobV);
             m_c_attnV.Setup(m_colInternalBottom, m_colInternalTop);
 
-            blobs.Add(m_c_attnQ.blobs[0]);
-            if (m_param.multihead_attention_param.bias_term)
-                blobs.Add(m_c_attnQ.blobs[1]);
-
-            blobs.Add(m_c_attnK.blobs[0]);
-            if (m_param.multihead_attention_param.bias_term)
-                blobs.Add(m_c_attnK.blobs[1]);
-
-            blobs.Add(m_c_attnV.blobs[0]);
-            if (m_param.multihead_attention_param.bias_term)
-                blobs.Add(m_c_attnV.blobs[1]);
+            blobs.Add(m_c_attnQ.blobs);
+            blobs.Add(m_c_attnK.blobs);
+            blobs.Add(m_c_attnV.blobs);
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
@@ -422,13 +417,19 @@ namespace MyCaffe.layers.gpt
 
             shareLayerBlob(m_blobQ, m_rgShape);
             m_blobQ.Reshape(m_rgShape);
+
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            shareLayerBlob(m_blobAttA, m_blobX0.shape());
-            m_blobAttA.Reshape(m_nB, m_nHeads, m_nBlockSize, m_nBlockSize);
-            shareLayerBlob(m_blobAttB, m_blobX0.shape());
-            m_blobAttB.Reshape(m_nB, m_nHeads, m_nBlockSize, m_nBlockSize);
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nHeads;
+            m_rgShape[2] = m_nBlockSize;
+            m_rgShape[3] = m_nBlockSize;
+
+            shareLayerBlob(m_blobAttA, m_rgShape);
+            m_blobAttA.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAttB, m_rgShape);
+            m_blobAttB.Reshape(m_rgShape);
 
             addInternal(m_blobAttA, m_blobAttB);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
@@ -440,7 +441,7 @@ namespace MyCaffe.layers.gpt
             }
 
             if (m_param.multihead_attention_param.enable_rotary_positional_embedding)
-                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nSize);
+                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nC);
 
             if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
             {
@@ -460,9 +461,7 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobY, colTop[0]);
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
 
-            blobs.Add(m_c_proj.blobs[0]);
-            if (m_param.multihead_attention_param.bias_term)
-                blobs.Add(m_c_proj.blobs[1]);
+            blobs.Add(m_c_proj.blobs);
 
             if (m_resid_dropout != null)
             {
@@ -478,22 +477,28 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_blobX0.ReshapeLike(colBottom[0]);
-            m_blobX1.ReshapeLike(colBottom[1]);
-            m_blobX2.ReshapeLike(colBottom[2]);
-
-            m_nB = m_blobX0.num;         // batch size
-            m_nT = m_blobX0.channels;    // sequence length
-            m_nC = m_blobX0.height;      // embedding dim (m_nEmbed)
-            m_nSize = m_nC / m_nHeads;
+            m_nB = colBottom[0].num;         // batch size
+            m_nT = colBottom[0].channels;    // sequence length
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nHeads;
             m_rgShape[3] = m_nSize;
 
+            m_nC = colBottom[0].height;      // embedding dim (m_nEmbed)
+            m_nSize = m_nC / m_nHeads;
+
+            m_blobX0.ReshapeLike(colBottom[0]);
+            m_blobX1.ReshapeLike(colBottom[1]);
+            m_blobX2.ReshapeLike(colBottom[2]);
+
             shareLayerBlob(m_blobK, m_rgShape);
             m_blobK.Reshape(m_rgShape);
+            shareLayerBlob(m_blobQ, m_rgShape);
+            m_blobQ.Reshape(m_rgShape);
+            shareLayerBlob(m_blobV, m_rgShape);
+            m_blobV.Reshape(m_rgShape);
+
             shareLayerBlob(m_blobKt1, m_rgShape);
             m_blobKt1.ReshapeLike(m_blobK);
             shareLayerBlob(m_blobKt, m_rgShape);
@@ -502,15 +507,11 @@ namespace MyCaffe.layers.gpt
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobKt1.ReshapeLike(m_blobKt);
 
-            shareLayerBlob(m_blobQ, m_rgShape);
-            m_blobQ.Reshape(m_rgShape);
             shareLayerBlob(m_blobQt, m_rgShape);
 
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            shareLayerBlob(m_blobV, m_rgShape);
-            m_blobV.Reshape(m_rgShape);
             shareLayerBlob(m_blobVt, m_rgShape);
 
             addInternal(m_blobV, m_blobVt);
@@ -627,8 +628,7 @@ namespace MyCaffe.layers.gpt
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
-                float fInf = 1e+29f;
-                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1 * fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
@@ -719,7 +719,6 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Perform Self Attention backward pass
-                // Perform Self Attention forward pass
                 if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
                 {
                     m_blobY.CopyFrom(m_blobWork, true, true);
