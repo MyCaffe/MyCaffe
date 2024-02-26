@@ -17,6 +17,7 @@
 **/_build2/*
 **/_nuget/*
 **/bin/*
+**/_bak/*
 *.pro.*
 **/__pycache__/
 
