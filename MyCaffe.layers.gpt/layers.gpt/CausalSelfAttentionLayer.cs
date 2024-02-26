@@ -33,7 +33,7 @@ namespace MyCaffe.layers.gpt
         // Softmax
         Layer<T> m_softmax = null;
         // Causal mask to ensure that atttention is only applied to the left in the input sequence.
-        Blob<T> m_blobBias;
+        Blob<T> m_blobMask;
         Blob<T> m_blobQ;
         Blob<T> m_blobK;
         Blob<T> m_blobV;
@@ -48,6 +48,9 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobY;
         int[] m_rgYShape = new int[4];
         int[] m_rgWorkShape = new int[4];
+        long m_hRope = 0;
+        long m_hCudnn = 0;
+        long m_hFlashAttention = 0;
         // The number of heads.
         int m_nHeads;
         int m_nEmbed;
@@ -89,7 +92,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nHeads
             LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_attn", m_phase, p.freeze_learning);
             ipAttn.inner_product_param.num_output = (uint)(3 * m_nEmbed);
-            ipAttn.inner_product_param.bias_term = true;
+            ipAttn.inner_product_param.bias_term = p.causal_self_attention_param.bias_term;
             ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
             ipAttn.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipAttn.inner_product_param.axis = 2;
@@ -102,7 +105,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nEmbed
             LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_proj", m_phase, p.freeze_learning);
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
-            ipProj.inner_product_param.bias_term = true;
+            ipProj.inner_product_param.bias_term = p.causal_self_attention_param.bias_term;
             ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
             ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipProj.inner_product_param.axis = 2;
@@ -144,38 +147,38 @@ namespace MyCaffe.layers.gpt
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             // Causal mask to ensure that atttention is only applied to the left in the input sequence.
-            m_blobBias = new Blob<T>(cuda, log);
-            m_blobBias.Name = m_param.name + " bias";
+            m_blobMask = new Blob<T>(cuda, log);
+            m_blobMask.Name = m_param.name + ".mask";
 
             List<int> rgShape = new List<int>() { 1, 1, m_nBlockSize, m_nBlockSize };
-            m_blobBias.Reshape(rgShape);
-            fillBias(m_blobBias);
+            m_blobMask.Reshape(rgShape);
+            fillMask(m_blobMask);
 
             m_blobQ = new Blob<T>(cuda, log);
-            m_blobQ.Name = m_param.name + " Q";
+            m_blobQ.Name = m_param.name + ".Q";
             m_blobK = new Blob<T>(cuda, log);
-            m_blobK.Name = m_param.name + " K";
+            m_blobK.Name = m_param.name + ".K";
             m_blobV = new Blob<T>(cuda, log);
-            m_blobV.Name = m_param.name + " V";
+            m_blobV.Name = m_param.name + ".V";
             m_blobQt = new Blob<T>(cuda, log);
-            m_blobQt.Name = m_param.name + " Qt";
+            m_blobQt.Name = m_param.name + ".Qt";
             m_blobKt = new Blob<T>(cuda, log);
-            m_blobKt.Name = m_param.name + " Kt";
+            m_blobKt.Name = m_param.name + ".Kt";
             m_blobKt1 = new Blob<T>(cuda, log);
-            m_blobKt1.Name = m_param.name + " Kt1";
+            m_blobKt1.Name = m_param.name + ".Kt1";
             m_blobVt = new Blob<T>(cuda, log);
-            m_blobVt.Name = m_param.name + " Vt";
+            m_blobVt.Name = m_param.name + ".Vt";
             m_blobAttA = new Blob<T>(cuda, log);
-            m_blobAttA.Name = m_param.name + " AttA";
+            m_blobAttA.Name = m_param.name + ".AttA";
             m_blobAttB = new Blob<T>(cuda, log);
-            m_blobAttB.Name = m_param.name + " AttB";
+            m_blobAttB.Name = m_param.name + ".AttB";
             m_blobWork = new Blob<T>(cuda, log);
-            m_blobWork.Name = m_param.name + " Work";
+            m_blobWork.Name = m_param.name + ".Work";
 
             m_blobIpAttn = new Blob<T>(cuda, log);
-            m_blobIpAttn.Name = m_param.name + " IpAttn";
+            m_blobIpAttn.Name = m_param.name + ".IpAttn";
             m_blobY = new Blob<T>(cuda, log);
-            m_blobY.Name = m_param.name + " Y";
+            m_blobY.Name = m_param.name + ".Y";
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -191,7 +194,7 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_transposeQ);
             dispose(ref m_softmax);
 
-            dispose(ref m_blobBias);
+            dispose(ref m_blobMask);
             dispose(ref m_blobQ);
             dispose(ref m_blobK);
             dispose(ref m_blobV);
@@ -204,6 +207,24 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobWork);
             dispose(ref m_blobIpAttn);
             dispose(ref m_blobY);
+
+            if (m_hFlashAttention != 0)
+            {
+                m_cuda.FreeAttn(m_hFlashAttention);
+                m_hFlashAttention = 0;
+            }
+
+            if (m_hRope != 0)
+            {
+                m_cuda.FreeRope(m_hRope);
+                m_hRope = 0;
+            }
+
+            if (m_hCudnn != 0)
+            {
+                m_cuda.FreeCuDNN(m_hCudnn);
+                m_hCudnn = 0;
+            }
 
             base.dispose();
         }
@@ -223,7 +244,7 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobVt);
             col.Add(m_blobKt1);
             col.Add(m_blobAttA);
-            col.Add(m_blobBias);
+            col.Add(m_blobMask);
             col.Add(m_blobAttB);
             col.Add(m_blobWork);
             col.Add(m_blobY);
@@ -239,21 +260,21 @@ namespace MyCaffe.layers.gpt
                 col.Add(m_resid_dropout.internal_blobs);
         }
 
-        private void fillBias(Blob<T> b)
+        private void fillMask(Blob<T> b)
         {
             b.SetData(1.0);
 
-            float[] rgBiasData = convertF(b.mutable_cpu_data);
+            float[] rgMaskData = convertF(b.mutable_cpu_data);
 
             for (int i = 0; i<b.height; i++)
             {
                 for (int j = i + 1; j < b.width; j++)
                 {
-                    rgBiasData[i * b.width + j] = 0;
+                    rgMaskData[i * b.width + j] = 0;
                 }
             }
 
-            b.mutable_cpu_data = convert(rgBiasData);
+            b.mutable_cpu_data = convert(rgMaskData);
         }
 
         /// <summary>
@@ -331,7 +352,8 @@ namespace MyCaffe.layers.gpt
             m_c_attn.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_attn.blobs[0]);
-            blobs.Add(m_c_attn.blobs[1]);
+            if (m_param.causal_self_attention_param.bias_term)
+                blobs.Add(m_c_attn.blobs[1]);
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
@@ -355,7 +377,17 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobAttB, m_blobAttB);
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
-            
+
+            if (m_param.causal_self_attention_param.enable_rotary_positional_embedding)
+                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nSize * m_nHeads);
+
+            if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
+            {
+                m_hCudnn = m_cuda.CreateCuDNN();
+                m_hFlashAttention = m_cuda.CreateAttn();
+                m_cuda.SetAttn(m_hCudnn, m_hFlashAttention, m_cuda.GetDeviceID(), (m_phase == Phase.TRAIN) ? true : false, m_nB, m_nT, m_nHeads, m_nEmbed / m_nHeads, (float)m_param.causal_self_attention_param.attn_dropout);
+            }
+
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nC;
@@ -368,18 +400,13 @@ namespace MyCaffe.layers.gpt
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_proj.blobs[0]);
-            blobs.Add(m_c_proj.blobs[1]);
+            if (m_param.causal_self_attention_param.bias_term)
+                blobs.Add(m_c_proj.blobs[1]);
 
             if (m_resid_dropout != null)
             {
                 addInternal(colTop[0], colTop[0]);
                 m_resid_dropout.Setup(m_colInternalBottom, m_colInternalTop);
-            }
-
-            foreach (Blob<T> blob in blobs)
-            {
-                if (!blob.Name.StartsWith(m_param.name + "_"))
-                    blob.Name = m_param.name + "_" + blob.Name;
             }
         }
 
@@ -469,11 +496,11 @@ namespace MyCaffe.layers.gpt
                 m_resid_dropout.Reshape(m_colInternalBottom, m_colInternalTop);
             }
 
-            if (m_blobBias.height != m_nT || m_blobBias.width != m_nT)
+            if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
             {
                 List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
-                m_blobBias.Reshape(rgShape);
-                fillBias(m_blobBias);
+                m_blobMask.Reshape(rgShape);
+                fillMask(m_blobMask);
             }
         }
 
@@ -502,49 +529,65 @@ namespace MyCaffe.layers.gpt
             m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 1, m_blobIpAttn.gpu_data, m_blobK.mutable_gpu_data, DIR.FWD);
             m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 2, m_blobIpAttn.gpu_data, m_blobV.mutable_gpu_data, DIR.FWD);
 
+            // When using rope, apply the rotary positional embedding.
+            if (m_hRope != 0)
+            {
+                m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data);
+                m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data);
+            }
+
             // Transpose query, key and values along axes 1 & 2
-            // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+            // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-            addInternal(m_blobK, m_blobKt);
-            m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             addInternal(m_blobQ, m_blobQt);
+            m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
+            addInternal(m_blobK, m_blobKt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             addInternal(m_blobV, m_blobVt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            // Multiply query and key(T) matrices and scale
-            // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-
-            addInternal(m_blobKt, m_blobKt1);
-            m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-
-            double dfScale = 1.0 / Math.Sqrt(m_nSize);
-            m_blobAttA.MatMul(m_blobQt, m_blobKt1);
-            m_blobAttA.scale_data(dfScale);
-
-            // Apply mask to attention matrix
-            // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            m_cuda.mask(m_blobAttA.count(), m_blobBias.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, m_blobBias.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
-
-            // Take softmax of attention along the last axis.
-            // att = F.softmax(att, dim = -1)
-            addInternal(m_blobAttA, m_blobAttB);
-            m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
-
-            // Apply attention dropout.
-            // att = self.attn_dropout(att)
-            if (m_attn_dropout != null)
+            // Perform Self Attention forward pass
+            if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
             {
-                addInternal(m_blobAttB, m_blobAttB);
-                m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
+                m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, m_blobMask.gpu_data, m_blobWork.mutable_gpu_data);
             }
+            else
+            {
+                // Multiply query and key(T) matrices and scale
+                // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
 
-            m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+                addInternal(m_blobKt, m_blobKt1);
+                m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
 
-            // Multiply attention matrix with values
-            // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-            m_blobWork.MatMul(m_blobAttB, m_blobVt);
+                double dfScale = 1.0 / Math.Sqrt(m_nSize);
+                m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+                m_blobAttA.scale_data(dfScale);
+
+                // Apply mask to attention matrix
+                // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+                m_cuda.mask(m_blobAttA.count(), m_blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, m_blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+
+                // Take softmax of attention along the last axis.
+                // att = F.softmax(att, dim = -1)
+                addInternal(m_blobAttA, m_blobAttB);
+                m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
+
+                // Apply attention dropout.
+                // att = self.attn_dropout(att)
+                if (m_attn_dropout != null)
+                {
+                    addInternal(m_blobAttB, m_blobAttB);
+                    m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
+                }
+
+                m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+
+                // Multiply attention matrix with values
+                // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+                m_blobWork.MatMul(m_blobAttB, m_blobVt);
+            }
 
             // Reassemble all head outputs side by side.
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
@@ -614,6 +657,12 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Perform Self Attention backward pass
+                if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
+                {
+                    m_blobY.CopyFrom(m_blobWork, true, true);
+                    m_cuda.AttnScaledDotProductBackward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobQt.mutable_gpu_diff, m_blobKt.gpu_data, m_blobKt.mutable_gpu_diff, m_blobVt.gpu_data, m_blobVt.mutable_gpu_diff, 0, m_blobY.gpu_data, m_blobY.gpu_diff);
+                }
+                else
                 {
                     // Multiply attention matrix with values
                     // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
@@ -664,6 +713,13 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+
+                // When using rope, handle the rotary positional embedding.
+                if (m_hRope != 0)
+                {
+                    m_cuda.RopeBackward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.gpu_diff, m_blobQ.mutable_gpu_diff);
+                    m_cuda.RopeBackward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.gpu_diff, m_blobK.mutable_gpu_diff);
+                }
 
                 // Split IP output (3 * nEmbed) into query, key, values.
                 int nCount = m_blobQ.count();
