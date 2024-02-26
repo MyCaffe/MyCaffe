@@ -464,20 +464,17 @@ namespace MyCaffe.param.gpt
             if ((strVal = rp.FindValue("enable_ln_cuda_impl")) != null)
                 p.enable_layernorm_cuda_impl = bool.Parse(strVal);
 
-            if (p.block_type != BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
-            {
-                if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
-                    p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
+                p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
 
-                if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
-                    p.enable_rotary_positional_embedding = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
+                p.enable_rotary_positional_embedding = bool.Parse(strVal);
 
-                if ((strVal = rp.FindValue("bias_term")) != null)
-                    p.bias_term = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("bias_term")) != null)
+                p.bias_term = bool.Parse(strVal);
 
-                if ((strVal = rp.FindValue("multiple_of")) != null)
-                    p.multiple_of = uint.Parse(strVal);
-            }
+            if ((strVal = rp.FindValue("multiple_of")) != null)
+                p.multiple_of = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_llama_style_head")) != null)
                 p.enable_llama_style_head = bool.Parse(strVal);
