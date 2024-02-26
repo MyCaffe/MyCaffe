@@ -12,6 +12,7 @@ using MyCaffe.param;
 using System.IO;
 using System.Reflection;
 using MyCaffe.output_adapters;
+using System.ComponentModel;
 
 /// <summary>
 /// The MyCaffe.layers namespace contains all layers that have a solidified code base, including the Layer class.
@@ -108,6 +109,11 @@ namespace MyCaffe.layers
         /// </summary>
         protected LayerParameter.LayerType? m_parentLayerType = null;
 
+        /// <summary>
+        /// Specifies the blobs shared across layers to conserve memory.
+        /// </summary>
+        protected BlobCollection<T> m_colSharedBlobs;
+
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
 
@@ -167,6 +173,7 @@ namespace MyCaffe.layers
             m_rgbParamPropagateDown = new DictionaryMap<bool>(false);
             m_rgLoss = new DictionaryMap<double>(0.0);
             m_colBlobs = new BlobCollection<T>();
+            m_colSharedBlobs = new BlobCollection<T>();
 
             for (int i = 0; i < p.blobs.Count; i++)
             {
@@ -190,6 +197,8 @@ namespace MyCaffe.layers
         /// </summary>
         protected virtual void dispose()
         {
+            m_colBlobs.Dispose();
+            m_colSharedBlobs.Dispose();
         }
         
         /// <summary>
@@ -476,14 +485,25 @@ namespace MyCaffe.layers
 
         private void setupOutputAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            // Adapters currently only supported on InnerProduct layers.
+            if (m_param.type != LayerParameter.LayerType.INNERPRODUCT)
+                return;
+
             if (m_param.output_adapter == null ||
                 m_param.output_adapter.OutputAdapterTypeMethod == OutputAdapterParameter.OutputAdapterType.NONE ||
                 m_param.output_adapter.enabled == false)
                 return;
 
+            LayerParameterEx<T> layerParameterEx = m_param as LayerParameterEx<T>;
+            if (layerParameterEx != null)
+            {
+                if (!layerParameterEx.enable_lora)
+                    return;
+            }
+
             OutputAdapterParameter pOutputAdapter = m_param.output_adapter;
-            LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-            if (pEx != null)
+            LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
+            if (pEx != null && pEx.SharedAdaptedBlobs != null)
                 pOutputAdapter = new OutputAdapterParameterEx<T>(pOutputAdapter, pEx.SharedAdaptedBlobs);
 
             m_outputAdatper = OutputAdapter<T>.Create(m_cuda, m_log, pOutputAdapter);
@@ -1161,17 +1181,22 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Called to convert a parent LayerParameterEx, used in blob sharing, with a child layer parameter.
+        /// Called to convert a parent LayerParameterEx, used in intra-layer blob sharing.
         /// </summary>
         /// <param name="pChild">Specifies the child layer parameter.</param>
         /// <param name="pParent">Specifies the parent layer parameter.</param>
         /// <returns>If the parent layer parameter is a LayerParameterEx, the shared blobs are passed to the child.</returns>
         protected LayerParameter convertLayerParam(LayerParameter pChild, LayerParameter pParent)
         {
-            if (pParent is LayerParameterEx<T>)
+            if (pParent is LayerParameterExFull<T>)
+            {
+                LayerParameterExFull<T> pEx = pParent as LayerParameterExFull<T>;
+                return new LayerParameterExFull<T>(pChild, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
+            }
+            else if (pParent is LayerParameterEx<T>)
             {
                 LayerParameterEx<T> pEx = pParent as LayerParameterEx<T>;
-                return new LayerParameterEx<T>(pChild, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, null);
+                return new LayerParameterEx<T>(pChild, pEx.enable_lora, pEx.enable_lora_load, pEx.SharedIntraLayerBlobs);
             }
 
             return pChild;
@@ -1186,7 +1211,7 @@ namespace MyCaffe.layers
         /// <returns>If the Blob is shared, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         protected bool shareParameter(Blob<T> b, List<int> rgMinShape, bool bAllowEndsWithComparison = false)
         {
-            LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
+            LayerParameterExFull<T> paramEx = m_param as LayerParameterExFull<T>;
             if (paramEx == null)
                 return false;
 
@@ -1204,7 +1229,7 @@ namespace MyCaffe.layers
         /// <returns>If the Blob is shared, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         protected bool shareLayerBlob(Blob<T> b, List<int> rgMinShape)
         {
-            LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
+            LayerParameterExFull<T> paramEx = m_param as LayerParameterExFull<T>;
             if (paramEx == null)
                 return false;
 
@@ -1215,13 +1240,45 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Create an intra layer blob with the given name.  If the blob has already been created, reuse the already created one.
+        /// </summary>
+        /// <param name="strName">Specifies the generic name of the blob - the name should not include the layer name.</param>
+        /// <param name="bCreateDiff">Specifies to create the diff portion.</param>
+        /// <returns>The new blob or shared blob is returned.</returns>
+        /// <exception cref="Exception">An exception occurs if the layer parameter is not of type LayerParameterEx.</exception>
+        /// <remarks>The net managing the shared intra layer blobs calls dispose on each blob on cleanup.</remarks>
+        protected Blob<T> createIntraLayerBlob(string strName, bool bCreateDiff = true)
+        {
+            Blob<T> b = null;
+
+            LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
+            if (paramEx != null && paramEx.SharedIntraLayerBlobs != null && m_param.freeze_learning)
+            {
+                b = paramEx.SharedIntraLayerBlobs.FindBlob(strName);
+                if (b != null)
+                    return b;
+
+                b = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                b.Name = strName;
+                paramEx.SharedIntraLayerBlobs.Add(b);
+            }
+            else
+            {
+                b = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                b.Name = layer_param.name + "." + strName;
+            }
+
+            return b;
+        }
+
+        /// <summary>
         /// Attempts to share the Layer blobs and internal_blobs with matching names and sizes with those in another matching layer.
         /// </summary>
         /// <param name="layer">Specifies the layer who will use the shared blobs and internal blobs from the shared layer.</param>
         /// <returns>If the layer blobs and internal blobs are shared successfully <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         protected bool shareLayerBlobs(Layer<T> layer)
         {
-            LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
+            LayerParameterExFull<T> paramEx = m_param as LayerParameterExFull<T>;
             if (paramEx == null)
                 return false;
 
@@ -1796,11 +1853,74 @@ namespace MyCaffe.layers
     }
 
     /// <summary>
-    /// The LayerParameterEx class is used when sharing another Net to conserve GPU memory and
+    /// The LayerParameterExFull class is used when sharing another Net to conserve GPU memory and
     /// extends the LayerParameter with shared Blobs for this purpose.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class LayerParameterEx<T> : LayerParameter
+    {
+        bool m_bEnableLora = false;
+        bool m_bEnableLoraLoad = false;
+        BlobCollection<T> m_rgSharedIntraLayerBlobs = null;
+
+        /// <summary>
+        /// The LayerParameterEx constructor.
+        /// </summary>
+        /// <param name="p">Specifies the original LayerParameter that is wrapped.</param>
+        /// <param name="bEnableLora">Specifies that LoRA is enabled across the entire net.  When false, all output adapters are ignored even if active.</param>
+        /// <param name="bEnableLoraLoad">Specifies to enable the LoRA loading with blob memory sharing.</param>
+        /// <param name="rgSharedIntraLayerBlobs">Specifies blobs shared across layers.  Note, when used, these blobs are disposed by the Net.</param>
+        public LayerParameterEx(LayerParameter p, bool bEnableLora, bool bEnableLoraLoad, BlobCollection<T> rgSharedIntraLayerBlobs)
+            : base(p)
+        {
+            m_bEnableLora = bEnableLora;
+            m_bEnableLoraLoad = bEnableLoraLoad;
+            m_rgSharedIntraLayerBlobs = rgSharedIntraLayerBlobs;
+        }
+
+        /// <summary>
+        /// Specifies blobs shared across layers.
+        /// </summary>
+        public BlobCollection<T> SharedIntraLayerBlobs
+        {
+            get { return m_rgSharedIntraLayerBlobs; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not LoRA is enabled across the entire net.
+        /// </summary>
+        [Description("Specifies whether or not LoRA is enabled across the entire net.")]
+        public bool enable_lora
+        {
+            get { return m_bEnableLora; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to enable the LoRA loading with blob memory sharing.
+        /// </summary>
+        [Description("Specifies whether or not to enable the LoRA loading with blob memory sharing.")]
+        public bool enable_lora_load
+        {
+            get { return m_bEnableLoraLoad; }
+        }
+
+        /// <summary>
+        /// Creates and returns a new copy of this instance.
+        /// </summary>
+        /// <param name="bCloneBlobs">Specifies whether or not to clone (or just share) the shared Blobs.</param>
+        /// <returns>The cloned LayerParameter is returned.</returns>
+        public override LayerParameter Clone(bool bCloneBlobs)
+        {
+            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_bEnableLora, m_bEnableLoraLoad, m_rgSharedIntraLayerBlobs);
+        }
+    }
+
+    /// <summary>
+    /// The LayerParameterExFull class is used when sharing another Net to conserve GPU memory and
+    /// extends the LayerParameter with shared Blobs for this purpose.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public class LayerParameterExFull<T> : LayerParameterEx<T>
     {
         BlobCollection<T> m_colSharedBlobs = null;
         BlobCollection<T> m_colSharedAdaptedBlobs = null;
@@ -1815,8 +1935,11 @@ namespace MyCaffe.layers
         /// <param name="colAdaptedBlobs">Specifies the Net adapted parameter Blobs to share.</param>
         /// <param name="colLayerBlobs">Specifies the Net layer Blobs to share.</param>
         /// <param name="sharedLayer">Specifies the shared Net layer matching this one that we are creating.</param>
-        public LayerParameterEx(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colAdaptedBlobs, BlobCollection<T> colLayerBlobs, Layer<T> sharedLayer)
-            : base(p)
+        /// <param name="bEnableLora">Specifies whether or not LoRA is enabled or not across the entire net.</param>
+        /// <param name="bEnableLoraLoad">Specifies to enable the LoRA loading with blob memory sharing.</param>
+        /// <param name="rgSharedIntraLayerBlobs">Specifies blobs shared across layers.  Note, when used, these blobs are disposed by the Net.</param>
+        public LayerParameterExFull(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colAdaptedBlobs, BlobCollection<T> colLayerBlobs, Layer<T> sharedLayer, bool bEnableLora, bool bEnableLoraLoad, BlobCollection<T> rgSharedIntraLayerBlobs)
+            : base(p, bEnableLora, bEnableLoraLoad, rgSharedIntraLayerBlobs)
         {
             m_colSharedBlobs = colBlobs;
             m_colSharedAdaptedBlobs = colAdaptedBlobs;
@@ -1863,7 +1986,7 @@ namespace MyCaffe.layers
         /// <returns>The cloned LayerParameter is returned.</returns>
         public override LayerParameter Clone(bool bCloneBlobs)
         {
-            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colSharedAdaptedBlobs, m_colLayerBlobs, m_layer);
+            return new LayerParameterExFull<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colSharedAdaptedBlobs, m_colLayerBlobs, m_layer, enable_lora, enable_lora_load, SharedIntraLayerBlobs);
         }
     }
 }
