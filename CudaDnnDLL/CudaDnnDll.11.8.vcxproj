@@ -176,6 +176,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121\cudnn.lib;$(CUDA_PATH_V11_8)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
