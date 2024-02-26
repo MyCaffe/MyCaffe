@@ -811,6 +811,7 @@ namespace MyCaffe.layers.tft
         /// <param name="nValueIndexStartOverride">Optionally, specifies the value index start override (default = -1 to ignore)</param>
         /// <param name="nValueStepSize">Optionally, specifies the value step size used with non shuffled selection (default = 1).</param>
         /// <param name="bIgnoreFutureData">Optionally, specifies to ignore the future data.</param>
+        /// <param name="bEnforceTimeSync">Optinally, specifies to enforce the time sync.</param>
         /// <returns>The list of selected indexes is returned.</returns>
         public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebugImage = false, bool bEnableDebugStat = false, string strDebugPath = null, int nValueIndexStartOverride = -1, int nValueStepSize = 1, bool bIgnoreFutureData = false, bool bEnforceTimeSync = false)
         {
