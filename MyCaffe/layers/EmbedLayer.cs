@@ -24,6 +24,7 @@ namespace MyCaffe.layers
         int m_nM;
         int m_nK;
         int m_nN;
+        int m_nMajorVer = 0;
         bool m_bBiasTerm;
         Blob<T> m_blobBiasMultiplier;
         bool m_bWarningShown = false;
@@ -155,6 +156,13 @@ namespace MyCaffe.layers
             if (colBottom.Count > 1)
                 m_param.embed_param.input_dim = (uint)convertF(colBottom[1].GetData(0));
 
+            int[] rgCompute = m_cuda.GetComputeLevel();
+            if (rgCompute != null)
+                m_nMajorVer = rgCompute[0];
+
+            // Currently using synch-safe version of the EmbedLayer bwd.
+            m_nMajorVer = 1;
+
             m_nN = (int)m_param.embed_param.num_output;
             m_log.CHECK_GT(m_nN, 0, "EmbedLayer num_output must be positive.");
 
@@ -280,7 +288,7 @@ namespace MyCaffe.layers
                 long hTopDiff = colTop[0].gpu_diff;
                 long hBottomData = colBottom[0].gpu_data;
                 long hWeightDiff = m_colBlobs[0].mutable_gpu_diff;
-                m_cuda.embed_bwd(nTopCount, hBottomData, hTopDiff, m_nM, m_nN, m_nK, hWeightDiff);                
+                m_cuda.embed_bwd(nTopCount, hBottomData, hTopDiff, m_nM, m_nN, m_nK, hWeightDiff, m_nMajorVer);                
             }
 
             if (m_bBiasTerm && m_rgbParamPropagateDown[1])
