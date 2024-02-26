@@ -85,8 +85,8 @@ namespace MyCaffe.layers.gpt
             m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.TOKENIZED_DATA_PAIRS;
 
-            if (p.tokenized_data_param.seed.HasValue)
-                m_random = new Random(p.tokenized_data_param.seed.Value);
+            if (p.tokenized_data_pairs_param.seed.HasValue)
+                m_random = new Random(p.tokenized_data_pairs_param.seed.Value);
             else
                 m_random = new Random();
 
