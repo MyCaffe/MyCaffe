@@ -32,7 +32,7 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobX = null;
         Blob<T> m_blobY = null;
         Blob<T> m_blobTriangle = null;
-        Random m_random = new Random();
+        Random m_random;
         Blob<T> m_blobEncIn = null;
         Blob<T> m_blobDecIn = null;
         Layer<T> m_softmax = null;
@@ -84,6 +84,11 @@ namespace MyCaffe.layers.gpt
         {
             m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.TOKENIZED_DATA_PAIRS;
+
+            if (p.tokenized_data_param.seed.HasValue)
+                m_random = new Random(p.tokenized_data_param.seed.Value);
+            else
+                m_random = new Random();
 
             m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
             m_blobTriangle.Name = "triangle";
