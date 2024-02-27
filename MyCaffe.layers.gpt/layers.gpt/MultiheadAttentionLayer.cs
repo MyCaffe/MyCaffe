@@ -441,7 +441,7 @@ namespace MyCaffe.layers.gpt
             }
 
             if (m_param.multihead_attention_param.enable_rotary_positional_embedding)
-                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nC);
+                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nHeads, m_nC/m_nHeads);
 
             if (m_param.multihead_attention_param.enable_flash_scaled_dot_product_attention)
             {
@@ -598,8 +598,21 @@ namespace MyCaffe.layers.gpt
             // When using rope, apply the rotary positional embedding.
             if (m_hRope != 0)
             {
+                //Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+                //Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+                //string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\";
+
+                //m_blobQ.LoadFromNumpy(strPath + "rope.pre_xq.npy");
+                //m_blobK.LoadFromNumpy(strPath + "rope.pre_xk.npy");
+
                 m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data);
                 m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data);
+
+                //blobVal.LoadFromNumpy(strPath + "rope.post_xq.npy");
+                //Trace.Assert(blobVal.Compare(m_blobQ, blobWork));
+
+                //blobVal.LoadFromNumpy(strPath + "rope.post_xk.npy");
+                //Trace.Assert(blobVal.Compare(m_blobK, blobWork));
             }
 
             addInternal(m_blobQ, m_blobQt);
