@@ -22,8 +22,41 @@
 template <class T>
 class RopeData
 {
+protected:
 	Memory<T>* m_pMem;
 	Math<T>* m_pMath;
+
+public:
+	RopeData(Memory<T>* pMem, Math<T>* pMath)
+	{
+		m_pMem = pMem;
+		m_pMath = pMath;
+	}
+
+	~RopeData()
+	{
+	}
+
+	Memory<T>* GetMemory()
+	{
+		return m_pMem;
+	}
+
+	Math<T>* GetMath()
+	{
+		return m_pMath;
+	}
+
+	virtual LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta) = 0;
+	virtual void CleanUp() = 0;
+
+	virtual LONG Forward(int n, long hXdata, long hYdata) = 0;
+	virtual LONG Backward(int n, long hXdata, long hYdiff, long hXdiff) = 0;
+};
+
+template <class T>
+class RopeDataCpu : public RopeData<T>
+{
 	T* m_pfFreqCos;
 	T* m_pfFreqSin;
 	T* m_pfXqr;
@@ -34,6 +67,11 @@ class RopeData
 	T* m_pfY;
 	int m_nCount;
 
+	LONG allocHost(int nCount);
+
+	LONG updateToHostMemory(int nCount, T* pfXdev);
+	LONG updateToDevMemory(int nCount, T* pfYdev);
+
 public:
 	int m_nGpuID;
 	int m_nBatch;
@@ -42,10 +80,8 @@ public:
 	int m_nDim;
 	T m_fTheta;
 
-	RopeData(Memory<T>* pMem, Math<T>* pMath)
+	RopeDataCpu(Memory<T>* pMem, Math<T>* pMath) : RopeData<T>(pMem, pMath)
 	{
-		m_pMem = pMem;
-		m_pMath = pMath;		
 		m_nGpuID = 0;
 		m_nBatch = 0;
 		m_nSeqLen = 0;
@@ -64,28 +100,13 @@ public:
 		m_pfXq_out_i = NULL;
 	}
 
-	~RopeData()
+	~RopeDataCpu()
 	{
 		CleanUp();
 	}
 
-	Memory<T>* GetMemory()
-	{
-		return m_pMem;
-	}
-
-	Math<T>* GetMath()
-	{
-		return m_pMath;
-	}
-
 	LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	void CleanUp();
-
-	LONG allocHost(int nCount);
-
-	LONG UpdateToHostMemory(int nCount, T* pfXdev);
-	LONG UpdateToDevMemory(int nCount, T* pfYdev);
 
 	LONG Forward(int n, long hXdata, long hYdata);
 	LONG Backward(int n, long hXdata, long hYdiff, long hXdiff);
@@ -97,7 +118,7 @@ public:
 //=============================================================================
 
 template <class T>
-LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta)
+LONG RopeDataCpu<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta)
 {
 	LONG lErr;
 
@@ -162,12 +183,12 @@ LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, in
 	return 0;
 }
 
-template LONG RopeData<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, double fTheta);
-template LONG RopeData<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta);
+template LONG RopeDataCpu<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, double fTheta);
+template LONG RopeDataCpu<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta);
 
 
 template <class T>
-void RopeData<T>::CleanUp()
+void RopeDataCpu<T>::CleanUp()
 {
 	if (m_pfFreqCos != NULL)
 	{
@@ -218,11 +239,11 @@ void RopeData<T>::CleanUp()
 	}
 }
 
-template void RopeData<double>::CleanUp();
-template void RopeData<float>::CleanUp();
+template void RopeDataCpu<double>::CleanUp();
+template void RopeDataCpu<float>::CleanUp();
 
 template <class T>
-LONG RopeData<T>::allocHost(int nCount)
+LONG RopeDataCpu<T>::allocHost(int nCount)
 {
 	if (nCount > m_nCount)
 	{
@@ -295,7 +316,7 @@ LONG RopeData<T>::allocHost(int nCount)
 }
 
 template <class T>
-LONG RopeData<T>::UpdateToHostMemory(int nCount, T* pfXdev)
+LONG RopeDataCpu<T>::updateToHostMemory(int nCount, T* pfXdev)
 {
 	LONG lErr;
 
@@ -312,7 +333,7 @@ LONG RopeData<T>::UpdateToHostMemory(int nCount, T* pfXdev)
 }
 
 template <class T>
-LONG RopeData<T>::UpdateToDevMemory(int nCount, T* pfYdev)
+LONG RopeDataCpu<T>::updateToDevMemory(int nCount, T* pfYdev)
 {
 	LONG lErr;
 
@@ -326,7 +347,7 @@ LONG RopeData<T>::UpdateToDevMemory(int nCount, T* pfYdev)
 }
 
 template <class T>
-LONG RopeData<T>::Forward(int n, long hXdata, long hYdata)
+LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -339,7 +360,7 @@ LONG RopeData<T>::Forward(int n, long hXdata, long hYdata)
 	if (lErr = pMemCol->GetData(hYdata, &pY))
 		return lErr;
 
-	if (lErr = UpdateToHostMemory(n, (T*)pX->Data()))
+	if (lErr = updateToHostMemory(n, (T*)pX->Data()))
 		return lErr;
 
 	for (int i=0; i<n; i++)
@@ -373,18 +394,18 @@ LONG RopeData<T>::Forward(int n, long hXdata, long hYdata)
 			m_pfY[i] = m_pfXq_out_i[i / 2];	
 	}
 
-	if (lErr = UpdateToDevMemory(n, (T*)pY->Data()))
+	if (lErr = updateToDevMemory(n, (T*)pY->Data()))
 		return lErr;
 
 	return 0;
 }
 
-template LONG RopeData<double>::Forward(int n, long hXdata, long hYdata);
-template LONG RopeData<float>::Forward(int n, long hXdata, long hYdata);
+template LONG RopeDataCpu<double>::Forward(int n, long hXdata, long hYdata);
+template LONG RopeDataCpu<float>::Forward(int n, long hXdata, long hYdata);
 
 
 template <class T>
-LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
+LONG RopeDataCpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -397,7 +418,7 @@ LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	if (lErr = pMemCol->GetData(hYdiff, &pY))
 		return lErr;
 
-	if (lErr = UpdateToHostMemory(n, (T*)pY->Data())) // y grads
+	if (lErr = updateToHostMemory(n, (T*)pY->Data())) // y grads
 		return lErr;
 
 	for (int i = 0; i < n; i++)
@@ -431,14 +452,14 @@ LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 			m_pfY[i] = m_pfXq_out_i[i / 2]; // x grads
 	}
 
-	if (lErr = UpdateToDevMemory(n, (T*)pX->Data()))
+	if (lErr = updateToDevMemory(n, (T*)pX->Data()))
 		return lErr;
 
 	return 0;
 }
 
-template LONG RopeData<double>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
-template LONG RopeData<float>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
+template LONG RopeDataCpu<double>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
+template LONG RopeDataCpu<float>::Backward(int n, long hXdata, long hYdiff, long hXdiff);
 
 
 //=============================================================================
@@ -452,7 +473,7 @@ long ropeHandle<T>::Update(Memory<T>* pMem, Math<T>* pMath)
 	m_pMath = pMath;
 	m_nRefCount++;
 
-	m_pData = new RopeData<T>(pMem, pMath);
+	m_pData = new RopeDataCpu<T>(pMem, pMath);
 	if (m_pData == NULL)
 		return ERROR_MEMORY_OUT;
 
