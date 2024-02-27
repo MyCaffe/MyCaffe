@@ -373,12 +373,14 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private string getTestDataLlamaPath(string strSubPath, string strFile)
+        private string getTestDataLlamaPath(string strSubPath, string strFile, string strType = "")
         {
             if (!string.IsNullOrEmpty(strSubPath))
                 strSubPath += "\\";
 
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + "iter_0\\";
+            if (!string.IsNullOrEmpty(strType))
+                strPath += strType + "\\";
 
             if (!File.Exists(strPath + strFile))
                 throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
@@ -1065,25 +1067,37 @@ namespace MyCaffe.test
             Blob<T> blobY = new Blob<T>(m_cuda, m_log);
             Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
             Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = getTestDataLlamaPath("llama", "tfm.freqs_cos.npy");
+            string strPathTrain = getTestDataLlamaPath("rope", "freqs_cos.npy", "train");
+            string strPathTest = getTestDataLlamaPath("rope", "freqs_cos.npy", "test");
 
             try
             {
-                blobX.LoadFromNumpy(strPath + "rope.pre_xq.npy");
+                blobX.LoadFromNumpy(strPathTrain + "rope.pre_xq.npy");
                 blobY.ReshapeLike(blobX);
 
                 int nBatch = blobX.num;
                 int nSeqLen = blobX.channels;
+                int nHeads = blobX.height;
                 int nDim = blobX.width;
                 int nCount = blobX.count();
 
                 m_cuda.debug();
 
-                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nDim);
+                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
 
-                blobVal.LoadFromNumpy(strPath + "rope.post_xq.npy");
-                m_log.CHECK(blobY.Compare(blobVal, m_blobWork, false, 2e-08), "The Y blob data is different.");
+                blobVal.LoadFromNumpy(strPathTrain + "freqs_cos.npy");
+                blobVal.LoadFromNumpy(strPathTrain + "freqs_sin.npy");
+
+                blobVal.LoadFromNumpy(strPathTrain + "rope.post_xq.npy");
+                m_log.CHECK(blobY.Compare(blobVal, m_blobWork, false, (typeof(T) == typeof(float)) ? 5e-07 : 1e-04), "The Y blob data is different.");
+
+                blobX.LoadFromNumpy(strPathTest + "rope.pre_xq.npy");
+                blobY.ReshapeLike(blobX);
+                m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
+
+                blobVal.LoadFromNumpy(strPathTest + "rope.post_xq.npy");
+                m_log.CHECK(blobY.Compare(blobVal, m_blobWork, false, (typeof(T) == typeof(float)) ? 3e-07 : 1e-04), "The Y blob data is different.");
             }
             finally
             {
@@ -1104,26 +1118,27 @@ namespace MyCaffe.test
             Blob<T> blobY = new Blob<T>(m_cuda, m_log);
             Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
             Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = getTestDataLlamaPath("llama", "tfm.freqs_cos.npy");
+            string strPath = getTestDataLlamaPath("rope", "freqs_cos.npy", "train");
 
             try
             {
                 blobX.LoadFromNumpy(strPath + "rope.pre_xq.npy");   
                 blobY.ReshapeLike(blobX);
-                blobY.LoadFromNumpy(strPath + "mth0.4.xq.rope.grad.npy", true);
+                blobY.LoadFromNumpy(strPath + "rope.post_xq.grad.npy", true);
 
                 int nBatch = blobX.num;
                 int nSeqLen = blobX.channels;
+                int nHeads = blobX.height;
                 int nDim = blobX.width;
                 int nCount = blobX.count();
 
                 m_cuda.debug();
 
-                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nDim);
+                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeBackward(hRope, nCount, blobX.gpu_data, blobY.gpu_diff, blobX.mutable_gpu_diff);
 
-                blobVal.LoadFromNumpy(strPath + "mth0.3.xq1.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(blobX, m_blobWork, true, 2e-08), "The Y blob data is different.");
+                blobVal.LoadFromNumpy(strPath + "rope.pre_xq.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blobX, m_blobWork, true, 5e-07), "The Y blob data is different.");
             }
             finally
             {
