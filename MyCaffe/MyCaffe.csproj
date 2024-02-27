@@ -205,6 +205,7 @@
     <Compile Include="output_adapters\OutputAdapterLoRA.cs" />
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />
     <Compile Include="param.gpt\GeluParameter.cs" />
+    <Compile Include="param.gpt\RMSNormParameter.cs" />
     <Compile Include="param.gpt\LayerNormParameter.cs" />
     <Compile Include="param.gpt\PositionalEncoderParameter.cs" />
     <Compile Include="param.gpt\MultiheadAttentionParameter.cs" />
