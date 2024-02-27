@@ -161,7 +161,8 @@ namespace MyCaffe.layers
                 m_nMajorVer = rgCompute[0];
 
             // Currently using synch-safe version of the EmbedLayer bwd.
-            m_nMajorVer = 1;
+            if (m_param.embed_param.backward_compute_type == EmbedParameter.COMPUTE_TYPE.ACCUMULATE)
+                m_nMajorVer = 1;
 
             m_nN = (int)m_param.embed_param.num_output;
             m_log.CHECK_GT(m_nN, 0, "EmbedLayer num_output must be positive.");

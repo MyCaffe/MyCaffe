@@ -19,10 +19,36 @@ namespace MyCaffe.param
         bool m_bBiasTerm = true;
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
+        COMPUTE_TYPE m_backwardComputeType = COMPUTE_TYPE.FAST;
+
+        /// <summary>
+        /// Specifies the type of computation to use.
+        /// </summary>
+        public enum COMPUTE_TYPE
+        {
+            /// <summary>
+            /// Specifies to use the accurate computation which is slower.
+            /// </summary>
+            ACCUMULATE = 0,
+            /// <summary>
+            /// Specifies to use the fast computation which is faster but less accurate.
+            /// </summary>
+            FAST = 1
+        }
 
         /** @copydoc LayerParameterBase */
         public EmbedParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the type of computation to use.
+        /// </summary>
+        [Description("Specifies the type of computation to use (default=FAST).  ACCUMULATE = 0, FAST = 1")]
+        public COMPUTE_TYPE backward_compute_type
+        {
+            get { return m_backwardComputeType; }
+            set { m_backwardComputeType = value; }
         }
 
         /// <summary>
@@ -97,6 +123,7 @@ namespace MyCaffe.param
             m_nNumOutput = p.m_nNumOutput;
             m_nInputDim = p.m_nInputDim;
             m_bBiasTerm = p.m_bBiasTerm;
+            m_backwardComputeType = p.m_backwardComputeType;
 
             if (p.m_fillerParam_bias != null)
                 m_fillerParam_bias = p.m_fillerParam_bias.Clone();
@@ -124,6 +151,7 @@ namespace MyCaffe.param
 
             rgChildren.Add("num_output", num_output.ToString());
             rgChildren.Add("input_dim", input_dim.ToString());
+            rgChildren.Add("backward_compute_type", ((int)backward_compute_type).ToString());
 
             if (bias_term != true)
                 rgChildren.Add("bias_term", bias_term.ToString());
@@ -155,6 +183,14 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("bias_term")) != null)
                 p.bias_term = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("backward_compute_type")) != null)
+            {
+                if (strVal == COMPUTE_TYPE.ACCUMULATE.ToString())
+                    p.backward_compute_type = COMPUTE_TYPE.ACCUMULATE;
+                else
+                    p.backward_compute_type = COMPUTE_TYPE.FAST;
+            }
 
             RawProto rpWeightFiller = rp.FindChild("weight_filler");
             if (rpWeightFiller != null)
