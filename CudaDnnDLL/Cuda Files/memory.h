@@ -2224,7 +2224,7 @@ inline long Memory<T>::CreateRope(int nSharedIndex, int nGpuID, int nCount, int 
 		if ((r = new ropeHandle<T>()) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if (lErr = r->Update(this, pMath))
+		if (lErr = r->Update(nGpuID, this, pMath))
 		{
 			delete r;
 			return lErr;

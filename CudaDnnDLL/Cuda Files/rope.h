@@ -78,7 +78,7 @@ public:
 		m_bOwner = bOwner;
 	}
 
-	long Update(Memory<T>* pMem, Math<T>* pMath);
+	long Update(int nGpuID, Memory<T>* pMem, Math<T>* pMath);
 
 	long Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	long CleanUp();
