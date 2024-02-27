@@ -4173,7 +4173,7 @@ inline long Device<T>::CreateRope(long lInput, T* pfInput, long llInput, LONGLON
 
 	if (lErr = verifyInput(lInput, pfInput, 1, 1))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 5, 5))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
@@ -4183,10 +4183,11 @@ inline long Device<T>::CreateRope(long lInput, T* pfInput, long llInput, LONGLON
 	int nCount = (int)plInput[1];
 	int nBatch = (int)plInput[2];
 	int nSeqLen = (int)plInput[3];
-	int nDim = (int)plInput[4];
+	int nHeads = (int)plInput[4];
+	int nDim = (int)plInput[5];
 	T fTheta = pfInput[0];
 
-	if (lErr = m_memory.CreateRope(nGpuID, nCount, nBatch, nSeqLen, nDim, fTheta, &m_math, &hHandle))
+	if (lErr = m_memory.CreateRope(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim, fTheta, &m_math, &hHandle))
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);
