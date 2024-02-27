@@ -38,6 +38,7 @@ public:
 	int m_nGpuID;
 	int m_nBatch;
 	int m_nSeqLen;
+	int m_nHeads;
 	int m_nDim;
 	T m_fTheta;
 
@@ -48,6 +49,7 @@ public:
 		m_nGpuID = 0;
 		m_nBatch = 0;
 		m_nSeqLen = 0;
+		m_nHeads = 0;
 		m_nDim = 0;
 		m_fTheta = 0.0f;
 		m_pfFreqCos = NULL;
@@ -77,7 +79,7 @@ public:
 		return m_pMath;
 	}
 
-	LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta);
+	LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	void CleanUp();
 
 	LONG allocHost(int nCount);
@@ -95,7 +97,7 @@ public:
 //=============================================================================
 
 template <class T>
-LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta)
+LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta)
 {
 	LONG lErr;
 
@@ -104,6 +106,7 @@ LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, in
 	m_nGpuID = nGpuID;
 	m_nBatch = nBatch;
 	m_nSeqLen = nSeqLen;
+	m_nHeads = nHeads;
 	m_nDim = nDim;
 	m_fTheta = fTheta;
 
@@ -159,8 +162,8 @@ LONG RopeData<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, in
 	return 0;
 }
 
-template LONG RopeData<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, double fTheta);
-template LONG RopeData<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, float fTheta);
+template LONG RopeData<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, double fTheta);
+template LONG RopeData<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta);
 
 
 template <class T>
@@ -348,9 +351,13 @@ LONG RopeData<T>::Forward(int n, long hXdata, long hYdata)
 	}
 
 	int nDim = m_nDim / 2;
+	int nFullDim = nDim * m_nHeads;
 	for (int i = 0; i < n / 2; i++)
 	{
-		int nIdx = (i / m_nDim) * nDim + i % nDim;
+		int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
+		int nIdx2 = (i % nDim);
+		int nIdx = nIdx1 + nIdx2;
+
 		T fCos = m_pfFreqCos[nIdx];
 		T fSin = m_pfFreqSin[nIdx];
 
@@ -402,15 +409,18 @@ LONG RopeData<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	}
 
 	int nDim = m_nDim / 2;
+	int nFullDim = nDim * m_nHeads;
 	for (int i = 0; i < n / 2; i++)
 	{
-		int nIdx = (i / m_nDim) * nDim + i % nDim;
+		int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
+		int nIdx2 = (i % nDim);
+		int nIdx = nIdx1 + nIdx2;
+
 		T fCos = m_pfFreqCos[nIdx];
 		T fSin = m_pfFreqSin[nIdx];
 
 		m_pfXq_out_r[i] = m_pfXqr[i] * fCos + m_pfXqi[i] * fSin; // y grads
-		m_pfXq_out_i[i] = T(- 1.0) * (m_pfXqr[i] * fSin - m_pfXqi[i] * fCos); // y grads
-		nIdx = 0;
+		m_pfXq_out_i[i] = -m_pfXqr[i] * fSin + m_pfXqi[i] * fCos; // y grads
 	}
 
 	for (int i = 0; i < n; i++)
@@ -454,11 +464,11 @@ template long ropeHandle<float>::Update(Memory<float>* pMem, Math<float>* pMath)
 
 
 template <class T>
-long ropeHandle<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta)
+long ropeHandle<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta)
 {
 	long lErr;
 
-	if (lErr = m_pData->Initialize(nGpuID, nCount, nBatch, nSeqLen, nDim, fTheta))
+	if (lErr = m_pData->Initialize(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim, fTheta))
 	{
 		m_pData->CleanUp();
 		return lErr;
@@ -467,8 +477,8 @@ long ropeHandle<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, 
 	return 0;
 }
 
-template long ropeHandle<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, double fTheta);
-template long ropeHandle<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, float fTheta);
+template long ropeHandle<double>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, double fTheta);
+template long ropeHandle<float>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta);
 
 
 template <class T>

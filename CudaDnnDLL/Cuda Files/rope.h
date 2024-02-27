@@ -75,7 +75,7 @@ public:
 
 	long Update(Memory<T>* pMem, Math<T>* pMath);
 
-	long Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta);
+	long Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	long CleanUp();
 
 	long Forward(int n, long hXdata, long hYdata);
