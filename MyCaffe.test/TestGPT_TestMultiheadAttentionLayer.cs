@@ -1083,7 +1083,7 @@ namespace MyCaffe.test
 
                 m_cuda.debug();
 
-                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nHeads, nDim);
+                hRope = m_cuda.CreateRope(1, 0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
 
                 blobVal.LoadFromNumpy(strPathTrain + "freqs_cos.npy");
@@ -1134,7 +1134,7 @@ namespace MyCaffe.test
 
                 m_cuda.debug();
 
-                hRope = m_cuda.CreateRope(0, nCount, nBatch, nSeqLen, nHeads, nDim);
+                hRope = m_cuda.CreateRope(1, 0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeBackward(hRope, nCount, blobX.gpu_data, blobY.gpu_diff, blobX.mutable_gpu_diff);
 
                 blobVal.LoadFromNumpy(strPath + "rope.pre_xq.grad.npy", true);

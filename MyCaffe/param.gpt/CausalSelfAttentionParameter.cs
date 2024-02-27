@@ -26,6 +26,7 @@ namespace MyCaffe.param.gpt
         OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
         bool m_bEnableFlashScaledDotProductAttention = false;
         bool m_bEnableRotaryPositionalEmbedding = false;
+        int m_nRopeSharedIndex = 1;
         bool m_bBiasTerm = true;
 
         /** @copydoc LayerParameterBase */
@@ -54,6 +55,16 @@ namespace MyCaffe.param.gpt
         {
             get { return m_bEnableRotaryPositionalEmbedding; }
             set { m_bEnableRotaryPositionalEmbedding = value; }
+        }
+
+        /// <summary>
+        /// Specifies the rope shared index so that only one rope is used for all layers. To use a unique rope for each layer, set this value to -1.
+        /// </summary>
+        [Description("Specifies the rope shared index so that only one rope is used for all layers. To use a unique rope for each layer, set this value to -1.")]
+        public int rope_shared_index
+        {
+            get { return m_nRopeSharedIndex; }
+            set { m_nRopeSharedIndex = value; }
         }
 
         /// <summary>
@@ -195,6 +206,7 @@ namespace MyCaffe.param.gpt
             m_output_adapter_out = p.output_adapter_out.Clone();
             m_bEnableFlashScaledDotProductAttention = p.enable_flash_scaled_dot_product_attention;
             m_bEnableRotaryPositionalEmbedding = p.enable_rotary_positional_embedding;
+            m_nRopeSharedIndex = p.rope_shared_index;
             m_bBiasTerm = p.bias_term;
         }
 
@@ -227,6 +239,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add(output_adapter_out.ToProto("output_adapter_out"));
             rgChildren.Add("enable_flash_scaled_dot_product_attention", enable_flash_scaled_dot_product_attention.ToString());
             rgChildren.Add("enable_rotary_positional_embedding", enable_rotary_positional_embedding.ToString());
+            rgChildren.Add("rope_shared_index", rope_shared_index.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
 
             return new RawProto(strName, "", rgChildren);
@@ -281,6 +294,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
                 p.enable_rotary_positional_embedding = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("rope_shared_index")) != null)
+                p.rope_shared_index = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("bias_term")) != null)
                 p.bias_term = bool.Parse(strVal);

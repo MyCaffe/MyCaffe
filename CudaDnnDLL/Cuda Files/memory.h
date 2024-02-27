@@ -522,7 +522,7 @@ class Memory
 		long LayerNormForward(long hLayerNorm, long hXdata, long hYdata);
 		long LayerNormBackward(long hLayerNorm, long hYdata, long hXdiff, long hYdiff);
 
-		long CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle);
+		long CreateRope(int nSharedIndex, int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle);
 		long FreeRope(long hHandle);
 		ropeHandle<T>* GetRope(long hHandle);
 		long RopeForward(long hRope, int n, long hXdata, long hYdata);
@@ -2207,34 +2207,46 @@ inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdata, long hYdi
 
 
 template <class T>
-inline long Memory<T>::CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle)
+inline long Memory<T>::CreateRope(int nSharedIndex, int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle)
 {
 	LONG lErr;
 	ropeHandle<T>* r = NULL;
+	long hHandle = 0;
 
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if ((r = new ropeHandle<T>()) == NULL)
-		return ERROR_MEMORY_OUT;
+	if (nSharedIndex > 0)
+		r = GetRope(nSharedIndex);
 
-	if (lErr = r->Update(this, pMath))
+	if (r == NULL)
 	{
-		delete r;
-		return lErr;
+		if ((r = new ropeHandle<T>()) == NULL)
+			return ERROR_MEMORY_OUT;
+
+		if (lErr = r->Update(this, pMath))
+		{
+			delete r;
+			return lErr;
+		}
+
+		if (lErr = r->Initialize(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim, fTheta))
+		{
+			delete r;
+			return lErr;
+		}
+
+		hHandle = m_rope.Allocate(r);
+		if (hHandle < 0)
+		{
+			delete r;
+			return ERROR_MEMORY_OUT;
+		}
 	}
-
-	if (lErr = r->Initialize(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim, fTheta))
+	else
 	{
-		delete r;
-		return lErr;
-	}
-
-	long hHandle = m_rope.Allocate(r);
-	if (hHandle < 0)
-	{
-		delete r;
-		return ERROR_MEMORY_OUT;
+		r->AddRef();
+		hHandle = nSharedIndex;
 	}
 
 	*phHandle = hHandle;

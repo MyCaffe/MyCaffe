@@ -6138,6 +6138,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Create the Cuda version of Rope
         /// </summary>
+        /// <param name="nSharedIndex">Specifies the shared index used so that all layers use the same RoPE. To use a unique RoPE set this value to -1.</param>
         /// <param name="nGpuID">Specifies the GPUID to use.</param>
         /// <param name="nCount">Specifies the total number of items in the input (and output).</param>
         /// <param name="nBatch">Specifies the batch size of items (e.g., num)</param>
@@ -6146,16 +6147,16 @@ namespace MyCaffe.common
         /// <param name="nDim">Specifies the spatial dimentions of the inner data.</param>
         /// <param name="fTheta">Optionally, specifies the theta value used in the rope calculation (default = 10000f).</param>
         /// <returns>The handle to the LayerNorm configuration.  This handle is used with all other layer norm functions.</returns>
-        public long CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta = 10000.0f)
+        public long CreateRope(int nSharedIndex, int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta = 10000.0f)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsDouble(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsDouble(fTheta), m_param.AsLong(nSharedIndex, nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsFloat(fTheta), m_param.AsLong(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_ROPE, m_param.AsFloat(fTheta), m_param.AsLong(nSharedIndex, nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim));
                 return (long)rg[0];
             }
         }

@@ -379,7 +379,7 @@ namespace MyCaffe.layers.gpt
             }
 
             if (m_param.causal_self_attention_param.enable_rotary_positional_embedding)
-                m_hRope = m_cuda.CreateRope(m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nHeads, m_nSize);
+                m_hRope = m_cuda.CreateRope(m_param.causal_self_attention_param.rope_shared_index, m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nHeads, m_nSize);
 
             if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
             {

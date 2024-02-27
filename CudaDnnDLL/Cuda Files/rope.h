@@ -63,6 +63,11 @@ public:
 		return m_nRefCount;
 	}
 
+	void AddRef()
+	{
+		m_nRefCount++;
+	}
+
 	bool IsOwner()
 	{
 		return m_bOwner;

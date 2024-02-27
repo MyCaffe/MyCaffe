@@ -54,6 +54,7 @@ namespace MyCaffe.layers.gpt
             p1.multihead_attention_param.output_adapter_out = p.causal_self_attention_param.output_adapter_out;
             p1.multihead_attention_param.enable_flash_scaled_dot_product_attention = p.causal_self_attention_param.enable_flash_scaled_dot_product_attention;
             p1.multihead_attention_param.enable_rotary_positional_embedding = p.causal_self_attention_param.enable_rotary_positional_embedding;
+            p1.multihead_attention_param.rope_shared_index = p.causal_self_attention_param.rope_shared_index;
             p1.multihead_attention_param.bias_term = p.causal_self_attention_param.bias_term;
             m_mh_att = new MultiheadAttentionLayer<T>(m_cuda, m_log, convertLayerParam(p1, p));
 
