@@ -213,67 +213,10 @@ template void LayerNormMemory<float>::CleanUp();
 template <class T>
 LONG LayerNormMemory<T>::save(std::string strName, bool bSaveDiff)
 {
-	std::ofstream wf("c:\\temp\\snap\\" + strName + ".npy", std::ios::out | std::ios::binary);
-	if (!wf)
-		return ERROR_FILE_NOT_FOUND;
-
+	std::string strFile = "c:\\temp\\snap\\" + strName + ".npy";
 	long hData = (bSaveDiff) ? m_hDiff : m_hData;
-	int nOuterNum = m_nOuterNum;
-	int nChannels = m_nChannels;
-	int nInnerNum = m_nInnerNum;
 
-	size_t lCount;
-	T* pData = m_pMem->GetMemoryToHost(hData, &lCount);
-	if (pData == NULL)
-		return ERROR_MEMORY_NOT_FOUND;
-
-	byte hdr[8];
-	hdr[0] = (byte)0x93;
-	hdr[1] = (byte)0x4E; // N
-	hdr[2] = (byte)0x55; // U
-	hdr[3] = (byte)0x4D; // M
-	hdr[4] = (byte)0x50; // P
-	hdr[5] = (byte)0x59; // Y
-	hdr[6] = (byte)0x01;
-	hdr[7] = (byte)0x00;
-	wf.write((const char*)&hdr[0], 8);
-
-	std::string strHeader = "{'descr': '<f4', 'fortran_order': False, 'shape': (";
-	strHeader += std::to_string(nOuterNum);
-	strHeader += ",";
-	strHeader += std::to_string(nChannels);
-	strHeader += ",";
-	strHeader += std::to_string(nInnerNum);
-	strHeader += ")";
-
-	if (strHeader.length() < 117)
-		strHeader += std::string(117 - strHeader.length(), ' ');
-	strHeader += "\n";
-
-	byte bLen = (byte)strHeader.length();
-	wf.write((const char*)&bLen, 1);
-	byte bVal = (byte)0x00;
-	wf.write((const char*)&bVal, 1);
-
-	for (int i = 0; i < strHeader.length(); i++)
-	{
-		bVal = (byte)strHeader[i];
-		wf.write((const char*)&bVal, 1);
-	}
-
-	for (size_t lIdx = 0; lIdx < lCount; lIdx++)
-	{
-		float fVal = (float)pData[lIdx];
-		wf.write((const char*)&fVal, 4);
-	}
-
-	m_pMem->FreeHost(pData);
-
-	wf.close();
-	if (!wf.good())
-		return ERROR_FILE_CORRUPT;
-
-	return 0;
+	return m_pMem->SaveToNumpy(strFile, hData, m_nOuterNum, m_nChannels, m_nInnerNum, 1);
 }
 
 template LONG LayerNormMemory<double>::save(std::string strName, bool bSaveDiff);

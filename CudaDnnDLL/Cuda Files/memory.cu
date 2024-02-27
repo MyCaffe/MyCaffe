@@ -5,6 +5,9 @@
 //=============================================================================
 
 #include "memory.h"
+#include <string>
+#include <iostream>
+#include <fstream>
 
 
 //=============================================================================
@@ -170,6 +173,84 @@ Memory<T>::~Memory()
 
 template Memory<double>::~Memory();
 template Memory<float>::~Memory();
+
+
+template <class T>
+long Memory<T>::SaveToNumpy(std::string strFile, long hData, int nN, int nC, int nH, int nW)
+{
+	size_t lCount;
+	T* pData = GetMemoryToHost(hData, &lCount);
+	if (pData == NULL)
+		return ERROR_MEMORY_NOT_FOUND;
+
+	LONG lErr = SaveHostToNumpy(strFile, pData, lCount, nN, nC, nH, nW);
+
+	FreeHost(pData);
+
+	return lErr;
+}
+
+template long Memory<double>::SaveToNumpy(std::string strFile, long hData, int nN, int nC, int nH, int nW);
+template long Memory<float>::SaveToNumpy(std::string strFile, long hData, int nN, int nC, int nH, int nW);
+
+template <class T>
+long Memory<T>::SaveHostToNumpy(std::string strFile, T* pData, size_t lCount, int nN, int nC, int nH, int nW)
+{
+	std::ofstream wf(strFile, std::ios::out | std::ios::binary);
+	if (!wf)
+		return ERROR_FILE_NOT_FOUND;
+
+	byte hdr[8];
+	hdr[0] = (byte)0x93;
+	hdr[1] = (byte)0x4E; // N
+	hdr[2] = (byte)0x55; // U
+	hdr[3] = (byte)0x4D; // M
+	hdr[4] = (byte)0x50; // P
+	hdr[5] = (byte)0x59; // Y
+	hdr[6] = (byte)0x01;
+	hdr[7] = (byte)0x00;
+	wf.write((const char*)&hdr[0], 8);
+
+	std::string strHeader = "{'descr': '<f4', 'fortran_order': False, 'shape': (";
+	strHeader += std::to_string(nN);
+	strHeader += ",";
+	strHeader += std::to_string(nC);
+	strHeader += ",";
+	strHeader += std::to_string(nH);
+	strHeader += ",";
+	strHeader += std::to_string(nW);
+	strHeader += ")";
+
+	if (strHeader.length() < 117)
+		strHeader += std::string(117 - strHeader.length(), ' ');
+	strHeader += "\n";
+
+	byte bLen = (byte)strHeader.length();
+	wf.write((const char*)&bLen, 1);
+	byte bVal = (byte)0x00;
+	wf.write((const char*)&bVal, 1);
+
+	for (int i = 0; i < strHeader.length(); i++)
+	{
+		bVal = (byte)strHeader[i];
+		wf.write((const char*)&bVal, 1);
+	}
+
+	for (size_t lIdx = 0; lIdx < lCount; lIdx++)
+	{
+		float fVal = (float)pData[lIdx];
+		wf.write((const char*)&fVal, 4);
+	}
+
+	wf.close();
+	if (!wf.good())
+		return ERROR_FILE_CORRUPT;
+
+	return 0;
+}
+
+template long Memory<double>::SaveHostToNumpy(std::string strFile, double* pData, size_t lCount, int nN, int nC, int nH, int nW);
+template long Memory<float>::SaveHostToNumpy(std::string strFile, float* pData, size_t lCount, int nN, int nC, int nH, int nW);
 
 
 template <class T>

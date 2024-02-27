@@ -293,6 +293,9 @@ class Memory
 			return &m_streams;
 		}
 
+		long SaveToNumpy(std::string strFileName, long hData, int nN, int nC, int nH, int nW);
+		long SaveHostToNumpy(std::string strFileName, T* pData, size_t lCount, int nN, int nC, int nH, int nW);
+
 		long alloc_host(void** ppDst, size_t lSize, bool bPinned = true);
 		long free_host(void* pData);
 		long convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSize, __half** ppDst);
@@ -519,7 +522,7 @@ class Memory
 		long LayerNormForward(long hLayerNorm, long hXdata, long hYdata);
 		long LayerNormBackward(long hLayerNorm, long hYdata, long hXdiff, long hYdiff);
 
-		long CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta, Math<T>* pMath, long* phHandle);
+		long CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle);
 		long FreeRope(long hHandle);
 		ropeHandle<T>* GetRope(long hHandle);
 		long RopeForward(long hRope, int n, long hXdata, long hYdata);
@@ -2204,7 +2207,7 @@ inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdata, long hYdi
 
 
 template <class T>
-inline long Memory<T>::CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nDim, T fTheta, Math<T>* pMath, long* phHandle)
+inline long Memory<T>::CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta, Math<T>* pMath, long* phHandle)
 {
 	LONG lErr;
 	ropeHandle<T>* r = NULL;
@@ -2221,7 +2224,7 @@ inline long Memory<T>::CreateRope(int nGpuID, int nCount, int nBatch, int nSeqLe
 		return lErr;
 	}
 
-	if (lErr = r->Initialize(nGpuID, nCount, nBatch, nSeqLen, nDim, fTheta))
+	if (lErr = r->Initialize(nGpuID, nCount, nBatch, nSeqLen, nHeads, nDim, fTheta))
 	{
 		delete r;
 		return lErr;
