@@ -125,6 +125,16 @@ public:
 		return m_diff;
 	}
 
+	inline long hdata()
+	{
+		return m_hData;
+	}
+
+	inline long hdiff()
+	{
+		return m_hDiff;
+	}
+
 	inline long desc()
 	{
 		return m_hDesc;
@@ -180,11 +190,15 @@ public:
 
 	inline long reshape(int nN, int nC, int nH, int nW)
 	{
+		long lErr;
 		m_nN = nN;
 		m_nC = nC;
 		m_nH = nH;
 		m_nW = nW;
 		m_nCount = nN * nC * nH * nW;
+
+		if (m_hDesc != 0)
+			return set_tensor_desc(m_hDesc, nN, nC, nH, nW);
 
 		return 0;
 	}
@@ -213,21 +227,21 @@ public:
 	LONG apply_dropout_fwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 	LONG apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 	LONG apply_mask(blob<T>& blobMask);
-	LONG matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false);
+	LONG matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
 	LONG matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, double dfScale = 1.0);
 
 	LONG matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false);
 
 	inline long matmul(int nOuterCount, int m, int n, int k, T* a, T* b, T* c, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
 	{
-		int ldb = n;
-		int lda = k;
+		int ldb = (bTransB) ? k : n;
+		int lda = (bTransA) ? m : k;
 		int ldc = n;
 		int strideb = k * n;
 		int stridea = m * k;
 		int stridec = m * n;
 
-		return m_pMath->gemm2(bTransA, bTransB, n, m, k, T(dfScale), b, a, T(0.0), c, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
+		return m_pMath->gemm2(bTransB, bTransA, n, m, k, T(dfScale), b, a, T(0.0), c, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
 	}
 
 	inline long set_tensor_desc(long hDesc, int n, int c, int h, int w)
@@ -310,7 +324,7 @@ public:
 
 	long Set(long hCuda, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, unsigned long long lSeed);
 
-	long Forward(long hCuda, long hQ, long hK, long hV, long hMask, long hY);
+	long Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
 
 	long Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY);
 

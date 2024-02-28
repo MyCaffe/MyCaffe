@@ -2459,18 +2459,19 @@ inline long Device<T>::AttnForward(long lInput, T* pfInput, long llInput, LONGLO
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
 	long hCuda = (long)plInput[0];
 	long hAttn = (long)plInput[1];
-	long hQ = (long)plInput[2];
-	long hK = (long)plInput[3];
-	long hV = (long)plInput[4];
-	long hMask = (long)plInput[5];
-	long hY = (long)plInput[6];
+	int nBlockSize = (int)plInput[2];
+	long hQ = (long)plInput[3];
+	long hK = (long)plInput[4];
+	long hV = (long)plInput[5];
+	long hMask = (long)plInput[6];
+	long hY = (long)plInput[7];
 
-	return m_memory.ForwardAttn(hCuda, hAttn, hQ, hK, hV, hMask, hY);
+	return m_memory.ForwardAttn(hCuda, hAttn, nBlockSize, hQ, hK, hV, hMask, hY);
 }
 
 template <class T>

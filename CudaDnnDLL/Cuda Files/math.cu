@@ -3029,6 +3029,16 @@ long Math<T>::mask(int n, int nMaskDim, T fSearch, T fReplace, long hX, long hMa
 template long Math<double>::mask(int n, int nMaskDim, double dfSearch, double dfReplace, long hX, long hMask, long hY);
 template long Math<float>::mask(int n, int nMaskDim, float dfSearch, float dfReplace, long hX, long hMask, long hY);
 
+template <class T>
+long Math<T>::mask(int n, int nMaskDim, T fSearch, T fReplace, T* x, T* mask, T* y)
+{
+	mask_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nMaskDim, x, mask, y, fSearch, fReplace);
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mask(int n, int nMaskDim, double dfSearch, double dfReplace, double* x, double* mask, double* y);
+template long Math<float>::mask(int n, int nMaskDim, float dfSearch, float dfReplace, float* x, float* mask, float* y);
+
 
 template <typename T>
 __global__ void mask_batch_kernel(const int n, const int nBatch, const int nMaskDim, const T* x, const T* mask, T* y, const T fSearch, const T fReplace)

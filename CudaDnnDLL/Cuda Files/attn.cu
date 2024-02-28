@@ -176,7 +176,7 @@ LONG blob<T>::transpose_hw(blob<T>& blobSrc, bool bDiff = false, bool bReshape =
 {
 	LONG lErr;
 
-	if (m_nCount != blobSrc.count())
+	if (!bReshape && m_nCount != blobSrc.count())
 		return ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE;
 
 	if (lErr = compare_sizes(blobSrc, true))
@@ -302,12 +302,11 @@ template LONG blob<float>::apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_
 template <class T>
 LONG blob<T>::apply_mask(blob<T>& blobMask)
 {
-	if (m_nN != blobMask.n() || m_nH != blobMask.c())
+	if (blobMask.n() != 1 || blobMask.c() != 1 || blobMask.h() != m_nH || blobMask.w() != m_nW)
 		return ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE;
 
-	float fInf = 1e+29f * -1.0f;
-
-	return m_pMath->mask_batch(count(), n(), blobMask.count(), T(0.0), T(fInf), m_data, blobMask.data(), m_data);
+	float fInf = -1e+29f;
+	return m_pMath->mask(count(), blobMask.count(), T(0.0), T(fInf), m_data, blobMask.data(), m_data);
 }
 
 template LONG blob<double>::apply_mask(blob<double>& blobMask);
@@ -315,53 +314,46 @@ template LONG blob<float>::apply_mask(blob<float>& blobMask);
 
 
 template <class T>
-LONG blob<T>::matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false)
+LONG blob<T>::matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false)
 {
 	LONG lErr;
 
-	if (lErr = compare_sizes(blobA, true))
+	if (lErr = compare_sizes(blobA, true, bTransA))
 		return lErr;
 
-	if (lErr = compare_sizes(blobB, true))
+	if (lErr = compare_sizes(blobB, true, bTransB))
 		return lErr;
 
-	int nOuter = m_nN * m_nC;
-	int nM = blobA.h();
-	int nN = blobB.w();
-	int nK = blobA.w();
+	int nOuter = blobA.n() * blobA.c();
+	int nM = (bTransA) ? blobA.w() : blobA.h();
+	int nN = (bTransB) ? blobB.h() : blobB.w();
+	int nK = (bTransA) ? blobA.h() : blobA.w();
 
-	long hA = (bAdiff) ? blobA.m_hDiff : blobA.m_hData;
-	long hB = (bBdiff) ? blobB.m_hDiff : blobB.m_hData;
-	long hC = (bCdiff) ? m_hDiff : m_hData;
+	T* a = (bAdiff) ? blobA.m_diff : blobA.data();
+	T* b = (bBdiff) ? blobB.m_diff : blobB.m_data;
+	T* c = (bCdiff) ? m_diff : m_data;
 
-	if (lErr = matmul(nOuter, nM, nN, nK, hA, hB, hC, T(dfScale)))
+	if (lErr = matmul(nOuter, nM, nN, nK, a, b, c, T(dfScale), bTransA, bTransB))
 		return lErr;
-
-	//T* a = (bAdiff) ? blobA.m_diff : blobA.data();
-	//T* b = (bBdiff) ? blobB.m_diff : blobB.m_data;
-	//T* c = (bCdiff) ? m_diff : m_data;
-
-	//if (lErr = matmul(nOuter, nM, nN, nK, a, b, c, T(dfScale)))
-	//	return lErr;
 
 	return 0;
 
 }
 
-template LONG blob<double>::matmul(blob<double>& blobA, blob<double>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false);
-template LONG blob<float>::matmul(blob<float>& blobA, blob<float>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false);
+template LONG blob<double>::matmul(blob<double>& blobA, blob<double>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
+template LONG blob<float>::matmul(blob<float>& blobA, blob<float>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
 
 template <class T>
 LONG blob<T>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
 {
-	int ldb = n;
-	int lda = k;
+	int ldb = (bTransB) ? k : n;
+	int lda = (bTransA) ? m : k;
 	int ldc = n;
 	int strideb = k * n;
 	int stridea = m * k;
 	int stridec = m * n;
 
-	return m_pMath->gemm2(bTransA, bTransB, n, m, k, T(dfScale), hB, hA, T(0.0), hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
+	return m_pMath->gemm2(bTransB, bTransA, n, m, k, T(dfScale), hB, hA, T(0.0), hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
 }
 
 template LONG blob<double>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false);
@@ -379,18 +371,10 @@ LONG blob<T>::matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, doub
 			return lErr;
 	}
 
-	blobWork.reshape_like(blobB);
-	if (lErr = blobWork.transpose_hw(blobB, false, true))
+	if (lErr = blobA.matmul(*this, blobB, 1.0, true, false, true, false, true))
 		return lErr;
 
-	if (lErr = blobA.matmul(*this, blobWork, 1.0, true, false, true))
-		return lErr;
-
-	blobWork.reshape_like(blobA);
-	if (lErr = blobWork.transpose_hw(blobA, false, true))
-		return lErr;
-
-	if (lErr = blobB.matmul(blobWork, *this, 1.0, false, true, true))
+	if (lErr = blobB.matmul(blobA, *this, 1.0, false, true, true, true, false))
 		return lErr;
 
 	return 0;
@@ -515,7 +499,7 @@ template long attnHandle<double>::CleanUp();
 template long attnHandle<float>::CleanUp();
 
 template <class T>
-long attnHandle<T>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, long hY)
+long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY)
 {
 	LONG lErr;
 	blob<T> blobQ(m_pMem, m_pMath, m_nGpuID);
@@ -527,28 +511,32 @@ long attnHandle<T>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, l
 	if (m_pMem == NULL)
 		return ERROR_ATTN_NOT_INITIALIZED;
 
+	if (nBlockSize > m_nBlockSize)
+		return ERROR_ATTN_INVALID_BLOCK_SIZE;
+
 	cudnnHandle_t cuda = m_pMem->GetCuDNN(hCuda);
 
-	if (lErr = blobQ.set(hQ, NULL, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
+	if (lErr = blobQ.set(hQ, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
 
-	if (lErr = blobK.set(hK, NULL, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
+	if (lErr = blobK.set(hK, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
 
-	if (lErr = blobV.set(hV, NULL, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
+	if (lErr = blobV.set(hV, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
 
-	if (lErr = blobMask.set(hMask, NULL, m_nBatch, m_nBlockSize, 1, 1))
+	if (lErr = blobMask.set(hMask, NULL, 1, 1, nBlockSize, nBlockSize))
 		return lErr;
 
-	if (lErr = blobY.set(hY, NULL, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
+	if (lErr = blobY.set(hY, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
 
 	// Transpose K -> Kt
-	if (lErr = m_blobKt.transpose_hw(blobK))
+	if (lErr = m_blobKt.transpose_hw(blobK, false, true))
 		return lErr;
 
 	// Matmul Qt @ Kt1 -> AttA
+	m_blobAttA.reshape(m_blobAttA.n(), m_blobAttA.c(), nBlockSize, nBlockSize);
 	if (lErr = m_blobAttA.matmul(blobQ, m_blobKt, m_dfScale, false, false, false))
 		return lErr;
 
@@ -560,6 +548,7 @@ long attnHandle<T>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, l
 	}
 
 	// Softmax along the last dimension of AttA -> AttB
+	m_blobAttB.reshape(m_blobAttB.n(), m_blobAttB.c(), nBlockSize, nBlockSize);
 	if (lErr = m_blobAttB.softmax_fwd(hCuda, m_blobAttA))
 		return lErr;
 
@@ -577,8 +566,8 @@ long attnHandle<T>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, l
 	return cudaStreamSynchronize(0);
 }
 
-template long attnHandle<double>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, long hY);
-template long attnHandle<float>::Forward(long hCuda, long hQ, long hK, long hV, long hMask, long hY);
+template long attnHandle<double>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
+template long attnHandle<float>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
 
 template <class T>
 long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY)
@@ -604,7 +593,7 @@ long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, l
 	if (lErr = blobV.set(hV, hdV, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
 		return lErr;
 
-	if (lErr = blobMask.set(hMask, NULL, m_nBatch, m_nBlockSize, 1, 1))
+	if (lErr = blobMask.set(hMask, NULL, 1, 1, m_nBlockSize, m_nBlockSize))
 		return lErr;
 
 	if (lErr = blobY.set(hY, hdY, m_nBatch, m_nHeads, m_nBlockSize, m_nSize))
@@ -613,6 +602,9 @@ long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, l
 	// MatmulGrad dAttB @ dVt <- dY
 	if (lErr = blobY.matmulgrad(m_blobAttB, blobV, m_blobWork))
 		return lErr;
+
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\1.mycaffe.attb.grad.npy", m_blobAttB.hdiff(), m_blobAttB.n(), m_blobAttB.c(), m_blobAttB.h(), m_blobAttB.w());
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\1.mycaffe.v.grad.npy", blobV.hdiff(), blobV.n(), blobV.c(), blobV.h(), blobV.w());
 
 	// Apply dropout to dAttB
 	if (m_bTraining && m_dfDropout > 0)
@@ -625,13 +617,20 @@ long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, l
 	if (lErr = m_blobAttB.softmax_bwd(hCuda, m_blobAttA))
 		return lErr;
 
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\2.mycaffe.atta.grad.npy", m_blobAttA.hdiff(), m_blobAttA.n(), m_blobAttA.c(), m_blobAttA.h(), m_blobAttA.w());
+
 	// Matmul Qt @ dKt1 <- dAttA
 	if (lErr = m_blobAttA.matmulgrad(blobQ, m_blobKt, m_blobWork, T(m_dfScale)))
 		return lErr;
 
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\3.mycaffe.q.grad.npy", blobQ.hdiff(), blobQ.n(), blobQ.c(), blobQ.h(), blobQ.w());
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\3.mycaffe.kt.grad.npy", m_blobKt.hdiff(), m_blobKt.n(), m_blobKt.c(), m_blobKt.h(), m_blobKt.w());
+
 	// Transpose dK <- dKt
 	if (lErr = blobK.transpose_hw(m_blobKt, true))
 		return lErr;
+
+//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\4.mycaffe.q.grad.npy", blobK.hdiff(), blobK.n(), blobK.c(), blobK.h(), blobK.w());
 
 	return cudaStreamSynchronize(0);
 }
