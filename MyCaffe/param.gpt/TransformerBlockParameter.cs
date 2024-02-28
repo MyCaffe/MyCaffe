@@ -37,7 +37,7 @@ namespace MyCaffe.param.gpt
         BLOCK_TYPE m_type = BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
         NORMALIZATION m_normalization = NORMALIZATION.LAYER_NORM;
         bool m_bEnableLayerNormCudaImplementation = false;
-        bool m_bEnableFlashScaledDotProductAttention = false;
+        bool m_bEnableCudaScaledDotProductAttention = false;
         bool m_bEnableRotaryPositionalEmbedding = false;
         bool m_bEnableLlamaStyleHead = false;
         bool m_bBiasTerm = true;
@@ -218,13 +218,13 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.
+        /// Specifies whether or not to enable the CudaScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.
         /// </summary>
-        [Description("Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.")]
-        public bool enable_flash_scaled_dot_product_attention
+        [Description("Specifies whether or not to enable the CudaScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.")]
+        public bool enable_cuda_scaled_dot_product_attention
         {
-            get { return m_bEnableFlashScaledDotProductAttention; }
-            set { m_bEnableFlashScaledDotProductAttention = value; }
+            get { return m_bEnableCudaScaledDotProductAttention; }
+            set { m_bEnableCudaScaledDotProductAttention = value; }
         }
 
         /// <summary>
@@ -343,7 +343,7 @@ namespace MyCaffe.param.gpt
             m_activation = p.activation;
             m_type = p.block_type;
             m_bEnableLayerNormCudaImplementation = p.enable_layernorm_cuda_impl;
-            m_bEnableFlashScaledDotProductAttention = p.enable_flash_scaled_dot_product_attention;
+            m_bEnableCudaScaledDotProductAttention = p.enable_cuda_scaled_dot_product_attention;
             m_bEnableRotaryPositionalEmbedding = p.enable_rotary_positional_embedding;
             m_bEnableLlamaStyleHead = p.enable_llama_style_head;
             m_output_adapter_q = p.output_adapter_q.Clone();
@@ -383,7 +383,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("block_type", block_type.ToString());
             rgChildren.Add("normaliation", normalization_type.ToString());
             rgChildren.Add("enable_ln_cuda_impl", enable_layernorm_cuda_impl.ToString());
-            rgChildren.Add("enable_flash_scaled_dot_product_attention", enable_flash_scaled_dot_product_attention.ToString());
+            rgChildren.Add("enable_cuda_scaled_dot_product_attention", enable_cuda_scaled_dot_product_attention.ToString());
             rgChildren.Add("enable_rotary_positional_embedding", enable_rotary_positional_embedding.ToString());
             rgChildren.Add("enable_llama_style_head", enable_llama_style_head.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
@@ -464,8 +464,8 @@ namespace MyCaffe.param.gpt
             if ((strVal = rp.FindValue("enable_ln_cuda_impl")) != null)
                 p.enable_layernorm_cuda_impl = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
-                p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_cuda_scaled_dot_product_attention")) != null)
+                p.enable_cuda_scaled_dot_product_attention = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
                 p.enable_rotary_positional_embedding = bool.Parse(strVal);

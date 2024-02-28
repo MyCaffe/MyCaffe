@@ -379,13 +379,13 @@ namespace MyCaffe.layers.gpt
             }
 
             if (m_param.causal_self_attention_param.enable_rotary_positional_embedding)
-                m_hRope = m_cuda.CreateRope(m_param.causal_self_attention_param.rope_shared_index, m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, m_nT, m_nHeads, m_nSize);
+                m_hRope = m_cuda.CreateRope(m_param.causal_self_attention_param.rope_shared_index, m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, (int)m_param.causal_self_attention_param.block_size, m_nHeads, m_nSize);
 
-            if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
+            if (m_param.causal_self_attention_param.enable_cuda_scaled_dot_product_attention)
             {
                 m_hCudnn = m_cuda.CreateCuDNN();
                 m_hFlashAttention = m_cuda.CreateAttn();
-                m_cuda.SetAttn(m_hCudnn, m_hFlashAttention, m_cuda.GetDeviceID(), (m_phase == Phase.TRAIN) ? true : false, m_nB, m_nT, m_nHeads, m_nEmbed / m_nHeads, (float)m_param.causal_self_attention_param.attn_dropout);
+                m_cuda.SetAttn(m_hCudnn, m_hFlashAttention, m_cuda.GetDeviceID(), (m_phase == Phase.TRAIN) ? true : false, m_nB, (int)m_param.causal_self_attention_param.block_size, m_nHeads, m_nEmbed / m_nHeads, (float)m_param.causal_self_attention_param.attn_dropout);
             }
 
             m_rgShape[0] = m_nB;
@@ -548,10 +548,10 @@ namespace MyCaffe.layers.gpt
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
             // Perform Self Attention forward pass
-            if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
+            if (m_param.causal_self_attention_param.enable_cuda_scaled_dot_product_attention)
             {
                 m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
-                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, m_blobMask.gpu_data, m_blobWork.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, blobX.channels, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, m_blobMask.gpu_data, m_blobWork.mutable_gpu_data);
             }
             else
             {
@@ -657,7 +657,7 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Perform Self Attention backward pass
-                if (m_param.causal_self_attention_param.enable_flash_scaled_dot_product_attention)
+                if (m_param.causal_self_attention_param.enable_cuda_scaled_dot_product_attention)
                 {
                     m_blobY.CopyFrom(m_blobWork, true, true);
                     m_cuda.AttnScaledDotProductBackward(m_hCudnn, m_hFlashAttention, m_blobQt.gpu_data, m_blobQt.mutable_gpu_diff, m_blobKt.gpu_data, m_blobKt.mutable_gpu_diff, m_blobVt.gpu_data, m_blobVt.mutable_gpu_diff, 0, m_blobY.gpu_data, m_blobY.gpu_diff);

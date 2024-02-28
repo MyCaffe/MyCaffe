@@ -25,7 +25,7 @@ namespace MyCaffe.param.gpt
         OutputAdapterParameter m_output_adapter_k = new OutputAdapterParameter("k");
         OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
         OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
-        bool m_bEnableFlashScaledDotProductAttention = false;
+        bool m_bEnableCudaScaledDotProductAttention = false;
         bool m_bEnableRotaryPositionalEmbedding = false;
         int m_nRopeSharedIndex = 1;
         bool m_bBiasTerm = true;
@@ -61,13 +61,13 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.
+        /// Specifies whether or not to enable the CudaScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.
         /// </summary>
-        [Description("Specifies whether or not to enable the FlashScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.")]
-        public bool enable_flash_scaled_dot_product_attention
+        [Description("Specifies whether or not to enable the CudaScaledDotProductAttention.  When enabled, the scaled dot product attention is computed at the CUDA level.")]
+        public bool enable_cuda_scaled_dot_product_attention
         {
-            get { return m_bEnableFlashScaledDotProductAttention; }
-            set { m_bEnableFlashScaledDotProductAttention = value; }
+            get { return m_bEnableCudaScaledDotProductAttention; }
+            set { m_bEnableCudaScaledDotProductAttention = value; }
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace MyCaffe.param.gpt
             m_output_adapter_k = p.output_adapter_k.Clone();
             m_output_adapter_v = p.output_adapter_v.Clone();
             m_output_adapter_out = p.output_adapter_out.Clone();
-            m_bEnableFlashScaledDotProductAttention = p.enable_flash_scaled_dot_product_attention;
+            m_bEnableCudaScaledDotProductAttention = p.enable_cuda_scaled_dot_product_attention;
             m_bEnableRotaryPositionalEmbedding = p.enable_rotary_positional_embedding;
             m_nRopeSharedIndex = p.rope_shared_index;
             m_bBiasTerm = p.bias_term;
@@ -253,7 +253,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("attn_dropout", attn_dropout.ToString());
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
             rgChildren.Add("weight_init", weight_init.ToString());
-            rgChildren.Add("enable_flash_scaled_dot_product_attention", enable_flash_scaled_dot_product_attention.ToString());
+            rgChildren.Add("enable_cuda_scaled_dot_product_attention", enable_cuda_scaled_dot_product_attention.ToString());
             rgChildren.Add("enable_rotary_positional_embedding", enable_rotary_positional_embedding.ToString());
             rgChildren.Add("rope_shared_index", rope_shared_index.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
@@ -303,8 +303,8 @@ namespace MyCaffe.param.gpt
                     throw new Exception("Unknown weight init strategy '" + strVal + "'!");
             }
             
-            if ((strVal = rp.FindValue("enable_flash_scaled_dot_product_attention")) != null)
-                p.enable_flash_scaled_dot_product_attention = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_cuda_scaled_dot_product_attention")) != null)
+                p.enable_cuda_scaled_dot_product_attention = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
                 p.enable_rotary_positional_embedding = bool.Parse(strVal);
