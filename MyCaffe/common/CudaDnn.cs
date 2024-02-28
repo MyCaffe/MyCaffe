@@ -5440,17 +5440,18 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
         /// <param name="hAttn">Specifies the handle to the RNN8 created with CreateAttn.</param>
+        /// <param name="nBlockSize">Specifies the block size which must be less than or equal to the block size set in the SetAttn call.</param>
         /// <param name="hQdata">Specifies a handle to the GPU memory containing the Q inputs.</param>
         /// <param name="hKdata">Specifies a handle to the GPU memory containing the K inputs.</param>
         /// <param name="hVdata">Specifies a handle to the GPU memory containing the V inputs.</param>
         /// <param name="hMaskdata">Specifies a handle to the GPU memory containing the Mask inputs, or 0 to ignore.</param>
         /// <param name="hYdata">Specifies a handle to the GPU memory containing the Y outputs.</param>
-        public void AttnScaledDotProductForward(long hCuDnn, long hAttn, long hQdata, long hKdata, long hVdata, long hMaskdata, long hYdata)
+        public void AttnScaledDotProductForward(long hCuDnn, long hAttn, int nBlockSize, long hQdata, long hKdata, long hVdata, long hMaskdata, long hYdata)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata));
         }
 
         /// <summary>
