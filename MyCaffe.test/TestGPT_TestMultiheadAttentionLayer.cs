@@ -419,7 +419,7 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -472,7 +472,7 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -536,7 +536,7 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -601,7 +601,7 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -893,7 +893,7 @@ namespace MyCaffe.test
                 hCuDnn = m_cuda.CreateCuDNN();
                 hAttn = m_cuda.CreateAttn();
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, false, nBatch, nBlock, nHeads, nSize, fDropout);
-                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, m_blobQ.gpu_data, m_blobK.gpu_data, m_blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, m_blobQ.channels, m_blobQ.gpu_data, m_blobK.gpu_data, m_blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
 
                 m_log.CHECK(m_blobY.Compare(blobY, m_blobWork), "The Y blob data is different.");
             }
@@ -943,7 +943,7 @@ namespace MyCaffe.test
                 hCuDnn = m_cuda.CreateCuDNN();
                 hAttn = m_cuda.CreateAttn();
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, true, nBatch, nBlock, nHeads, nSize, fDropout);
-                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.channels, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
                 blobY.CopyFrom(m_blobY, true);
 
                 blobY.CompareToRawFile("c:\\temp\\_debug\\y.matmul1.a.grad.raw", true);
@@ -1021,7 +1021,7 @@ namespace MyCaffe.test
                 Trace.WriteLine("Starting flash attention forward...");
                 for (int i = 0; i < nIterations; i++)
                 {
-                    m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                    m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.channels, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
                 }
 
                 double dfTotalForwardFlash = sw.Elapsed.TotalMilliseconds;
@@ -1176,7 +1176,7 @@ namespace MyCaffe.test
             p.causal_self_attention_param.block_size = nSeqLen;
             p.causal_self_attention_param.attn_dropout = 0.0;
             p.causal_self_attention_param.resid_dropout = 0.0;
-            p.causal_self_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.causal_self_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             p.causal_self_attention_param.enable_rotary_positional_embedding = true;
             p.causal_self_attention_param.bias_term = false;
             Layer<T> layer = new CausalSelfAttentionLayer2<T>(m_cuda, m_log, p);
@@ -1222,7 +1222,7 @@ namespace MyCaffe.test
             p.causal_self_attention_param.block_size = nSeqLen;
             p.causal_self_attention_param.attn_dropout = 0.0;
             p.causal_self_attention_param.resid_dropout = 0.0;
-            p.causal_self_attention_param.enable_flash_scaled_dot_product_attention = bEnableFlash;
+            p.causal_self_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
             p.causal_self_attention_param.enable_rotary_positional_embedding = true;
             p.causal_self_attention_param.bias_term = false;
             Layer<T> layer = new CausalSelfAttentionLayer2<T>(m_cuda, m_log, p);
