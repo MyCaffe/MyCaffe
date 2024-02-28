@@ -1152,7 +1152,6 @@ namespace MyCaffe.layers.lnn
             copyGrad(m_colWtsAccum, blobs, WEIGHT.MU);
             copyGrad(m_colWtsAccum, blobs, WEIGHT.SIGMA);
 
-            m_cuda.debug();
             // cm/t is loop invariant, so we can compute it once here.
             op_bwd(OP.DIV, blobs[(int)WEIGHT.CM], m_blobTs, m_blobCmt, 1, 1, nSD, nN, 1, m_blobCmt.channels, m_blobCmt.count(2));
             m_blobTs.scale_diff(1.0 / m_param.ltc_unit_param.ode_unfolds);
