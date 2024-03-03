@@ -49,20 +49,28 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.LAYERNORM;
 
-            m_blobWork = new Blob<T>(cuda, log);
-            m_blobWork.Name = m_param.name + " work";
-            m_blobMu = new Blob<T>(cuda, log);
-            m_blobMu.Name = m_param.name + " mu";
-            m_blobXmu = new Blob<T>(cuda, log);
-            m_blobXmu.Name = m_param.name + " xmu";
-            m_blobXmuSq = new Blob<T>(cuda, log);
-            m_blobXmuSq.Name = m_param.name + " xmu_sq";
-            m_blobVar = new Blob<T>(cuda, log);
-            m_blobVar.Name = m_param.name + " var";
-            m_blobStdev = new Blob<T>(cuda, log);
-            m_blobStdev.Name = m_param.name + " stdev";
-            m_blobStdevFull = new Blob<T>(cuda, log);
-            m_blobStdevFull.Name = m_param.name + " stdev_full";
+            m_blobWork = createIntraLayerBlob("ln_work", false);
+            m_blobMu = createIntraLayerBlob("ln_mu", false);
+            m_blobXmu = createIntraLayerBlob("ln_xmu", false);
+            m_blobXmuSq = createIntraLayerBlob("ln_xmu_sq", false);
+            m_blobVar = createIntraLayerBlob("ln_var");
+            m_blobStdev = createIntraLayerBlob("ln_stdev");
+            m_blobStdevFull = createIntraLayerBlob("ln_stdev_full", true, true);
+
+            //m_blobWork = new Blob<T>(cuda, log, false);
+            //m_blobWork.Name = m_param.name + " work";
+            //m_blobMu = new Blob<T>(cuda, log);
+            //m_blobMu.Name = m_param.name + " mu";
+            //m_blobXmu = new Blob<T>(cuda, log);
+            //m_blobXmu.Name = m_param.name + " xmu";
+            //m_blobXmuSq = new Blob<T>(cuda, log);
+            //m_blobXmuSq.Name = m_param.name + " xmu_sq";
+            //m_blobVar = new Blob<T>(cuda, log);
+            //m_blobVar.Name = m_param.name + " var";
+            //m_blobStdev = new Blob<T>(cuda, log);
+            //m_blobStdev.Name = m_param.name + " stdev";
+            //m_blobStdevFull = new Blob<T>(cuda, log);
+            //m_blobStdevFull.Name = m_param.name + " stdev_full";
 
             setup_internal_blobs(m_colInternalBlobs);
         }

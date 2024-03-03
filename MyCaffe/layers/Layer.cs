@@ -13,6 +13,7 @@ using System.IO;
 using System.Reflection;
 using MyCaffe.output_adapters;
 using System.ComponentModel;
+using System.Diagnostics.SymbolStore;
 
 /// <summary>
 /// The MyCaffe.layers namespace contains all layers that have a solidified code base, including the Layer class.
@@ -1240,23 +1241,33 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Create an intra layer blob with the given name.  If the blob has already been created, reuse the already created one.
+        /// Create an intra layer blob with the given name.  If the blob has already been created, reuse the already created one.  The intra layer blobs are are only shared
+        /// between layers when the 'enable_lora_load' is set to <i>true</i> in the LayerParameterEx.
         /// </summary>
         /// <param name="strName">Specifies the generic name of the blob - the name should not include the layer name.</param>
         /// <param name="bCreateDiff">Specifies to create the diff portion.</param>
+        /// <param name="bShareDiffOnly">Specifies to share the diff portion only.</param>
         /// <returns>The new blob or shared blob is returned.</returns>
         /// <exception cref="Exception">An exception occurs if the layer parameter is not of type LayerParameterEx.</exception>
         /// <remarks>The net managing the shared intra layer blobs calls dispose on each blob on cleanup.</remarks>
-        protected Blob<T> createIntraLayerBlob(string strName, bool bCreateDiff = true)
+        protected Blob<T> createIntraLayerBlob(string strName, bool bCreateDiff = true, bool bShareDiffOnly = false)
         {
             Blob<T> b = null;
 
             LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
-            if (paramEx != null && paramEx.SharedIntraLayerBlobs != null && m_param.freeze_learning)
+            if (paramEx != null && paramEx.SharedIntraLayerBlobs != null && paramEx.enable_lora_load && m_param.freeze_learning)
             {
                 b = paramEx.SharedIntraLayerBlobs.FindBlob(strName);
                 if (b != null)
-                    return b;
+                {
+                    if (!bShareDiffOnly || !bCreateDiff)
+                        return b;
+
+                    Blob<T> b1 = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                    b1.Name = layer_param.name + "." + strName;
+                    b1.ShareDiff(b, true);
+                    return b1;
+                }
 
                 b = new Blob<T>(m_cuda, m_log, bCreateDiff);
                 b.Name = strName;

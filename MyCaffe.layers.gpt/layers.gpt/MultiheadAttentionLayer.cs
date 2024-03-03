@@ -207,34 +207,42 @@ namespace MyCaffe.layers.gpt
             softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
-            m_blobX0 = new Blob<T>(cuda, log);
-            m_blobX0.Name = m_param.name + " x0";
-            m_blobX1 = new Blob<T>(cuda, log);
-            m_blobX1.Name = m_param.name + " x1";
-            m_blobX2 = new Blob<T>(cuda, log);
-            m_blobX2.Name = m_param.name + " x2";
+            m_blobX0 = createIntraLayerBlob("mth_x0");
+            m_blobX1 = createIntraLayerBlob("mth_x0");
+            m_blobX2 = createIntraLayerBlob("mth_x0");
+
+            //m_blobX0 = new Blob<T>(cuda, log);
+            //m_blobX0.Name = m_param.name + " x0";
+            //m_blobX1 = new Blob<T>(cuda, log);
+            //m_blobX1.Name = m_param.name + " x1";
+            //m_blobX2 = new Blob<T>(cuda, log);
+            //m_blobX2.Name = m_param.name + " x2";
             m_blobQ = new Blob<T>(cuda, log);
             m_blobQ.Name = m_param.name + " Q";
             m_blobK = new Blob<T>(cuda, log);
             m_blobK.Name = m_param.name + " K";
-            m_blobV = new Blob<T>(cuda, log);
-            m_blobV.Name = m_param.name + " V";
+            m_blobV = createIntraLayerBlob("mth_v");
+            //m_blobV = new Blob<T>(cuda, log);
+            //m_blobV.Name = m_param.name + " V";
             m_blobQt = new Blob<T>(cuda, log);
             m_blobQt.Name = m_param.name + " Qt";
-            m_blobKt = new Blob<T>(cuda, log);
-            m_blobKt.Name = m_param.name + " Kt";
+            m_blobKt = createIntraLayerBlob("mth_kt");
+            //m_blobKt = new Blob<T>(cuda, log);
+            //m_blobKt.Name = m_param.name + " Kt";
             m_blobKt1 = new Blob<T>(cuda, log);
             m_blobKt1.Name = m_param.name + " Kt1";
             m_blobVt = new Blob<T>(cuda, log);
             m_blobVt.Name = m_param.name + " Vt";
-            m_blobAttA = new Blob<T>(cuda, log);
-            m_blobAttA.Name = m_param.name + " AttA";
+            m_blobAttA = createIntraLayerBlob("mth_attA");
+            //m_blobAttA = new Blob<T>(cuda, log);
+            //m_blobAttA.Name = m_param.name + " AttA";
             m_blobAttB = new Blob<T>(cuda, log);
             m_blobAttB.Name = m_param.name + " AttB";
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = m_param.name + " Work";
-            m_blobY = new Blob<T>(cuda, log);
-            m_blobY.Name = m_param.name + " Y";
+            m_blobY = createIntraLayerBlob("mth_y");    
+            //m_blobY = new Blob<T>(cuda, log);
+            //m_blobY.Name = m_param.name + " Y";
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -410,6 +418,10 @@ namespace MyCaffe.layers.gpt
             blobs.Add(m_c_attnK.blobs);
             blobs.Add(m_c_attnV.blobs);
 
+            blobs_adapted.Add(m_c_attnQ.blobs_adapted);
+            blobs_adapted.Add(m_c_attnK.blobs_adapted);
+            blobs_adapted.Add(m_c_attnV.blobs_adapted);
+
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
             m_rgShape[2] = m_nT;
@@ -462,6 +474,7 @@ namespace MyCaffe.layers.gpt
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_proj.blobs);
+            blobs_adapted.Add(m_c_proj.blobs_adapted);
 
             if (m_resid_dropout != null)
             {
