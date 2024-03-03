@@ -34,11 +34,7 @@ namespace MyCaffe.model
             /// <summary>
             /// Specifies to create a Llama7B model.
             /// </summary>
-            LLAMA_7B,
-            /// <summary>
-            /// Specifies to create a Llama13B model.
-            /// </summary>
-            LLAMA_13B
+            LLAMA_7B
         }
 
         /// <summary>
@@ -53,7 +49,7 @@ namespace MyCaffe.model
         /// <param name="dfLearningRate">Specifies the base learning rate.</param>
         /// <param name="rgGpuId">Optionally, specifies a set of GPU ID's to use (when null, GPU=0 is used).</param>
         /// <param name="net">Specifies the 'base' net parameter that is to be altered.</param>
-        public LlamaModelBuilder(string strBaseDirectory, MODEL model, uint nBatchSize = 1, uint nSeqLen = 896, uint nVocabSize = 32000, double dfDropout = 0.0, double dfLearningRate = 0.01, List<int> rgGpuId = null, NetParameter net = null) 
+        public LlamaModelBuilder(string strBaseDirectory, MODEL model, uint nBatchSize = 1, uint nSeqLen = 640, uint nVocabSize = 32000, double dfDropout = 0.0, double dfLearningRate = 0.01, List<int> rgGpuId = null, NetParameter net = null) 
             : base(strBaseDirectory, net)
         {
             if (rgGpuId == null)
@@ -128,13 +124,6 @@ namespace MyCaffe.model
                     nDim = 4096;
                     nHiddenDim = 11008;
                     break;
-
-                case MODEL.LLAMA_13B:
-                    nLayers = 40;
-                    nHeads = 32;
-                    nDim = 4096;
-                    nHiddenDim = 11008;
-                    break;
             }
 
             string strModel = buildModel(m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase);
@@ -168,6 +157,11 @@ namespace MyCaffe.model
                 tok.top.Add("tgt");
             net.layer.Add(tok);
 
+            LayerParameter silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+            silence.bottom.Add("pos");
+            silence.freeze_learning = true;
+            net.layer.Add(silence);
+
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "wte";
             emb1.embed_param.bias_term = false;
@@ -180,29 +174,7 @@ namespace MyCaffe.model
             emb1.freeze_learning = true;
             net.layer.Add(emb1);
 
-            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
-            emb2.name = "wpe";
-            emb2.embed_param.bias_term = false;
-            emb2.embed_param.input_dim = nBlockSize;
-            emb2.embed_param.num_output = nEmbed;
-            emb2.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
-            emb2.parameters.Add(new ParamSpec(1.0, 0.0));
-            emb2.bottom.Add("pos");
-            emb2.top.Add("tok_pos");
-            emb2.freeze_learning = true;
-            net.layer.Add(emb2);
-
-            LayerParameter elt = new LayerParameter(LayerParameter.LayerType.ELTWISE);
-            elt.name = "eltwise1";
-            elt.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
-            elt.eltwise_param.allow_single_batch_input = true;
-            elt.bottom.Add("tok_emb");
-            elt.bottom.Add("tok_pos");
-            elt.top.Add("eltwise1");
-            elt.freeze_learning = true;
-            net.layer.Add(elt);
-
-            string strEncBtm = "eltwise1";
+            string strEncBtm = "tok_emb";
             for (int i = 0; i < nLayers; i++)
             {
                 LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
@@ -212,17 +184,18 @@ namespace MyCaffe.model
                 enc.transformer_block_param.embed = nEmbed;
                 enc.transformer_block_param.block_size = nBlockSize;
                 enc.transformer_block_param.layers = (uint)nLayers;
-                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
+                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.SILU;
+                enc.transformer_block_param.normalization_type = TransformerBlockParameter.NORMALIZATION.LAYER_NORM;
                 enc.transformer_block_param.attn_dropout = dfDropout;
                 enc.transformer_block_param.resid_dropout = dfDropout;
+                enc.transformer_block_param.enable_layernorm_cuda_impl = false;
+                enc.transformer_block_param.enable_llama_style_head = true;
+                enc.transformer_block_param.enable_rotary_positional_embedding = true;
+                enc.transformer_block_param.bias_term = false;
                 enc.parameters.Add(new ParamSpec(1, 1));
-                enc.parameters.Add(new ParamSpec(1, 0));
                 enc.parameters.Add(new ParamSpec(1, 1));
-                enc.parameters.Add(new ParamSpec(1, 0));
                 enc.parameters.Add(new ParamSpec(1, 1));
-                enc.parameters.Add(new ParamSpec(1, 0));
                 enc.parameters.Add(new ParamSpec(1, 1));
-                enc.parameters.Add(new ParamSpec(1, 0));
                 enc.bottom.Add(strEncBtm);
                 enc.top.Add(enc.name);
                 enc.freeze_learning = true;
