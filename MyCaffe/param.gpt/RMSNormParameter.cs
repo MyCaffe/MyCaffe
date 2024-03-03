@@ -21,10 +21,21 @@ namespace MyCaffe.param.gpt
     {
         int m_nAxis = 2;
         double m_dfEpsilon = 1e-5;
+        bool m_bEnableWeights = false;
 
         /** @copydoc LayerParameterBase */
         public RMSNormParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies whether to enable weights (default = <i>false</i>).
+        /// </summary>
+        [Description("Specifies whether to enable weights (default = false).")]
+        public bool enable_weights
+        {
+            get { return m_bEnableWeights; }
+            set { m_bEnableWeights = value; }
         }
 
         /// <summary>
@@ -75,6 +86,7 @@ namespace MyCaffe.param.gpt
             RMSNormParameter p = (RMSNormParameter)src;
             m_dfEpsilon = p.epsilon;
             m_nAxis = p.m_nAxis;
+            m_bEnableWeights = p.enable_weights;
         }
 
         /// <summary>
@@ -99,6 +111,7 @@ namespace MyCaffe.param.gpt
 
             rgChildren.Add("epsilon", m_dfEpsilon.ToString());
             rgChildren.Add("axis", axis.ToString());
+            rgChildren.Add("enable_weights", m_bEnableWeights.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -118,6 +131,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_weights")) != null)
+                p.enable_weights = bool.Parse(strVal);
 
             return p;
         }
