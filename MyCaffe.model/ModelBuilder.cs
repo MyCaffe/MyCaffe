@@ -103,7 +103,10 @@ namespace MyCaffe.model
         /// </summary>
         /// <param name="bUseBatchNorm">Optionally, specifies whether or not to use batch normalization layers (default = <i>true</i>).</param>
         /// <param name="dfLrMult">Optionally, specifies the learning rate multiplier (default = 1.0).</param>
-        protected abstract LayerParameter addExtraLayers(bool bUseBatchNorm = true, double dfLrMult = 1.0);
+        protected virtual LayerParameter addExtraLayers(bool bUseBatchNorm = true, double dfLrMult = 1.0)
+        {
+            return null;
+        }
 
         /// <summary>
         /// Find a layer with a given name.
