@@ -1209,6 +1209,7 @@ namespace MyCaffe.common
             CUDA_COPY_EXPAND = 208,
             CUDA_COPY_SEQUENCE2 = 209,
 
+            CUDA_RSQRT = 216,
             CUDA_ADD3 = 217,
             CUDA_GEAM = 218,
             CUDA_GEMM2 = 219,
@@ -1298,6 +1299,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_PERCENTILE = 305,
             CUDA_CHANNEL_OP_FWD = 306,
             CUDA_CHANNEL_OP_BWD = 307,
+            CUDA_CHANNEL_SUM_ALL = 308,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7974,6 +7976,21 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Computes the invers square root of each element of X and places the result in Y.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="dfEpsilon">Optionally, add an epsilont value before performing the square root.</param>
+        public void rsqrt(int n, long hX, long hY, double dfEpsilon = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_RSQRT, m_param.AsDouble(dfEpsilon), m_param.AsLong(n, hX, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_RSQRT, m_param.AsFloat((float)dfEpsilon), m_param.AsLong(n, hX, hY));
+        }
+
+        /// <summary>
         /// Scale the data by the sqrt of the data.  y = sqrt(abs(x)) * sign(x)
         /// </summary>
         /// <param name="nCount">Specifies the number of elements.</param>
@@ -8584,6 +8601,23 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
+        /// Calculates the sum of all channels in X and places the result in Y which should be nInnerNum in length.
+        /// </summary>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory (with expected size nOuterNum, nChannels, nInnerNum).</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory (with expected size nInnerNum, 1, 1).</param>
+        /// <param name="dfScale">Optionally, specifies the scale to apply to the result.</param>
+        public void channel_sum_all(int nInnerNum, int nOuterNum, int nChannels, long hX, long hY, double dfScale = 1.0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM_ALL, m_param.AsDouble(dfScale), m_param.AsLong(nInnerNum, nOuterNum, nChannels, hX, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM_ALL, m_param.AsFloat((float)dfScale), m_param.AsLong(nInnerNum, nOuterNum, nChannels, hX, hY));
         }
 
         /// <summary>
