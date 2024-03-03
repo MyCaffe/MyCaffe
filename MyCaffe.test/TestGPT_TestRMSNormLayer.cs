@@ -56,6 +56,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+        
+        [TestMethod]
+        public void TestForwardEx2()
+        {
+            RmsNormLayerTest test = new RmsNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IRmsNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardEx2(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
 
         [TestMethod]
         public void TestForwardExCuda()
@@ -94,6 +112,25 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestBackwardEx2()
+        {
+            RmsNormLayerTest test = new RmsNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IRmsNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardEx2(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestBackwardExCuda()
         {
             RmsNormLayerTest test = new RmsNormLayerTest(EngineParameter.Engine.CAFFE);
@@ -118,6 +155,8 @@ namespace MyCaffe.test
 
         void TestForwardEx(bool bUseCuda);
         void TestBackwardEx(bool bUseCuda);
+        void TestForwardEx2(bool bUseCuda);
+        void TestBackwardEx2(bool bUseCuda);
     }
 
     class RmsNormLayerTest : TestBase
@@ -168,6 +207,10 @@ namespace MyCaffe.test
             try
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.RMSNORM);
+                p.rms_norm_param.epsilon = 1e-5;
+                p.rms_norm_param.enable_weights = false;
+                p.rms_norm_param.axis = 2;
+
                 layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
 
@@ -278,6 +321,118 @@ namespace MyCaffe.test
                 m_log.CHECK(layer.type == LayerParameter.LayerType.RMSNORM, "The layer type is incorrect!");
 
                 m_blob_bottom.LoadFromNumpy(strTestDataPath + "input.npy");
+                m_blob_top.SetData(0);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_blob_top.LoadFromNumpy(strTestDataPath + "output.grad.npy", true);
+
+                List<bool> rgProp = new List<bool>() { true };
+                layer.Backward(TopVec, rgProp, BottomVec);
+
+                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
+
+                m_blobVal.LoadFromNumpy(strTestDataPath + "x.grad.npy", true);
+                m_log.CHECK(m_blobVal.Compare(m_blob_bottom, m_blobWork, true, 6e-08), "The blobs are different.");
+
+                sw.Start();
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Backward(TopVec, rgProp, BottomVec);
+                }
+                sw.Stop();
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
+                Trace.WriteLine("Time Per Backward = " + dfTime.ToString("N6") + " ms");
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
+        }
+
+        public void TestForwardEx2(bool bUseCuda)
+        {
+            string strTestDataPath = getTestDataPath("rmsnorm", "tfb0.attn.rms.x.npy");
+            Layer<T> layer = null;
+
+            int nBatchSize = 64;
+            int nSeqLen = 128;
+            int nInputSize = 192;
+
+            try
+            {
+                Stopwatch sw = new Stopwatch();
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.RMSNORM);
+                p.rms_norm_param.epsilon = 1e-5;
+                //p.rms_norm_param.enable_cuda_impl = bUseCuda;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.RMSNORM, "The layer type is incorrect!");
+
+                m_blob_bottom.LoadFromNumpy(strTestDataPath + "tfb0.attn.rms.x.npy");
+                m_blob_top.SetData(0);
+
+                m_log.CHECK_EQ(m_blob_bottom.num, nBatchSize, "The num should be " + nBatchSize.ToString());
+                m_log.CHECK_EQ(m_blob_bottom.channels, nSeqLen, "The channels should be " + nSeqLen.ToString());
+                m_log.CHECK_EQ(m_blob_bottom.height, nInputSize, "The height should be " + nInputSize.ToString());
+                m_log.CHECK_EQ(m_blob_bottom.width, 1, "The width should be 1");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
+
+                m_blobVal.LoadFromNumpy(strTestDataPath + "tfb0.attn.rms.output1.npy");
+                m_log.CHECK(m_blobVal.Compare(m_blob_top, m_blobWork, false, 1e-06), "The blobs are different.");
+
+                sw.Start();
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+                sw.Stop();
+
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
+                Trace.WriteLine("Time Per Forward = " + dfTime.ToString("N6") + " ms");
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
+        }
+
+        public void TestBackwardEx2(bool bUseCuda)
+        {
+            string strTestDataPath = getTestDataPath("rmsnorm", "tfb0.attn.rms.x.npy");
+            strTestDataPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\";
+            Layer<T> layer = null;
+
+            int nBatchSize = 64;
+            int nSeqLen = 128;
+            int nInputSize = 192;
+
+            try
+            {
+                Stopwatch sw = new Stopwatch();
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.RMSNORM);
+                p.rms_norm_param.epsilon = 1e-5;
+                //p.rms_norm_param.enable_cuda_impl = bUseCuda;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.RMSNORM, "The layer type is incorrect!");
+
+                m_blob_bottom.LoadFromNumpy(strTestDataPath + "x.npy");
                 m_blob_top.SetData(0);
 
                 layer.Setup(BottomVec, TopVec);
