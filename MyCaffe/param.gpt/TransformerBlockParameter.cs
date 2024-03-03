@@ -143,9 +143,9 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies the normalization type to use.
+        /// Specifies the normalization type to use.  Currently, the LAYER_NORM is the recommended nromalization method as there are known issues with the RMS_NORM.
         /// </summary>
-        [Description("Specifies the normalization type to use.")]
+        [Description("Specifies the normalization type to use.  Currently, the LAYER_NORM is the recommended nromalization method as there are known issues with the RMS_NORM.")]
         public NORMALIZATION normalization_type
         {
             get { return m_normalization; }
