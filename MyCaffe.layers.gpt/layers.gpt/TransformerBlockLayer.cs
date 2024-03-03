@@ -627,6 +627,14 @@ namespace MyCaffe.layers.gpt
             if (m_fc2 != null)
                 blobs.Add(m_fc2.blobs);
             blobs.Add(m_proj.blobs);
+
+            blobs_adapted.Add(m_attn1.blobs_adapted);
+            if (m_attn2 != null)
+                blobs_adapted.Add(m_attn2.blobs_adapted);
+            blobs_adapted.Add(m_fc1.blobs_adapted);
+            if (m_fc2 != null)
+                blobs_adapted.Add(m_fc2.blobs_adapted);
+            blobs_adapted.Add(m_proj.blobs_adapted);
         }
 
         /// <summary>

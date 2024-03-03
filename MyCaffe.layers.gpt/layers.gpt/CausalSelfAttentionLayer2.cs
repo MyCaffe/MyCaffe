@@ -170,6 +170,7 @@ namespace MyCaffe.layers.gpt
             m_mh_att.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_mh_att.blobs);
+            blobs_adapted.Add(m_mh_att.blobs_adapted);
         }
 
         /// <summary>
