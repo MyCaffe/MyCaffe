@@ -128,7 +128,7 @@ namespace MyCaffe.output_adapters
             {
                 blob.Reshape(rgShapeA);
 
-                FillerParameter fp = new FillerParameter("xavier");
+                FillerParameter fp = new FillerParameter("constant", 1);
                 Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
                 filler.Fill(blob);
                 blob.scale_data(1.0 / m_param.rank);
@@ -146,7 +146,12 @@ namespace MyCaffe.output_adapters
             if (!shareParameter(blob, rgShapeB))
             {
                 blob.Reshape(rgShapeB);
-                blob.SetData(0.0);
+
+                FillerParameter fp = new FillerParameter("constant", 1);
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(blob);
+                blob.scale_data(1.0 / m_param.rank);
+
                 blob.SetDiff(0.0);
             }
             m_colBlobs.Add(blob);
