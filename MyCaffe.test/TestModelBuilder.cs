@@ -382,6 +382,46 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestLlamaModel_CreateTrainingModel()
+        {
+            LlamaModelBuilderTest test = new LlamaModelBuilderTest(LlamaModelBuilder.MODEL.LLAMA_7B);
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestCreateTrainingModel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLlamaModel_CreateSolver()
+        {
+            LlamaModelBuilderTest test = new LlamaModelBuilderTest(LlamaModelBuilder.MODEL.LLAMA_7B);
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestCreateSolver();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IModelBuilderTest : ITest
@@ -500,7 +540,6 @@ namespace MyCaffe.test
         }
     }
 
-
     class SSDPascalModelBuilderTest : TestBase
     {
         public SSDPascalModelBuilderTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
@@ -532,6 +571,39 @@ namespace MyCaffe.test
         }
     }
 
+    class LlamaModelBuilderTest : TestBase
+    {
+        LlamaModelBuilder.MODEL m_model;
+
+        public LlamaModelBuilderTest(LlamaModelBuilder.MODEL model)
+            : base("Llama 7B Model Builder Test", TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine.DEFAULT)
+        {
+            m_model = model;
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new LlamaModelBuilderTest<double>(strName, nDeviceID, m_model, engine);
+            else
+                return new LlamaModelBuilderTest<float>(strName, nDeviceID, m_model, engine);
+        }
+    }
+
+    class LlamaModelBuilderTest<T> : ModelBuilderTest<T>
+    {
+        public LlamaModelBuilderTest(string strName, int nDeviceID, LlamaModelBuilder.MODEL model, EngineParameter.Engine engine)
+            : base(strName, nDeviceID, engine)
+        {
+            m_engine = engine;
+            m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
+        }
+
+        protected override ModelBuilder create()
+        {
+            return new LlamaModelBuilder(m_strBaseDir, LlamaModelBuilder.MODEL.LLAMA_7B);
+        }
+    }
 
     abstract class ModelBuilderTest<T> : TestEx<T>, IModelBuilderTest
     {
@@ -631,6 +703,7 @@ namespace MyCaffe.test
             ModelBuilder builder = create();
 
             NetParameter net_param = builder.CreateModel();
+            net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
 
@@ -650,7 +723,7 @@ namespace MyCaffe.test
 
             save(strNet, strSolver, false);
 
-            //            mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null);
+            mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
             mycaffe.Dispose();
         }
 
@@ -674,7 +747,7 @@ namespace MyCaffe.test
 
             save(strNet, null, true);
 
-            //            mycaffe.LoadToRun(strNet, null, new BlobShape(1, 3, 300, 300));
+            mycaffe.LoadToRun(strNet, null, new BlobShape(1, 3, 300, 300));
             mycaffe.Dispose();
         }
     }
