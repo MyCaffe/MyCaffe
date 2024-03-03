@@ -454,6 +454,7 @@ class Device
 		long cuda_invert(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_sign(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_sqrt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_rsqrt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_sqrt_scale(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_reciprocol(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_student(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -483,6 +484,7 @@ class Device
 		long cuda_channel_stdev(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sum(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_sum_all(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_mul(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_mulv(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);

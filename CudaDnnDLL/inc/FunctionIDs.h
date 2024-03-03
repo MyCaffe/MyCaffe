@@ -228,6 +228,7 @@ const int CUDA_FN_COPY_SEQUENCE = 207;
 const int CUDA_FN_COPY_EXPAND = 208;
 const int CUDA_FN_COPY_SEQUENCE2 = 209;
 
+const int CUDA_FN_RSQRT = 216;
 const int CUDA_FN_ADD3 = 217;
 const int CUDA_FN_GEAM = 218;
 const int CUDA_FN_GEMM2 = 219;
@@ -317,6 +318,7 @@ const int CUDA_FN_CHANNEL_ADD = 304;
 const int CUDA_FN_CHANNEL_PERCENTILE = 305;
 const int CUDA_FN_CHANNEL_OP_FWD = 306;
 const int CUDA_FN_CHANNEL_OP_BWD = 307;
+const int CUDA_FN_CHANNEL_SUM_ALL = 308;
 
 const int CUDA_RNG_SETSEED = 349;
 const int CUDA_RNG_UNIFORM = 350;

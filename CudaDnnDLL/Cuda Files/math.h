@@ -227,7 +227,8 @@ class Math
 		long powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0);
 		long invert(int n, long hX, long hY, int nXOff = 0, int nYOff = 0, T dfScaleNum = 0, T dfScaleDenom = 0);
 		long sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
-		long sqrt(int n, long hX, long hY, float fEpsilon = 0.0f);
+		long sqrt(int n, long hX, long hY, T fEpsilon = (T)0.0);
+		long rsqrt(int n, long hX, long hY, T fEpsilon = (T)0.0);
 		long sqrt_scale(int n, long hX, long hY);
 		long reciprocol(int n, long hX, long hY);
 		long student(int n, long hX, long hY);
@@ -262,6 +263,7 @@ class Math
 		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff);
 		long channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, T fEps, bool bUnbiased);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
+		long channel_sum_all(int nInNum, int nOutNum, int nChannels, long hX, long hY, T fScale);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
 		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);

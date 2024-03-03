@@ -6005,17 +6005,24 @@ template long Math<float>::sign(int n, long hA, long hY, int nXOff, int nYOff);
 
 
 
-template <typename T>
-__global__ void sqrt_kernel(const int n, T* x, T* y, float fEpsilon)
+__global__ void sqrt_kernel(const int n, float* x, float* y, float fEpsilon)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = sqrtf(x[i] + fEpsilon);
+	}
+}
+
+__global__ void sqrt_kernel(const int n, double* x, double* y, double fEpsilon)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = sqrt(x[i] + fEpsilon);
 	}
 }
 
-template <typename T>
-long Math<T>::sqrt(int n, long hX, long hY, float fEpsilon)
+template <>
+long Math<float>::sqrt(int n, long hX, long hY, float fEpsilon)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6027,13 +6034,81 @@ long Math<T>::sqrt(int n, long hX, long hY, float fEpsilon)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	sqrt_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data(), fEpsilon);
+	sqrt_kernel<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pX->Data(), (float*)pY->Data(), fEpsilon);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::sqrt(int n, long hA, long hY, float fEpsilon);
-template long Math<float>::sqrt(int n, long hA, long hY, float fEpsilon);
+template <>
+long Math<double>::sqrt(int n, long hX, long hY, double fEpsilon)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	sqrt_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (double*)pX->Data(), (double*)pY->Data(), fEpsilon);
+
+	return cudaStreamSynchronize(0);
+}
+
+
+__global__ void rsqrt_kernel(const int n, float* x, float* y, float fEpsilon)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (float)1.0 / sqrt(x[i] + fEpsilon);
+	}
+}
+
+__global__ void rsqrt_kernel(const int n, double* x, double* y, double fEpsilon)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = 1.0 / sqrt(x[i] + fEpsilon);
+	}
+}
+
+template <>
+long Math<float>::rsqrt(int n, long hX, long hY, float fEpsilon)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	rsqrt_kernel<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (float*)pX->Data(), (float*)pY->Data(), fEpsilon);
+
+	return cudaStreamSynchronize(0);
+}
+
+template <>
+long Math<double>::rsqrt(int n, long hX, long hY, double fEpsilon)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	rsqrt_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (double*)pX->Data(), (double*)pY->Data(), fEpsilon);
+
+	return cudaStreamSynchronize(0);
+}
 
 
 template <typename T>
@@ -6663,6 +6738,7 @@ template long Math<double>::channel_sub(int n, int nOutNum, int nChannels, int n
 template long Math<float>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
 
 
+
 template <typename T>
 __global__ void channel_sum_kernel_acrosschannels(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
@@ -6796,6 +6872,45 @@ long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
 template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
+
+
+template <typename T>
+__global__ void channel_sum_all_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y, const T fScale)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		double val = 0;
+
+		for (int j = 0; j < num * channels; j++)
+		{
+			const int nIdx = j * spatial_dim;
+			val += (double)x[nIdx + i];
+		}
+
+		y[i] = (T)val * fScale;
+	}
+}
+
+template <typename T>
+long Math<T>::channel_sum_all(int nInNum, int nOutNum, int nChannels, long hX, long hY, T fScale)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_sum_all_kernel<T> << <CAFFE_GET_BLOCKS(nInNum), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data(), fScale);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_sum_all(int nInNum, int nOutNum, int nChannels, long hX, long hY, double fScale);
+template long Math<float>::channel_sum_all(int nInNum, int nOutNum, int nChannels, long hX, long hY, float fScale);
 
 
 template <typename T>

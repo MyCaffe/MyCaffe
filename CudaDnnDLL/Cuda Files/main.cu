@@ -608,6 +608,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_SQRT:
 			return m_device.cuda_sqrt(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_RSQRT:
+			return m_device.cuda_rsqrt(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_RECIPROCOL:
 			return m_device.cuda_reciprocol(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -688,6 +691,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 
 		case CUDA_FN_CHANNEL_SUM:
 			return m_device.cuda_channel_sum(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CHANNEL_SUM_ALL:
+			return m_device.cuda_channel_sum_all(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
 		case CUDA_FN_CHANNEL_DIV:
 			return m_device.cuda_channel_div(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
@@ -1804,6 +1810,9 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_SQRT:
 		return "CUDA_FN_SQRT";
 
+	case CUDA_FN_RSQRT:
+		return "CUDA_FN_RSQRT";
+
 	case CUDA_FN_SQRT_SCALE:
 		return "CUDA_FN_SQRT_SCALE";
 
@@ -1878,6 +1887,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_SUM:
 		return "CUDA_FN_CHANNEL_SUM";
+
+	case CUDA_FN_CHANNEL_SUM_ALL:
+		return "CUDA_FN_CHANNEL_SUM_ALL";
 
 	case CUDA_FN_CHANNEL_DIV:
 		return "CUDA_FN_CHANNEL_DIV";
