@@ -365,7 +365,10 @@ namespace MyCaffe.model
             data = addAnnotatedDataLayer(m_strTestDataSource, Phase.TEST, 1, true, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTest);
 
             LayerParameter lastLayer = addVGGNetBody(data, true, true, true, true, false, false);
-            lastLayer = addExtraLayers(m_bUseBatchNorm, m_dfLrMult);
+
+            LayerParameter lastLayerEx = addExtraLayers(m_bUseBatchNorm, m_dfLrMult);
+            if (lastLayerEx != null)
+                lastLayer = lastLayerEx;
 
             List<LayerParameter> rgMboxLayers = createMultiBoxHead(data, m_nNumClasses, m_rgMultiBoxInfo, m_rgPriorVariance, false, m_bUseBatchNorm, m_dfLrMult, true, 0, 0, m_bShareLocation, m_bFlip, m_bClip, 0.5, 3, 1);
 
