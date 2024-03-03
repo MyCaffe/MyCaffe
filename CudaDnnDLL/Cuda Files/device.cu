@@ -870,6 +870,9 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long llInput, LONGLONG* plI
 
 	if (lInput > 1)
 	{
+		if (pfInput == NULL)
+			return ERROR_PARAM_NULL;
+
 		if (lInput == lCount + 1)
 		{
 			pSrc = &pfInput[1];
@@ -918,6 +921,9 @@ long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long llInput, LONGLONG*
 
 	if (lInput > 1)
 	{
+		if (pfInput == NULL)
+			return ERROR_PARAM_NULL;
+
 		if (lInput == lCount + 1)
 		{
 			pSrc = &pfInput[1];
@@ -2641,6 +2647,29 @@ template long Device<float>::cuda_sqrt(long lInput, float* pfInput, long llInput
 
 
 template <class T>
+long Device<T>::cuda_rsqrt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
+	float fEpsilon = 0;
+
+	if (lInput > 0)
+		fEpsilon = (float)pfInput[0];
+
+	return m_math.rsqrt(n, hX, hY, fEpsilon);
+}
+
+template long Device<double>::cuda_rsqrt(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rsqrt(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_reciprocol(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
@@ -3344,6 +3373,30 @@ long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long llInput, LONGLONG
 
 template long Device<double>::cuda_channel_sub(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_channel_sub(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_channel_sum_all(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	int nInNum = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	long hX = (long)plInput[3];
+	long hY = (long)plInput[4];
+	T fScale = (T)pfInput[0];
+
+	return m_math.channel_sum_all(nInNum, nOutNum, nChannels, hX, hY, fScale);
+}
+
+template long Device<double>::cuda_channel_sum_all(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_sum_all(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
