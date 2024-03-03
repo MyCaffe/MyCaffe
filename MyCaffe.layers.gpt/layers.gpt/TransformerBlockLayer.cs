@@ -88,10 +88,12 @@ namespace MyCaffe.layers.gpt
             {
                 LayerParameter rms1 = new LayerParameter(LayerParameter.LayerType.RMSNORM, p.name + ".rms1", m_phase, p.freeze_learning);
                 rms1.rms_norm_param.axis = 2;
+                rms1.rms_norm_param.enable_weights = false;
                 m_norm1 = Layer<T>.Create(cuda, log, convertLayerParam(rms1, p), evtCancel) as Layer<T>;
 
                 LayerParameter rms2 = new LayerParameter(LayerParameter.LayerType.RMSNORM, p.name + ".rms2", m_phase, p.freeze_learning);
                 rms2.rms_norm_param.axis = 2;
+                rms2.rms_norm_param.enable_weights = false;
                 m_norm2 = Layer<T>.Create(cuda, log, convertLayerParam(rms2, p), evtCancel) as Layer<T>;
             }
             else
