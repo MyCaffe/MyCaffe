@@ -1856,10 +1856,11 @@ namespace MyCaffe.common
         /// Set the diff to point to the diff of the other blob -- useful in Layers which
         /// simply perform a copy in their forward pass.
         /// </summary>
-        /// <param name="b"></param>
-        public void ShareDiff(Blob<T> b)
+        /// <param name="b">Specifies the blob who's diff is to be shared.</param>
+        /// <param name="bForceReshape">Force a reshape of the current blob.</param>
+        public void ShareDiff(Blob<T> b, bool bForceReshape = false)
         {
-            if (!m_bReshapeWhenSharing)
+            if (!bForceReshape && !m_bReshapeWhenSharing)
                 m_log.CHECK_EQ(m_nCount, b.count(), "The blob counts are not the same!");
             else
                 reshapeShape(b.shape());
