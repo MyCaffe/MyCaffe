@@ -317,6 +317,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "ATTN: The Attention block size is invalid. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_BLOBLOADER:
+			_snprintf(szErr, lMaxErr, "BLOBLOADER: A general BlobLoader error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_BLOBLOADER_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "BLOBLOADER: The BlobLoader is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_CPD:
 			_snprintf(szErr, lMaxErr, "CPD: A general CPD error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;

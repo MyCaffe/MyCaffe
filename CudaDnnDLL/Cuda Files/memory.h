@@ -23,6 +23,7 @@
 #include "ssd.h"
 #include "layernorm.h"
 #include "rope.h"
+#include "blobloader.h"
 #include "extension.h"
 #include <vector>
 #include <algorithm>
@@ -170,6 +171,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_cpd;
 		HandleCollection<MIN_HANDLES> m_layernorm;
 		HandleCollection<MIN_HANDLES> m_rope;
+		HandleCollection<MIN_HANDLES> m_blobloaders;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
@@ -533,6 +535,13 @@ class Memory
 		long FreeExtension(long hHandle);
 		extensionHandle<T>* GetExtension(long hHandle);
 		long ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR pszErr, LONG lErrMax);
+
+		long CreateBlobLoader(LPTSTR pszFilePath, long nHeaderSize, long* phHandle);
+		long FreeBlobLoader(long hHandle);
+		blobloaderHandle<T>* GetBlobLoader(long hHandle);
+		long BlobLoaderLoad(long hBlobLoader, long lCount, long hData, long lLocalItemOffset);
+		long BlobLoaderResetOffset(long hBlobLoader, unsigned long lOffsetInBytes);
+		long BlobLoaderAddToOffset(long hBlobLoader, unsigned long lOffsetInBytes);
 };
 
 
@@ -2481,5 +2490,85 @@ inline long Memory<T>::ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long 
 	return GetExtension(hHandle)->Run(lfnIdx, pfInput, lCount, ppfOutput, plCount, pszErr, lErrMax);
 }
 
+
+template <class T>
+inline long Memory<T>::CreateBlobLoader(LPTSTR pszFilePath, long nHeaderSize, long* phHandle)
+{
+	LONG lErr;
+	blobloaderHandle<T>* blobloader = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((blobloader = new blobloaderHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = blobloader->Initialize(this, pszFilePath, nHeaderSize))
+	{
+		delete blobloader;
+		return lErr;
+	}
+
+	long hHandle = m_blobloaders.Allocate(blobloader);
+	if (hHandle < 0)
+	{
+		delete blobloader;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeBlobLoader(long hHandle)
+{
+	blobloaderHandle<T>* blobloader = (blobloaderHandle<T>*)m_blobloaders.Free(hHandle);
+
+	if (blobloader != NULL)
+	{
+		blobloader->CleanUp();
+		delete blobloader;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline blobloaderHandle<T>* Memory<T>::GetBlobLoader(long hHandle)
+{
+	return (blobloaderHandle<T>*)m_blobloaders.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::BlobLoaderLoad(long hBlobLoader, long lCount, long hData, long lLocalItemOffset)
+{
+	blobloaderHandle<T>* pBl = (blobloaderHandle<T>*)m_blobloaders.GetData(hBlobLoader);
+	if (pBl == NULL)
+		return ERROR_BLOBLOADER_NOT_INITIALIZED;
+
+	return pBl->Load(lCount, hData, lLocalItemOffset);
+}
+
+template <class T>
+inline long Memory<T>::BlobLoaderResetOffset(long hBlobLoader, unsigned long lOffsetInBytes)
+{
+	blobloaderHandle<T>* pBl = (blobloaderHandle<T>*)m_blobloaders.GetData(hBlobLoader);
+	if (pBl == NULL)
+		return ERROR_BLOBLOADER_NOT_INITIALIZED;
+
+	return pBl->ResetOffset(lOffsetInBytes);
+}
+
+
+template <class T>
+inline long Memory<T>::BlobLoaderAddToOffset(long hBlobLoader, unsigned long lOffsetInItems)
+{
+	blobloaderHandle<T>* pBl = (blobloaderHandle<T>*)m_blobloaders.GetData(hBlobLoader);
+	if (pBl == NULL)
+		return ERROR_BLOBLOADER_NOT_INITIALIZED;
+
+	return pBl->AddToOffset(lOffsetInItems);
+}
 
 #endif // __MEMORY_CU__

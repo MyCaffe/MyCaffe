@@ -968,6 +968,21 @@ extern "C" LONG WINAPI DLL_InvokeFloatEx(LONG lKernelIdx,
 			}
 			break;
 
+		case CUDA_FN_CREATE_BLOBLOADER:
+			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->CreateBlobLoader(pszInput, ppOutput, plOutput))
+			{
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+			break;
+
 		default:
 			return ERROR_NOT_SUPPORTED;
 	}
@@ -1005,6 +1020,21 @@ extern "C" LONG WINAPI DLL_InvokeDoubleEx(LONG lKernelIdx,
 			}
 
 			if (lErr = pKernel->CreateExtensionDouble(g_hModule, lKernelIdx, pszInput, ppOutput, plOutput))
+			{
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+			break;
+
+		case CUDA_FN_CREATE_BLOBLOADER:
+			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->CreateBlobLoader(pszInput, ppOutput, plOutput))
 			{
 				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;

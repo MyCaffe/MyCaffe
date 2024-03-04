@@ -210,7 +210,10 @@ const int ERROR_ATTN_MISSING_DESCRIPTOR		     = ERROR_ATTN + 3;
 const int ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE      = ERROR_ATTN + 4;
 const int ERROR_ATTN_INVALID_BLOCK_SIZE          = ERROR_ATTN + 5;
 
-const int ERROR_CPD                              = ERROR_ATTN + 40;
+const int ERROR_BLOBLOADER                       = ERROR_ATTN + 40;
+const int ERROR_BLOBLOADER_NOT_INITIALIZED       = ERROR_BLOBLOADER + 1;
+
+const int ERROR_CPD                              = ERROR_BLOBLOADER + 40;
 const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;
 
 const int ERROR_CUDNN_OFFSET					= 0x4000;

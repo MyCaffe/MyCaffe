@@ -255,6 +255,12 @@ class Device
 		long FreeExtension(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long ExtensionRun(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput, LPTSTR szErr, long lErrMax);
 
+		long CreateBlobLoader(long* plOutput, T** ppfOutput, LPTSTR pszInput);
+		long FreeBlobLoader(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long BlobLoaderLoad(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long BlobLoaderResetOffset(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long BlobLoaderAddToOffset(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long CreateCuDNN(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FreeCuDNN(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		cudnnHandle_t GetCuDNN(long h)
@@ -4313,6 +4319,79 @@ inline long Device<T>::ExtensionRun(long lInput, T* pfInput, long llInput, LONGL
 		pfInput = &pfInput[2];
 
 	return m_memory.ExtensionRun(hExtension, lfnIdx, pfInput, lInput, ppfOutput, plOutput, szErr, lErrMax);
+}
+
+template <class T>
+inline long Device<T>::CreateBlobLoader(long* plOutput, T** ppfOutput, LPTSTR pszInput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateBlobLoader(pszInput, 0, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeBlobLoader(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hBlobLoader = (long)pfInput[0];
+
+	return m_memory.FreeBlobLoader(hBlobLoader);
+}
+
+
+template <class T>
+inline long Device<T>::BlobLoaderLoad(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+
+	long hBlobLoader = (long)plInput[0];
+	long lCount = (long)plInput[1];
+	long hData = (long)plInput[2];
+	long lLocalItemOffset = (long)plInput[3];
+
+	return m_memory.BlobLoaderLoad(hBlobLoader, lCount, hData, lLocalItemOffset);
+}
+
+template <class T>
+inline long Device<T>::BlobLoaderResetOffset(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
+		return lErr;
+
+	long hBlobLoader = (long)plInput[0];
+	long lOffsetInBytes = (long)plInput[1];
+
+	return m_memory.BlobLoaderResetOffset(hBlobLoader, lOffsetInBytes);
+}
+
+template <class T>
+inline long Device<T>::BlobLoaderAddToOffset(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
+		return lErr;
+
+	long hBlobLoader = (long)plInput[0];
+	unsigned long lOffsetInItems = (unsigned long)plInput[1];
+
+	return m_memory.BlobLoaderAddToOffset(hBlobLoader, lOffsetInItems);
 }
 
 template <class T>

@@ -194,6 +194,18 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_FREE_EXTENSION:
 			return m_device.FreeExtension(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_FREE_BLOBLOADER:
+			return m_device.FreeBlobLoader(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_BLOBLOADER_LOAD:
+			return m_device.BlobLoaderLoad(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_BLOBLOADER_RESETOFFSET:
+			return m_device.BlobLoaderResetOffset(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_BLOBLOADER_ADDTOOFFSET:
+			return m_device.BlobLoaderAddToOffset(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDNN_FN_CREATE_CUDNN:
 			return m_device.CreateCuDNN(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1398,6 +1410,21 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_EXTENSION_RUN:
 		return "CUDA_FN_EXTENSION_RUN";
+
+	case CUDA_FN_CREATE_BLOBLOADER:
+		return "CUDA_FN_CREATE_BLOBLOADER";
+
+	case CUDA_FN_FREE_BLOBLOADER:
+		return "CUDA_FN_FREE_BLOBLOADER";
+
+	case CUDA_FN_BLOBLOADER_LOAD:
+		return "CUDA_FN_BLOBLOADER_LOAD";
+
+	case CUDA_FN_BLOBLOADER_RESETOFFSET:
+		return "CUDA_FN_BLOBLOADER_RESETOFFSET";
+
+	case CUDA_FN_BLOBLOADER_ADDTOOFFSET:
+		return "CUDA_FN_BLOBLOADER_ADDTOOFFSET";
 
 	case CUDNN_FN_CREATE_CUDNN:
 		return "CUDNN_FN_CREATE_CUDNN";

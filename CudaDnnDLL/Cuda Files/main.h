@@ -163,6 +163,11 @@ public:
 		return m_device.CreateExtensionDouble(hParent, lKernelIdx, plCount, ppfOutput, pszInput);
 	}
 
+	long CreateBlobLoader(LPTSTR pszInput, T** ppfOutput, long* plCount)
+	{
+		return m_device.CreateBlobLoader(plCount, ppfOutput, pszInput);
+	}
+
 	long Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppfOutput);
 };
 
