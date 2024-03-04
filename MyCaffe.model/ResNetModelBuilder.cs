@@ -12,7 +12,7 @@ namespace MyCaffe.model
     /// <summary>
     /// The ResNetModelBuilder adds the extra layers to a 'base' model for the ResNet model.
     /// </summary>
-    public class ResNetModelBuilder : ModelBuilder
+    public class ResNetModelBuilder<T> : ModelBuilder<T>
     {
         int m_nGpuID = 0;
         List<int> m_rgGpuID = new List<int>();

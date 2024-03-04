@@ -15,7 +15,7 @@ namespace MyCaffe.model
     /// @see [octconv.pytorch](https://github.com/d-li14/octconv.pytorch) by d-li14 on GitHub, 2020, distributed
     /// under Apache 2.0 License https://github.com/d-li14/octconv.pytorch/blob/master/LICENSE
     /// </remarks>
-    public class ResNetOctConvModelBuilder : ModelBuilder
+    public class ResNetOctConvModelBuilder<T> : ModelBuilder<T>
     {
         int m_nGpuID = 0;
         List<int> m_rgGpuID = new List<int>();

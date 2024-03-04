@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.param.ssd;
 using System;
@@ -15,7 +16,7 @@ namespace MyCaffe.model
     /// <summary>
     /// The ModelBuilder is an abstract class that is overridden by a base class used to programically build new models.
     /// </summary>
-    public abstract class ModelBuilder
+    public abstract class ModelBuilder<T>
     {
         /// <summary>
         /// Specifies the base directory that contains the data and models.
@@ -60,6 +61,18 @@ namespace MyCaffe.model
             m_strBaseDir = strBaseDir.TrimEnd('\\', '/');
             m_net = net;
             m_solver = solver;
+        }
+
+        /// <summary>
+        /// Load the model weights from the specified model file, using the specified format.
+        /// </summary>
+        /// <param name="col">Specifies the learnable parameters to load.</param>
+        /// <param name="strModelFile">Specifies the model file name.</param>
+        /// <param name="strFmt">Specifies the model format.</param>
+        /// <returns>A byte array of the weights in MyCaffe format is returned and can be loaded using the MyCaffe.UpdateWeights method.</returns>
+        public virtual byte[] LoadWeights(BlobCollection<T> col, string strModelFile, string strFmt)
+        {
+            return null;
         }
 
         /// <summary>

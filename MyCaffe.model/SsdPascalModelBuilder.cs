@@ -12,7 +12,7 @@ namespace MyCaffe.model
     /// <summary>
     /// The SsdPascalModelBuilder adds the extra layers to a 'base' model for the Pascal model used with SSD.
     /// </summary>
-    public class SsdPascalModelBuilder : ModelBuilder
+    public class SsdPascalModelBuilder<T> : ModelBuilder<T>
     {
         int m_nGpuID = 0;
         List<int> m_rgGpuID = new List<int>();
