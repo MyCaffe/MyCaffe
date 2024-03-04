@@ -190,7 +190,6 @@ public:
 
 	inline long reshape(int nN, int nC, int nH, int nW)
 	{
-		long lErr;
 		m_nN = nN;
 		m_nC = nC;
 		m_nH = nH;
