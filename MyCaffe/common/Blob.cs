@@ -1927,7 +1927,21 @@ namespace MyCaffe.common
             
             return rg[0];
         }
-       
+
+        /// <summary>
+        /// Returns the data at a given flat index within the Blob.
+        /// </summary>
+        /// <param name="nIdx">Specifies the flat index in the range [0,count()-1].</param>
+        /// <returns>The data item at the index is returned.</returns>
+        public float GetDataAsFloat(int nIdx)
+        {
+            T[] rg = m_cuda.get(count(), gpu_data, nIdx);
+            if (rg.Length == 0)
+                throw new Exception("No data at index = " + nIdx.ToString());
+
+            return Utility.ConvertValF<T>(rg[0]);
+        }
+
         /// <summary>
         /// Returns the diff at a given flat index within the Blob.
         /// </summary>
@@ -4199,6 +4213,67 @@ namespace MyCaffe.common
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Create and return the handle to the BlobLoader.
+        /// </summary>
+        /// <param name="strFile">Specifies the large weight file to load data from.</param>
+        /// <param name="lStartOffsetInBytes">Optionally, specifies the starting offset to use (default = 0).</param>
+        /// <returns>The handle to the Blob Loader is returned.</returns>
+        public long CreateBlobLoader(string strFile, long lStartOffsetInBytes = 0)
+        {
+            long hBlobLoader = m_cuda.CreateBlobLoader(strFile);
+            m_cuda.BlobLoaderResetOffset(hBlobLoader, lStartOffsetInBytes);
+
+            return hBlobLoader;
+        }
+
+        /// <summary>
+        /// Free the BlobLoader handle.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies the blob loader to free.</param>
+        public void FreeBlobLoader(long hBlobLoader)
+        {
+            m_cuda.FreeBlobLoader(hBlobLoader);
+        }   
+
+        /// <summary>
+        /// Load data using the BlobLoader.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies the handle of the BlobLoader to load data from.</param>
+        /// <param name="lCount">Specifies the number of items to load.</param>
+        /// <param name="lLocalItemOffset">Specifies the local offset (specified in items) from the current internal offset.</param>
+        /// <param name="bLoadDiff">Optionally, specifies to load the diff (default = false).</param>
+        public void LoadFromBlobLoader(long hBlobLoader, long lCount, long lLocalItemOffset, bool bLoadDiff = false)
+        {
+            m_log.CHECK_EQ(lCount, m_nCount, "The count must match the blob count.");
+            long hData = (bLoadDiff) ? mutable_gpu_diff : mutable_gpu_data;
+            m_cuda.LoadBlob(hBlobLoader, m_nCount, hData, lLocalItemOffset);
+        }
+
+        /// <summary>
+        /// Add to the current blob loader offset.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies the handle to the blob loader.</param>
+        /// <param name="lOffsetInItems">Specifies the offset in items to add to the internal offset used.</param>
+        public void AddToBlobLoaderOffset(long hBlobLoader, long lOffsetInItems)
+        {
+            if (lOffsetInItems < 0)
+                throw new Exception("Invalid offset in bytes, must be >= 0.");
+            m_cuda.BlobLoaderAddToOffset(hBlobLoader, lOffsetInItems);
+        }
+
+        /// <summary>
+        /// Reset the internal blob loader offset.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies the handle to the blob loader.</param>
+        /// <param name="lOffsetInBytes">Optionally, specifies the offset in bytes to use as the starting offset (default = 0).</param>
+        public void ResetBlobLoaderOffset(long hBlobLoader, long lOffsetInBytes = 0)
+        {
+            if (lOffsetInBytes < 0)
+                throw new Exception("Invalid offset in bytes, must be >= 0.");
+            m_cuda.BlobLoaderResetOffset(hBlobLoader, lOffsetInBytes);
         }
     }
 }

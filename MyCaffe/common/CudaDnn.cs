@@ -1501,6 +1501,12 @@ namespace MyCaffe.common
             CUDA_ROPE_FWD = 982,
             CUDA_ROPE_BWD = 983,
 
+            CUDA_CREATE_BLOBLOADER = 990,
+            CUDA_FREE_BLOBLOADER = 991,
+            CUDA_BLOBLOADER_LOAD = 992,
+            CUDA_BLOBLOADER_RESETOFFSET = 993,
+            CUDA_BLOBLOADER_ADDTOOFFSET = 994,
+
             CUDA_DEBUG = 1000
         }
 
@@ -6139,7 +6145,7 @@ namespace MyCaffe.common
 
 
         /// <summary>
-        /// Create the Cuda version of Rope
+        /// Create the Cuda version of RoPE
         /// </summary>
         /// <param name="nSharedIndex">Specifies the shared index used so that all layers use the same RoPE. To use a unique RoPE set this value to -1.</param>
         /// <param name="nGpuID">Specifies the GPUID to use.</param>
@@ -6149,7 +6155,7 @@ namespace MyCaffe.common
         /// <param name="nHeads">Specifies the number of heads used.</param>
         /// <param name="nDim">Specifies the spatial dimentions of the inner data.</param>
         /// <param name="fTheta">Optionally, specifies the theta value used in the rope calculation (default = 10000f).</param>
-        /// <returns>The handle to the LayerNorm configuration.  This handle is used with all other layer norm functions.</returns>
+        /// <returns>The handle to the RoPE configuration.  This handle is used with all other RoPE functions.</returns>
         public long CreateRope(int nSharedIndex, int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, float fTheta = 10000.0f)
         {
             if (m_dt == DataType.DOUBLE)
@@ -6205,6 +6211,79 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hXdata, hYdiff, hXdiff));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_BWD, null, m_param.AsLong(hRope, n, hXdata, hYdiff, hXdiff));
+        }
+
+        /// <summary>
+        /// Create the Cuda Blob loader used to load Blobs from large weight files.
+        /// </summary>
+        /// <param name="strFile">Specifies the weight file to load.</param>
+        /// <returns>The handle to the BlobLoader is returned.  This handle is used with all other blob loader functions.</returns>
+        public long CreateBlobLoader(string strFile)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_BLOBLOADER, null, strFile);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_BLOBLOADER, null, strFile);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free the instance of the BlobLoader GPU support.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies the handle to the BlobLoader instance.</param>
+        public void FreeBlobLoader(long hBlobLoader)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_BLOBLOADER, m_param.AsDouble(hBlobLoader));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_BLOBLOADER, m_param.AsFloat(hBlobLoader));
+        }
+
+        /// <summary>
+        /// Load a Blob GPU memory using the BlobLoader by reading the previously loaded file starting at the lOffset number of bytes and
+        /// reading nCount number of items into the GPU memory at hDst.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies a handle to the Blob loader.</param>
+        /// <param name="lCount">Specifies the number of items to read.</param>
+        /// <param name="hDst">Specifies the destination memory for the data read.</param>
+        /// <param name="lLocalOffsetInBytes">Specifies the local offset in bytes that is added to the internal offset, but does not alter the internal offset index.</param>
+        public void LoadBlob(long hBlobLoader, long lCount, long hDst, long lLocalOffsetInBytes)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_LOAD, null, m_param.AsLong(hBlobLoader, lCount, hDst, lLocalOffsetInBytes));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_LOAD, null, m_param.AsLong(hBlobLoader, lCount, hDst, lLocalOffsetInBytes));
+        }
+
+        /// <summary>
+        /// Reset the starting offset used to read the underlying file int the Blob.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies a handle to the Blob loader.</param>
+        /// <param name="lOffsetInBytes">Specifies the starting offset in bytes where the next LoadBlob will start reading from the file.</param>
+        public void BlobLoaderResetOffset(long hBlobLoader, long lOffsetInBytes)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_RESETOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInBytes));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_RESETOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInBytes));
+        }
+
+        /// <summary>
+        /// Adds to the starting offset used to read the underlying file int the Blob.
+        /// </summary>
+        /// <param name="hBlobLoader">Specifies a handle to the Blob loader.</param>
+        /// <param name="lOffsetInItems">Specifies the amount to add to the current offset counted in items.</param>
+        public void BlobLoaderAddToOffset(long hBlobLoader, long lOffsetInItems)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_ADDTOOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInItems));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_ADDTOOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInItems));
         }
 
         #endregion
