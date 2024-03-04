@@ -80,7 +80,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_CreateSolver()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101);
 
             try
             {
@@ -98,7 +98,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_CreateDeployModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101);
 
             try
             {
@@ -116,7 +116,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_CreateTrainingModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101);
 
             try
             {
@@ -134,7 +134,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_CreateSolver()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152);
 
             try
             {
@@ -152,7 +152,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_CreateDeployModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152);
 
             try
             {
@@ -170,7 +170,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_CreateTrainingModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152);
 
             try
             {
@@ -188,7 +188,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet56_Siamese_CreateSolver()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET56, true);
 
             try
             {
@@ -206,7 +206,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet56_Siamese_CreateDeployModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET56, true);
 
             try
             {
@@ -224,7 +224,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet56_Siamease_CreateTrainingModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET56, true);
 
             try
             {
@@ -242,7 +242,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_Siamese_CreateSolver()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101, true);
 
             try
             {
@@ -260,7 +260,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_Siamese_CreateDeployModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101, true);
 
             try
             {
@@ -278,7 +278,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet101_Siamease_CreateTrainingModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET101, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET101, true);
 
             try
             {
@@ -296,7 +296,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_Siamese_CreateSolver()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152, true);
 
             try
             {
@@ -314,7 +314,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_Siamease_CreateDeployModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152, true);
 
             try
             {
@@ -332,7 +332,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestResNet152_Siamese_CreateTrainingModel()
         {
-            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET152, true);
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL.RESNET152, true);
 
             try
             {
@@ -350,7 +350,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestOctConvResNet26_CreateTrainingModel()
         {
-            ResNetOctConvModelBuilderTest test = new ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder.MODEL.RESNET26);
+            ResNetOctConvModelBuilderTest test = new ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder<float>.MODEL.RESNET26);
 
             try
             {
@@ -368,7 +368,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestOctConvResNet26_CreateSolver()
         {
-            ResNetOctConvModelBuilderTest test = new ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder.MODEL.RESNET26);
+            ResNetOctConvModelBuilderTest test = new ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder<float>.MODEL.RESNET26);
 
             try
             {
@@ -386,7 +386,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestLlamaModel_CreateTrainingModel()
         {
-            LlamaModelBuilderTest test = new LlamaModelBuilderTest(LlamaModelBuilder.MODEL.LLAMA_7B);
+            LlamaModelBuilderTest test = new LlamaModelBuilderTest("Llama7B");
 
             try
             {
@@ -406,7 +406,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestLlamaModel_CreateSolver()
         {
-            LlamaModelBuilderTest test = new LlamaModelBuilderTest(LlamaModelBuilder.MODEL.LLAMA_7B);
+            LlamaModelBuilderTest test = new LlamaModelBuilderTest("Llama7B");
 
             try
             {
@@ -433,7 +433,7 @@ namespace MyCaffe.test
 
     class ResNetModelBuilderTest : TestBase
     {
-        public ResNetModelBuilderTest(ResNetModelBuilder.MODEL model, bool bSiamese = false, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+        public ResNetModelBuilderTest(ResNetModelBuilder<float>.MODEL model, bool bSiamese = false, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
             : base("ResNet Model Builder Test" + ((bSiamese) ? " SIAMESE" : "") + " " + model.ToString(), TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
@@ -459,33 +459,33 @@ namespace MyCaffe.test
 
     class ResNetSiameseModelBuilderTest<T> : ModelBuilderTest<T>
     {
-        ResNetModelBuilder.MODEL m_model;
+        ResNetModelBuilder<T>.MODEL m_model;
 
         public ResNetSiameseModelBuilderTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
         {
-            if (strName.Contains(ResNetModelBuilder.MODEL.RESNET101.ToString()))
-                m_model = ResNetModelBuilder.MODEL.RESNET101;
-            else if (strName.Contains(ResNetModelBuilder.MODEL.RESNET152.ToString()))
-                m_model = ResNetModelBuilder.MODEL.RESNET152;
+            if (strName.Contains(ResNetModelBuilder<T>.MODEL.RESNET101.ToString()))
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET101;
+            else if (strName.Contains(ResNetModelBuilder<T>.MODEL.RESNET152.ToString()))
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET152;
             else
-                m_model = ResNetModelBuilder.MODEL.RESNET56;
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET56;
         }
 
-        protected override ModelBuilder create()
+        protected override ModelBuilder<T> create()
         {
             List<Tuple<int, bool>> rgIP = new List<Tuple<int, bool>>();
             rgIP.Add(new Tuple<int, bool>(1024, false));
             rgIP.Add(new Tuple<int, bool>(512, true));
             rgIP.Add(new Tuple<int, bool>(10, false));
-            int nBatch = (m_model == ResNetModelBuilder.MODEL.RESNET56) ? 32 : (m_model == ResNetModelBuilder.MODEL.RESNET101) ? 16 : 12;
-            return new ResNetModelBuilder(m_strBaseDir, "CIFAR-10", 3, true, rgIP, true, false, m_model, nBatch, nBatch);
+            int nBatch = (m_model == ResNetModelBuilder<T>.MODEL.RESNET56) ? 32 : (m_model == ResNetModelBuilder<T>.MODEL.RESNET101) ? 16 : 12;
+            return new ResNetModelBuilder<T>(m_strBaseDir, "CIFAR-10", 3, true, rgIP, true, false, m_model, nBatch, nBatch);
         }
     }
 
     class ResNetOctConvModelBuilderTest : TestBase
     {
-        public ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder.MODEL model, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+        public ResNetOctConvModelBuilderTest(ResNetOctConvModelBuilder<float>.MODEL model, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
             : base("ResNet OctConv Model Builder Test" + " " + model.ToString(), TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
@@ -501,42 +501,42 @@ namespace MyCaffe.test
 
     class ResNetModelBuilderTest<T> : ModelBuilderTest<T>
     {
-        ResNetModelBuilder.MODEL m_model;
+        ResNetModelBuilder<T>.MODEL m_model;
 
         public ResNetModelBuilderTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
         {
-            if (strName.Contains(ResNetModelBuilder.MODEL.RESNET152.ToString()))
-                m_model = ResNetModelBuilder.MODEL.RESNET152;
-            else if (strName.Contains(ResNetModelBuilder.MODEL.RESNET101.ToString()))
-                m_model = ResNetModelBuilder.MODEL.RESNET101;
+            if (strName.Contains(ResNetModelBuilder<T>.MODEL.RESNET152.ToString()))
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET152;
+            else if (strName.Contains(ResNetModelBuilder<T>.MODEL.RESNET101.ToString()))
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET101;
             else
-                m_model = ResNetModelBuilder.MODEL.RESNET56;
+                m_model = ResNetModelBuilder<T>.MODEL.RESNET56;
         }
 
-        protected override ModelBuilder create()
+        protected override ModelBuilder<T> create()
         {
             List<Tuple<int, bool>> rgIP = new List<Tuple<int, bool>>();
             rgIP.Add(new Tuple<int, bool>(10, false));
-            return new ResNetModelBuilder(m_strBaseDir, "CIFAR-10", 3, false, rgIP, true, false, m_model);
+            return new ResNetModelBuilder<T>(m_strBaseDir, "CIFAR-10", 3, false, rgIP, true, false, m_model);
         }
     }
 
     class ResNetOctConvModelBuilderTest<T> : ModelBuilderTest<T>
     {
-        ResNetOctConvModelBuilder.MODEL m_model;
+        ResNetOctConvModelBuilder<T>.MODEL m_model;
 
         public ResNetOctConvModelBuilderTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
         {
-            m_model = ResNetOctConvModelBuilder.MODEL.RESNET26;
+            m_model = ResNetOctConvModelBuilder<T>.MODEL.RESNET26;
         }
 
-        protected override ModelBuilder create()
+        protected override ModelBuilder<T> create()
         {
             List<Tuple<int, bool>> rgIP = new List<Tuple<int, bool>>();
             rgIP.Add(new Tuple<int, bool>(10, false));
-            return new ResNetOctConvModelBuilder(m_strBaseDir, "CIFAR-10", rgIP, m_model);
+            return new ResNetOctConvModelBuilder<T>(m_strBaseDir, "CIFAR-10", rgIP, m_model);
         }
     }
 
@@ -565,43 +565,46 @@ namespace MyCaffe.test
             m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
         }
 
-        protected override ModelBuilder create()
+        protected override ModelBuilder<T> create()
         {
-            return new SsdPascalModelBuilder(m_strBaseDir);
+            return new SsdPascalModelBuilder<T>(m_strBaseDir);
         }
     }
 
     class LlamaModelBuilderTest : TestBase
     {
-        LlamaModelBuilder.MODEL m_model;
+        string m_strModel = "Llama7B";
 
-        public LlamaModelBuilderTest(LlamaModelBuilder.MODEL model)
+        public LlamaModelBuilderTest(string strModel)
             : base("Llama 7B Model Builder Test", TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine.DEFAULT)
         {
-            m_model = model;
+            m_strModel = strModel;
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new LlamaModelBuilderTest<double>(strName, nDeviceID, m_model, engine);
+                return new LlamaModelBuilderTest<double>(strName, nDeviceID, m_strModel, engine);
             else
-                return new LlamaModelBuilderTest<float>(strName, nDeviceID, m_model, engine);
+                return new LlamaModelBuilderTest<float>(strName, nDeviceID, m_strModel, engine);
         }
     }
 
     class LlamaModelBuilderTest<T> : ModelBuilderTest<T>
     {
-        public LlamaModelBuilderTest(string strName, int nDeviceID, LlamaModelBuilder.MODEL model, EngineParameter.Engine engine)
+        string m_strModel = "Llama7B";
+
+        public LlamaModelBuilderTest(string strName, int nDeviceID, string strModel, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
         {
             m_engine = engine;
             m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
+            m_strModel = strModel;
         }
 
-        protected override ModelBuilder create()
+        protected override ModelBuilder<T> create()
         {
-            return new LlamaModelBuilder(m_strBaseDir, LlamaModelBuilder.MODEL.LLAMA_7B);
+            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
         }
     }
 
@@ -623,7 +626,7 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        protected abstract ModelBuilder create();
+        protected abstract ModelBuilder<T> create();
 
         protected void save(string strModel, string strSolver, bool bDeploy)
         {
@@ -644,13 +647,13 @@ namespace MyCaffe.test
             }
             else if (m_strName.Contains("ResNet"))
             {
-                ResNetModelBuilder.MODEL model = ResNetModelBuilder.MODEL.RESNET101;
+                ResNetModelBuilder<T>.MODEL model = ResNetModelBuilder<T>.MODEL.RESNET101;
                 if (m_strName.Contains("152"))
-                    model = ResNetModelBuilder.MODEL.RESNET152;
+                    model = ResNetModelBuilder<T>.MODEL.RESNET152;
                 else if (m_strName.Contains("101"))
-                    model = ResNetModelBuilder.MODEL.RESNET101;
+                    model = ResNetModelBuilder<T>.MODEL.RESNET101;
                 else
-                    model = ResNetModelBuilder.MODEL.RESNET56;
+                    model = ResNetModelBuilder<T>.MODEL.RESNET56;
 
                 // NOTE: These models are big and can require 40+ GB of Video Memory depending on the batch sizes used.
                 if (m_strName.Contains("SIAMESE"))
@@ -686,7 +689,7 @@ namespace MyCaffe.test
 
         public void TestCreateSolver()
         {
-            ModelBuilder builder = create();
+            ModelBuilder<T> builder = create();
 
             SolverParameter solverParam = builder.CreateSolver();
             RawProto proto = solverParam.ToProto("root");
@@ -700,7 +703,7 @@ namespace MyCaffe.test
 
         public void TestCreateTrainingModel()
         {
-            ModelBuilder builder = create();
+            ModelBuilder<T> builder = create();
 
             NetParameter net_param = builder.CreateModel();
             net_param.enable_memory_stats = true;
@@ -718,18 +721,28 @@ namespace MyCaffe.test
             string strSolver = protoSolver.ToString();
 
             SettingsCaffe settings = new SettingsCaffe();
+            settings.GpuIds = "1";
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
 
-            save(strNet, strSolver, false);
+            try
+            {
+                save(strNet, strSolver, false);
 
-            mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
-            mycaffe.Dispose();
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+
+                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\models\\llama2_7b_chat.bin";
+                builder.LoadWeights(mycaffe.GetInternalNet(Phase.TRAIN).learnable_parameters, strModelPath, "KPTH1");
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
         }
 
         public void TestCreateDeployModel()
         {
-            ModelBuilder builder = create();
+            ModelBuilder<T> builder = create();
 
             NetParameter net_param = builder.CreateDeployModel();
             RawProto proto = net_param.ToProto("root");
