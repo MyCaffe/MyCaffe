@@ -720,8 +720,12 @@ namespace MyCaffe.test
             RawProto protoSolver = solver.ToProto("root");
             string strSolver = protoSolver.ToString();
 
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            int nDevCount = cuda.GetDeviceCount();
+            cuda.Dispose();
+
             SettingsCaffe settings = new SettingsCaffe();
-            settings.GpuIds = "1";
+            settings.GpuIds = (nDevCount > 1) ? "1" : "0";
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
 
