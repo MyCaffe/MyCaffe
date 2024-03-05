@@ -96,9 +96,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory.
+        /// When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory. NOTE: This setting should only be enabled when only LoRA weights are being trained with all other layers frozen."
         /// </summary>
-        [Description("When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory.")]
+        [Description("When using enabled, the network will only load the Lora model and not the base model into the learnable parameters that are updated saving memory. NOTE: This setting should only be enabled when only LoRA weights are being trained with all other layers frozen.")]
         public bool enable_lora_only_load
         {
             get { return m_bEnableLoraOnlyLoad; }
