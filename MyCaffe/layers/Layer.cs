@@ -351,8 +351,9 @@ namespace MyCaffe.layers
         /// <param name="softmax">Specifies the softmax layer used to post process the logits.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
+        /// <param name="bSkipDetokenize">Optionally, skip detokenizing - set to true when detokenizing the entire set of tokens at the end (used with unicode tokens).</param>
         /// <returns>The array of word string, index, propabilities and end of sequence found boolean corresponding to the softmax output is returned.</returns>
-        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1, bool bSkipDetokenize = false)
         {
             return null;
         }
