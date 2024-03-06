@@ -1873,13 +1873,18 @@ namespace MyCaffe.common
         /// <summary>
         /// Reshape all layers from the bottom to the top.
         /// </summary>
+        /// <param name="nStartLayer">Specifies the starting layer in the reshape.</param>
+        /// <param name="nEndLayer">Specifies the last layer included in the reshape, or -1 to reshape through all remaining layers.</param>
         /// <remarks>
         /// This is useful to propagate changes to layer sizes without running
         /// a forward pass, e.g. to compute output feature size.
         /// </remarks>
-        public void Reshape()
+        public void Reshape(int nStartLayer = 0, int nEndLayer = -1)
         {
-            for (int i = 0; i < m_rgLayers.Count; i++)
+            if (nEndLayer == -1)
+                nEndLayer = m_rgLayers.Count-1;
+
+            for (int i = nStartLayer; i <= nEndLayer; i++)
             {
                 m_rgLayers[i].SetNetReshapeRequest();
                 m_rgLayers[i].Reshape(m_rgcolBottomVecs[i], m_rgcolTopVecs[i]);
