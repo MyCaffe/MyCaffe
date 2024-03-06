@@ -14,6 +14,9 @@ using MyCaffe.data;
 using MyCaffe.layers.beta;
 using MyCaffe.model;
 using System.IO;
+using MyCaffe.param.gpt;
+using MyCaffe.layers.gpt;
+using System.Diagnostics;
 
 /// <summary>
 /// Testing the Model Builders.
@@ -705,7 +708,9 @@ namespace MyCaffe.test
         {
             ModelBuilder<T> builder = create();
 
-            NetParameter net_param = builder.CreateModel();
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
+            NetParameter net_param = builder.CreateModel(prop);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -736,7 +741,66 @@ namespace MyCaffe.test
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
                 string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\models\\llama2_7b_chat.bin";
-                builder.LoadWeights(mycaffe.GetInternalNet(Phase.TRAIN).learnable_parameters, strModelPath, "KPTH1");
+                if (!File.Exists(strModelPath))
+                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH1");
+
+                TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
+
+                PropertySet input = new PropertySet();
+                string strPrompt = "What is your name?";
+                int nMaxNewTokens = 50;
+                Blob<T> blobTokdata = net.FindBlob("tokdata");
+                Blob<T> blobLogits = net.FindBlob("logits");
+                int nCurIdx = 0;
+                float fTemperature = 0.1f;
+                Stopwatch sw = new Stopwatch();
+
+                int nSeqLen = 0;
+                input.SetProperty("InputData", strPrompt);
+                BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
+                blobTokdata.CopyFrom(colBtm[0], false, true);
+                List<float> rgTokenIds = new List<float>();
+
+                int[] rgShape = new int[2] { 1, 1 };
+
+                rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));   
+
+                sw.Start();
+                double dfTotalTime = 0;
+
+                for (int i = 0; i < nMaxNewTokens; i++)
+                {                    
+                    net.ForwardFromTo(3, 37);
+                    blobLogits.scale_data(1.0f / fTemperature);
+
+                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                    for (int j = 0; j < res.Count; j++)
+                    {
+                        rgTokenIds.Add(res[j].Item2);
+                    }
+
+                    while (rgTokenIds.Count > nSeqLen)
+                    {
+                        rgTokenIds.RemoveAt(0);
+                    }
+
+                    rgShape[1] = rgTokenIds.Count;
+                    blobTokdata.Reshape(rgShape);
+                    blobTokdata.mutable_cpu_data = convert(rgTokenIds.ToArray());
+
+                    sw.Stop();
+                    dfTotalTime += sw.Elapsed.TotalMilliseconds;
+
+                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i+1)).ToString("N3") + " ms.");
+
+                    sw.Restart();
+                }
+
+                string strOutput = tok.Detokenize(rgTokenIds.ToArray(), 0, rgTokenIds.Count);
+                m_log.WriteLine("Output: " + strOutput);
             }
             finally
             {
