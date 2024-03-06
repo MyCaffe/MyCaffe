@@ -240,10 +240,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Testing the BPE tokenizer.
+        /// </summary>
+        /// <remarks>
+        /// @see [GitHub belladoreai/llama-tokenizer.js](https://github.com/belladoreai/llama-tokenizer-js/tree/master) by belladore.ai, 2023, GitHub.
+        /// Distributed under the MIT license at https://github.com/belladoreai/llama-tokenizer-js/blob/master/LICENSE.md
+        /// </remarks>
         public void TestBpeTokenizer()
         {
-            string strVocabPath = "C:\\temp\\projects\\llama2\\llama2\\models\\meta_hf\\llama2_7b\\tokenizer.model";
-            VocabularyBytePairEncoding bpe = new VocabularyBytePairEncoding(strVocabPath);
+            VocabularyBytePairEncoding bpe = new VocabularyBytePairEncoding();
 
             string strData = "Kicking the Llama's arse! ☺";
             List<int> rgTokens = bpe.Tokenize(strData);
