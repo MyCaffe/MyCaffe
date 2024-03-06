@@ -527,10 +527,11 @@ namespace MyCaffe.layers.gpt
         /// <param name="softmax">Specifies the softmax layer.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Specifies the TopK max items of the logits to use, or 0 to ignore.</param>
+        /// <param name="bSkipDetokenize">Optionally, skip detokenizing - set to true when detokenizing the entire set of tokens at the end (used with unicode tokens).</param>
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1, bool bSkipDetokenize = false)
         {
             float[] rgData = convertF(blobLogits.mutable_cpu_data);
             int nVocabCount = blobLogits.count(nAxis);
