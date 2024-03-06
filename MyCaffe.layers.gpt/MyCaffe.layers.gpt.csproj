@@ -66,11 +66,17 @@
     <Compile Include="layers.gpt\NLLLossLayer.cs" />
     <Compile Include="layers.gpt\TokenizedDataPairsLayer.cs" />
     <Compile Include="layers.gpt\TransformerBlockLayer.cs" />
+    <Compile Include="layers.gpt\VocabularyBytePairEncoding.cs" />
     <Compile Include="layers.gpt\VocabularySentencePiece.cs" />
     <Compile Include="layers.gpt\VocabularyWord.cs" />
     <Compile Include="layers.gpt\VocabularyCharacter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="layers.gpt\TokenizedDataLayer.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -92,6 +98,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />
+    <None Include="Resources\llama_vocab_base64.txt" />
+    <None Include="Resources\llama_merges_binary.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
