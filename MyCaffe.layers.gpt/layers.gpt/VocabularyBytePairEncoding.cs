@@ -26,8 +26,7 @@ namespace MyCaffe.layers.gpt.layers.gpt
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="strVocabPath">Specifies the LlaMA 'tokenizer.model' file downloaded with the LlaMA model from Meta.</param>
-        public VocabularyBytePairEncoding(string strVocabPath)
+        public VocabularyBytePairEncoding()
         {
             m_rgVocabById = decodeVocabulary(Properties.Resources.llama_vocab_base64);
             foreach (KeyValuePair<int, string> kvp in m_rgVocabById)
@@ -129,11 +128,10 @@ namespace MyCaffe.layers.gpt.layers.gpt
         /// Not used with the LLaMA vocabulary.
         /// </summary>
         /// <param name="strData">Not used.</param>
-        /// <returns>Not used.</returns>
-        /// <exception cref="NotImplementedException">The NotImplemented exception is thrown when called.</exception>
+        /// <returns>The current vocabulary Count is returned.</returns>
         public int BuildFromString(string strData)
         {
-            throw new NotImplementedException();
+            return Count;
         }
 
         /// <summary>
