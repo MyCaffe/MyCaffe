@@ -144,8 +144,9 @@ namespace MyCaffe.model
         /// <summary>
         /// Create the training model.
         /// </summary>
+        /// <param name="prop">Specifies optional properties.</param>
         /// <param name="bDeploy">Optionally, specifies to create a deployment model (default = false).</param>
-        public override NetParameter CreateModel(bool bDeploy = false)
+        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
         {
             Phase phase = (bDeploy) ? Phase.RUN : Phase.TRAIN;
 
@@ -166,7 +167,16 @@ namespace MyCaffe.model
                     break;
             }
 
-            string strModel = buildModel(m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase);
+            TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
+
+            if (prop != null)
+            {
+                int nVocabType = prop.GetPropertyAsInt("VocabularyType", -1);
+                if (nVocabType != -1)
+                    vocabType = (TokenizedDataParameter.VOCABULARY_TYPE)nVocabType;
+            }
+
+            string strModel = buildModel(vocabType, m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase);
 
             return m_net;
         }
@@ -176,7 +186,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(true);
+            return CreateModel(null, true);
         }
 
         /// <summary>
@@ -375,14 +385,15 @@ namespace MyCaffe.model
         }
 
 
-        private string buildModel(NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase)
+        private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase)
         {
             net.enable_lora = true;
             net.enable_lora_only_load = true;
 
-            LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA);
+            LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA, "data");
             tok.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
-            tok.tokenized_data_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
+            tok.tokenized_data_param.sample_method = TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY;
+            tok.tokenized_data_param.vocabulary_type = vocabType;
             tok.tokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\input.txt";
             tok.tokenized_data_param.batch_size = nBatch;
             tok.tokenized_data_param.block_size = nBlockSize;
