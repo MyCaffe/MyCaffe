@@ -181,17 +181,17 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Returns the special BOS character.
         /// </summary>
-        public char BOS
+        public int BOS
         {
-            get { return (char)SPECIAL_TOKENS.BOS; }
+            get { return (int)SPECIAL_TOKENS.BOS; }
         }
 
         /// <summary>
         /// Returns the special EOS character.
         /// </summary>
-        public char EOS
+        public int EOS
         {
-            get { return (char)SPECIAL_TOKENS.EOS; }
+            get { return (int)SPECIAL_TOKENS.EOS; }
         }
 
         /// <summary>

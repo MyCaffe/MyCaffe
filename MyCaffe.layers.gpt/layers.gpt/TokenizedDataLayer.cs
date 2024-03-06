@@ -714,7 +714,7 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Return the special begin of sequence character.
         /// </summary>
-        public override char BOS
+        public override int BOS
         { 
             get { return m_vocab.BOS; }
         }
@@ -722,7 +722,7 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Return the special end of sequence character.
         /// </summary>
-        public override char EOS
+        public override int EOS
         {
             get { return m_vocab.EOS; }
         }

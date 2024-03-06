@@ -19,11 +19,11 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Returns the special BOS character.
         /// </summary>
-        char BOS { get; }
+        int BOS { get; }
         /// <summary>
         /// Returns the special EOS character.
         /// </summary>
-        char EOS { get; }
+        int EOS { get; }
         /// <summary>
         /// Add a new string to the vocabulary.
         /// </summary>
@@ -194,10 +194,10 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Return the special begin of sequence character.
         /// </summary>
-        public abstract char BOS { get; }
+        public abstract int BOS { get; }
         /// <summary>
         /// Return the special end of sequence character.
         /// </summary>
-        public abstract char EOS { get; }
+        public abstract int EOS { get; }
     }
 }
