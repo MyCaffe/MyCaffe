@@ -47,8 +47,12 @@ namespace MyCaffe.param.gpt
             /// </summary>
             SENTENCEPIECE,
             /// <summary>
-            /// Specifies to use a custom vocabulary.
+            /// Specifies to use the Byte-Pair Encoding (BPE) vocabulary supported by the LlaMA2 models.
             /// </summary>
+            LLAMA2,
+            /// <summary>
+            /// Specifies to use a custom vocabulary.
+            /// </summary>            
             CUSTOM
         }
 
@@ -286,6 +290,8 @@ namespace MyCaffe.param.gpt
                     p.vocabulary_type = VOCABULARY_TYPE.WORD;
                 else if (strVal == VOCABULARY_TYPE.SENTENCEPIECE.ToString())
                     p.vocabulary_type = VOCABULARY_TYPE.SENTENCEPIECE;
+                else if (strVal == VOCABULARY_TYPE.LLAMA2.ToString())
+                    p.vocabulary_type = VOCABULARY_TYPE.LLAMA2;
                 else if (strVal == VOCABULARY_TYPE.CUSTOM.ToString())
                     p.vocabulary_type = VOCABULARY_TYPE.CUSTOM;
                 else

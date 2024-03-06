@@ -10,6 +10,7 @@ using System.IO;
 using MyCaffe.db.image;
 using MyCaffe.param.gpt;
 using System.Net;
+using MyCaffe.layers.gpt.layers.gpt;
 
 namespace MyCaffe.layers.gpt
 {
@@ -324,20 +325,15 @@ namespace MyCaffe.layers.gpt
             if (string.IsNullOrEmpty(strInput))
                 strInput = " ";
 
-            int[] rgShape = new int[2];
-            rgShape[0] = 1;
-            rgShape[1] = strInput.Length;
-
-            blobIdx.Reshape(rgShape);
 
             List<int> rgTokens = m_data.Tokenize(strInput, false, false);
-            float[] rgInput = new float[rgTokens.Count];
+            float[] rgInput = rgTokens.Select(tok => (float)tok).ToArray();
 
-            for (int i = 0; i < strInput.Length; i++)
-            {
-                rgInput[i] = rgTokens[i];
-            }
+            int[] rgShape = new int[2];
+            rgShape[0] = 1;
+            rgShape[1] = rgInput.Length;
 
+            blobIdx.Reshape(rgShape);
             blobIdx.mutable_cpu_data = convert(rgInput);
 
             return new BlobCollection<T>() { blobIdx };
@@ -379,10 +375,11 @@ namespace MyCaffe.layers.gpt
         /// <param name="softmax">Specifies the softmax layer.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Specifies the TopK max items of the logits to use, or 0 to ignore.</param>
+        /// <param name="bSkipDetokenize">Specifies to skip detokenizing.</param>
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1, bool bSkipDetokenize = false)
         {
             float[] rgData = convertF(blobLogits.mutable_cpu_data);
             int nVocabCount = blobLogits.count(nAxis);
@@ -446,12 +443,25 @@ namespace MyCaffe.layers.gpt
             softmax.Forward(colBottom, colTop);
 
             float[] rgProb = convertF(m_blobY.mutable_cpu_data);
-            int nCharIdx = (m_param.tokenized_data_param.sample_method == TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY) ? sample(rgProb) : argmax(rgProb);
+            int nTokenId = (m_param.tokenized_data_param.sample_method == TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY) ? sample(rgProb) : argmax(rgProb);
 
             string str = "";
-            str += m_data.Detokenize(nCharIdx, true, true);
 
-            return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
+            if (!bSkipDetokenize)
+                str += m_data.Detokenize(nTokenId, true, true);
+
+            return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nTokenId, 0) };
+        }
+
+        /// <summary>
+        /// Detokenize a set of tokens.
+        /// </summary>
+        /// <param name="rgTokenIds">Specifies the tokens to detokenize into a string.</param>
+        /// <returns>The detokenized string is returned.</returns>
+        public string Detokenize(List<int> rgTokenIds)
+        {
+            float[] rgf = rgTokenIds.Select(p => (float)p).ToArray();
+            return m_data.Detokenize(rgf, 0, rgf.Length, true, true);
         }
 
         private int argmax(float[] rgData)
@@ -545,10 +555,12 @@ namespace MyCaffe.layers.gpt
                 }
             }
 
-            if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.WORD)
+            if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2)
+                m_vocab = new VocabularyBytePairEncoding();
+            else if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.WORD)
                 m_vocab = new VocabularyWord(m_random, false, false);
             else
-               m_vocab = new VocabularyCharacter(m_random, false, false, false);
+                m_vocab = new VocabularyCharacter(m_random, false, false, false);
             
             m_vocab.BuildFromString(m_strData);
         }
