@@ -86,7 +86,9 @@ namespace MyCaffe.model
         /// <summary>
         /// Create the training/testing/deploy model to use.
         /// </summary>
-        public abstract NetParameter CreateModel(bool bDeploy = false);
+        /// <param name="prop">Specifies optional properties.</param>
+        /// <param name="bDeploy">Specifies to create the deploy model.</param>
+        public abstract NetParameter CreateModel(PropertySet prop, bool bDeploy = false);
 
         /// <summary>
         /// Create the deploy model to use.

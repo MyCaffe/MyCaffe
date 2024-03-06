@@ -352,7 +352,9 @@ namespace MyCaffe.model
         /// <summary>
         /// Create the training SSD model for the pascal dataset.
         /// </summary>
-        public override NetParameter CreateModel(bool bDeploy = false)
+        /// <param name="prop">Specifies the property set containing the optional properties.</param>
+        /// <param name="bDeploy">Optionally, specifies to create the deloy model.</param>
+        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
         {
             string strLabelMapFile = getFileName(m_strLabelMapFile, null);
             LayerParameter data = null;
@@ -480,7 +482,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(true);
+            return CreateModel(null, true);
         }
 
         /// <summary>

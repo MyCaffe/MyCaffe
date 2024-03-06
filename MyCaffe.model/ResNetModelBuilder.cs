@@ -156,8 +156,9 @@ namespace MyCaffe.model
         /// <summary>
         /// Create the training model.
         /// </summary>
+        /// <param name="prop">Specifies the property set containing the optional properties.</param>
         /// <param name="bDeploy">Optionally, specifies to create a deployment model (default = false).</param>
-        public override NetParameter CreateModel(bool bDeploy = false)
+        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
         {
             LayerParameter lastLayer = null;
             LayerParameter data = null;
@@ -328,7 +329,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(true);
+            return CreateModel(null, true);
         }
 
         /// <summary>
