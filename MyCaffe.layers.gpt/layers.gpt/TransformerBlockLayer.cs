@@ -88,12 +88,12 @@ namespace MyCaffe.layers.gpt
             {
                 LayerParameter rms1 = new LayerParameter(LayerParameter.LayerType.RMSNORM, p.name + ".rms1", m_phase, p.freeze_learning);
                 rms1.rms_norm_param.axis = 2;
-                rms1.rms_norm_param.enable_weights = false;
+                rms1.rms_norm_param.enable_weights = true;
                 m_norm1 = Layer<T>.Create(cuda, log, convertLayerParam(rms1, p), evtCancel) as Layer<T>;
 
                 LayerParameter rms2 = new LayerParameter(LayerParameter.LayerType.RMSNORM, p.name + ".rms2", m_phase, p.freeze_learning);
                 rms2.rms_norm_param.axis = 2;
-                rms2.rms_norm_param.enable_weights = false;
+                rms2.rms_norm_param.enable_weights = true;
                 m_norm2 = Layer<T>.Create(cuda, log, convertLayerParam(rms2, p), evtCancel) as Layer<T>;
             }
             else
@@ -635,6 +635,20 @@ namespace MyCaffe.layers.gpt
             if (m_fc2 != null)
                 blobs_adapted.Add(m_fc2.blobs_adapted);
             blobs_adapted.Add(m_proj.blobs_adapted);
+        }
+
+        /// <summary>
+        /// Set the layer options.
+        /// </summary>
+        /// <param name="strName">Specifies the layer option name.</param>
+        /// <param name="strVal">Specifies the layer option value.</param>
+        public override void SetLayerOption(string strName, string strVal)
+        {
+            base.SetLayerOption(strName, strVal);
+
+            m_attn1.SetLayerOption(strName, strVal);
+            if (m_attn2 != null)
+                m_attn2.SetLayerOption(strName, strVal);
         }
 
         /// <summary>
