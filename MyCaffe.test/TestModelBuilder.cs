@@ -763,33 +763,36 @@ namespace MyCaffe.test
                 BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
                 blobTokdata.CopyFrom(colBtm[0], false, true);
                 List<float> rgTokenIds = new List<float>();
-
-                int[] rgShape = new int[2] { 1, 1 };
+                List<float> rgResponseTokens = new List<float>();
 
                 rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));   
 
                 sw.Start();
                 double dfTotalTime = 0;
+                int nTokenId = (int)rgTokenIds[0];
+
+                int[] rgShape = new int[2] { 1, 1 };
+                blobTokdata.Reshape(rgShape);
 
                 for (int i = 0; i < nMaxNewTokens; i++)
-                {                    
+                {
+                    blobTokdata.SetData(nTokenId, 0);
+
+                    net.SetLayerOption("position", i);
                     net.ForwardFromTo(3, 37);
-                    blobLogits.scale_data(1.0f / fTemperature);
 
-                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
-                    for (int j = 0; j < res.Count; j++)
+                    if (i < rgTokenIds.Count - 1)
                     {
-                        rgTokenIds.Add(res[j].Item2);
+                        nTokenId = (int)rgTokenIds[i + 1];
                     }
-
-                    while (rgTokenIds.Count > nSeqLen)
+                    else
                     {
-                        rgTokenIds.RemoveAt(0);
-                    }
+                        blobLogits.scale_data(1.0f / fTemperature);
 
-                    rgShape[1] = rgTokenIds.Count;
-                    blobTokdata.Reshape(rgShape);
-                    blobTokdata.mutable_cpu_data = convert(rgTokenIds.ToArray());
+                        List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                        nTokenId = res[0].Item2;
+                        rgResponseTokens.Add(nTokenId);
+                    }
 
                     sw.Stop();
                     dfTotalTime += sw.Elapsed.TotalMilliseconds;
@@ -799,7 +802,7 @@ namespace MyCaffe.test
                     sw.Restart();
                 }
 
-                string strOutput = tok.Detokenize(rgTokenIds.ToArray(), 0, rgTokenIds.Count);
+                string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
                 m_log.WriteLine("Output: " + strOutput);
             }
             finally
