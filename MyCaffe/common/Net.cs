@@ -856,6 +856,21 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Set the layer option for all layers associated with the option name.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the option.</param>
+        /// <param name="dfVal">Specifies the value of the option.</param>
+        public void SetLayerOption(string strName, double dfVal)
+        {
+            string strVal = dfVal.ToString();
+
+            foreach (Layer<T> layer in m_rgLayers)
+            {
+                layer.SetLayerOption(strName, strVal);
+            }
+        }
+
+        /// <summary>
         /// Change the phase of the network.
         /// </summary>
         /// <param name="phase">Specifies the new phase.</param>

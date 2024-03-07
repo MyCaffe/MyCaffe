@@ -115,6 +115,11 @@ namespace MyCaffe.layers
         /// </summary>
         protected BlobCollection<T> m_colSharedBlobs;
 
+        /// <summary>
+        /// Specifies layer options that may be used during inferencing.
+        /// </summary>
+        protected PropertySet m_options = new PropertySet();
+
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
 
@@ -260,6 +265,24 @@ namespace MyCaffe.layers
         public LayerParameter.LayerType? parent_layer_type
         {
             get { return m_parentLayerType; }
+        }
+
+        /// <summary>
+        /// Returns the layer options property set.
+        /// </summary>
+        public PropertySet layer_options
+        {
+            get { return m_options; }
+        }
+
+        /// <summary>
+        /// Set a layer option based on the layer option name.
+        /// </summary>
+        /// <param name="strName">Specifies the option name.</param>
+        /// <param name="strVal">Specifies the option value.</param>
+        public virtual void SetLayerOption(string strName, string strVal)
+        {
+            m_options.SetProperty(strName, strVal);
         }
 
         /// <summary>
