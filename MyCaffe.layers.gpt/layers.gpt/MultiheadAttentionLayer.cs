@@ -453,7 +453,10 @@ namespace MyCaffe.layers.gpt
             }
 
             if (m_param.multihead_attention_param.enable_rotary_positional_embedding)
-                m_hRope = m_cuda.CreateRope(m_param.multihead_attention_param.rope_shared_index, m_cuda.GetDeviceID(), colBottom[0].count(), m_nB, (int)m_param.multihead_attention_param.block_size, m_nHeads, m_nC/m_nHeads);
+            {
+                int nGpuID = m_cuda.GetDeviceID();
+                m_hRope = m_cuda.CreateRope(m_param.multihead_attention_param.rope_shared_index, nGpuID, colBottom[0].count(), m_nB, (int)m_param.multihead_attention_param.block_size, m_nHeads, m_nC / m_nHeads);
+            }
 
             if (m_param.multihead_attention_param.enable_cuda_scaled_dot_product_attention)
             {
@@ -611,8 +614,13 @@ namespace MyCaffe.layers.gpt
             // When using rope, apply the rotary positional embedding.
             if (m_hRope != 0)
             {
-                m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data);
-                m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data);
+                int nFreqOffset = -1;
+                int nPos = m_options.GetPropertyAsInt("position", -1);
+                if (nPos > 0)
+                    nFreqOffset = nPos * m_nSize / 2;
+
+                m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data, nFreqOffset);
+                m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data, nFreqOffset);
             }
 
             addInternal(m_blobQ, m_blobQt);
