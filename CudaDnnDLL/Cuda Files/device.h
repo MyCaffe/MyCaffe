@@ -4221,15 +4221,19 @@ inline long Device<T>::RopeForward(long lInput, T* pfInput, long llInput, LONGLO
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 5))
 		return lErr;
 
 	long hRope = (long)plInput[0];
 	int nCount = (int)plInput[1];
 	long hXdata = (long)plInput[2];
 	long hYdata = (long)plInput[3];
+	int nFreqOffset = -1;
 
-	if (lErr = m_memory.RopeForward(hRope, nCount, hXdata, hYdata))
+	if (llInput > 4)
+		nFreqOffset = (int)plInput[4];
+
+	if (lErr = m_memory.RopeForward(hRope, nCount, hXdata, hYdata, nFreqOffset))
 		return lErr;
 
 	return 0;

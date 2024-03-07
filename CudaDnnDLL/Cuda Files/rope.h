@@ -83,7 +83,7 @@ public:
 	long Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	long CleanUp();
 
-	long Forward(int n, long hXdata, long hYdata);
+	long Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 	long Backward(int n, long hXdata, long hYdiff, long hXdiff);
 };
 

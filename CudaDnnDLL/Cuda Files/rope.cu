@@ -28,10 +28,10 @@ protected:
 
 	T* m_pfFreqCos;
 	T* m_pfFreqSin;
-	T* m_pfXqr;
-	T* m_pfXqi;
-	T* m_pfXq_out_r;
-	T* m_pfXq_out_i;
+	T* m_pfXr;
+	T* m_pfXi;
+	T* m_pfX_out_r;
+	T* m_pfX_out_i;
 	int m_nCount;
 
 public:
@@ -56,10 +56,10 @@ public:
 		m_pfFreqSin = NULL;
 
 		m_nCount = 0;
-		m_pfXqr = NULL;
-		m_pfXqi = NULL;
-		m_pfXq_out_r = NULL;
-		m_pfXq_out_i = NULL;
+		m_pfXr = NULL;
+		m_pfXi = NULL;
+		m_pfX_out_r = NULL;
+		m_pfX_out_i = NULL;
 	}
 
 	~RopeData()
@@ -79,7 +79,7 @@ public:
 	virtual LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta) = 0;
 	virtual void CleanUp() = 0;
 
-	virtual LONG Forward(int n, long hXdata, long hYdata) = 0;
+	virtual LONG Forward(int n, long hXdata, long hYdata, int nFreqOffset) = 0;
 	virtual LONG Backward(int n, long hXdata, long hYdiff, long hXdiff) = 0;
 };
 
@@ -109,7 +109,7 @@ public:
 	LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	void CleanUp();
 
-	LONG Forward(int n, long hXdata, long hYdata);
+	LONG Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 	LONG Backward(int n, long hXdata, long hYdiff, long hXdiff);
 };
 
@@ -132,7 +132,7 @@ public:
 	LONG Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen, int nHeads, int nDim, T fTheta);
 	void CleanUp();
 
-	LONG Forward(int n, long hXdata, long hYdata);
+	LONG Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 	LONG Backward(int n, long hXdata, long hYdiff, long hXdiff);
 };
 
@@ -225,28 +225,28 @@ void RopeDataCpu<T>::CleanUp()
 		m_pfFreqSin = NULL;
 	}
 
-	if (m_pfXqr != NULL)
+	if (m_pfXr != NULL)
 	{
-		free(m_pfXqr);
-		m_pfXqr = NULL;
+		free(m_pfXr);
+		m_pfXr = NULL;
 	}
 
-	if (m_pfXqi != NULL)
+	if (m_pfXi != NULL)
 	{
-		free(m_pfXqi);
-		m_pfXqi = NULL;
+		free(m_pfXi);
+		m_pfXi = NULL;
 	}
 
-	if (m_pfXq_out_r != NULL)
+	if (m_pfX_out_r != NULL)
 	{
-		free(m_pfXq_out_r);
-		m_pfXq_out_r = NULL;
+		free(m_pfX_out_r);
+		m_pfX_out_r = NULL;
 	}
 
-	if (m_pfXq_out_i != NULL)
+	if (m_pfX_out_i != NULL)
 	{
-		free(m_pfXq_out_i);
-		m_pfXq_out_i = NULL;
+		free(m_pfX_out_i);
+		m_pfX_out_i = NULL;
 	}
 
 	if (m_pfX != NULL)
@@ -296,37 +296,37 @@ LONG RopeDataCpu<T>::allocHost(int nCount)
 			return ERROR_MEMORY_OUT;
 		}
 
-		if (m_pfXqr != NULL)
+		if (m_pfXr != NULL)
 		{
-			cudaFree(m_pfXqr);
-			m_pfXqr = NULL;
+			cudaFree(m_pfXr);
+			m_pfXr = NULL;
 		}
 
-		if (m_pfXqi != NULL)
+		if (m_pfXi != NULL)
 		{
-			cudaFree(m_pfXqi);
-			m_pfXqi = NULL;
+			cudaFree(m_pfXi);
+			m_pfXi = NULL;
 		}
 
-		if (m_pfXq_out_r != NULL)
+		if (m_pfX_out_r != NULL)
 		{
-			cudaFree(m_pfXq_out_r);
-			m_pfXq_out_r = NULL;
+			cudaFree(m_pfX_out_r);
+			m_pfX_out_r = NULL;
 		}
 
-		if (m_pfXq_out_i != NULL)
+		if (m_pfX_out_i != NULL)
 		{
-			cudaFree(m_pfXq_out_i);
-			m_pfXq_out_i = NULL;
+			cudaFree(m_pfX_out_i);
+			m_pfX_out_i = NULL;
 		}
 
 		int nSize = nCount / 2;
-		m_pfXqr = (T*)malloc(nSize * sizeof(T));
-		m_pfXqi = (T*)malloc(nSize * sizeof(T));
-		m_pfXq_out_r = (T*)malloc(nSize * sizeof(T));
-		m_pfXq_out_i = (T*)malloc(nSize * sizeof(T));
+		m_pfXr = (T*)malloc(nSize * sizeof(T));
+		m_pfXi = (T*)malloc(nSize * sizeof(T));
+		m_pfX_out_r = (T*)malloc(nSize * sizeof(T));
+		m_pfX_out_i = (T*)malloc(nSize * sizeof(T));
 
-		if (m_pfXqr == NULL || m_pfXqi == NULL || m_pfXq_out_r == NULL || m_pfXq_out_i == NULL)
+		if (m_pfXr == NULL || m_pfXi == NULL || m_pfX_out_r == NULL || m_pfX_out_i == NULL)
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
@@ -370,7 +370,7 @@ LONG RopeDataCpu<T>::updateToDevMemory(int nCount, T* pfYdev)
 }
 
 template <class T>
-LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata)
+LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata, int nFreqOffset)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -386,13 +386,21 @@ LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata)
 	if (lErr = updateToHostMemory(n, (T*)pX->Data()))
 		return lErr;
 
-	for (int i=0; i<n; i++)
+	for (int i = 0; i < n; i++)
 	{
 		if (i % 2 == 0)
-			m_pfXqr[i / 2] = m_pfX[i];
+			m_pfXr[i / 2] = m_pfX[i];
 		else
-			m_pfXqi[i / 2] = m_pfX[i];
+			m_pfXi[i / 2] = m_pfX[i];
 	}
+
+	T* pfFreqCos = m_pfFreqCos;
+	if (nFreqOffset > 0)
+		pfFreqCos += nFreqOffset;
+
+	T* pfFreqSin = m_pfFreqSin;
+	if (nFreqOffset > 0)
+		pfFreqSin += nFreqOffset;
 
 	int nDim = m_nDim / 2;
 	int nFullDim = nDim * m_nHeads;
@@ -402,19 +410,19 @@ LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata)
 		int nIdx2 = (i % nDim);
 		int nIdx = nIdx1 + nIdx2;
 
-		T fCos = m_pfFreqCos[nIdx];
-		T fSin = m_pfFreqSin[nIdx];
+		T fCos = pfFreqCos[nIdx];
+		T fSin = pfFreqSin[nIdx];
 
-		m_pfXq_out_r[i] = m_pfXqr[i] * fCos - m_pfXqi[i] * fSin;
-		m_pfXq_out_i[i] = m_pfXqr[i] * fSin + m_pfXqi[i] * fCos;
+		m_pfX_out_r[i] = m_pfXr[i] * fCos - m_pfXi[i] * fSin;
+		m_pfX_out_i[i] = m_pfXr[i] * fSin + m_pfXi[i] * fCos;
 	}
 
 	for (int i = 0; i < n; i++)
 	{
 		if (i % 2 == 0)
-			m_pfY[i] = m_pfXq_out_r[i / 2];
+			m_pfY[i] = m_pfX_out_r[i / 2];
 		else
-			m_pfY[i] = m_pfXq_out_i[i / 2];	
+			m_pfY[i] = m_pfX_out_i[i / 2];	
 	}
 
 	if (lErr = updateToDevMemory(n, (T*)pY->Data()))
@@ -423,8 +431,8 @@ LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata)
 	return 0;
 }
 
-template LONG RopeDataCpu<double>::Forward(int n, long hXdata, long hYdata);
-template LONG RopeDataCpu<float>::Forward(int n, long hXdata, long hYdata);
+template LONG RopeDataCpu<double>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
+template LONG RopeDataCpu<float>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 
 
 template <class T>
@@ -447,9 +455,9 @@ LONG RopeDataCpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	for (int i = 0; i < n; i++)
 	{
 		if (i % 2 == 0)
-			m_pfXqr[i / 2] = m_pfX[i]; // y grads
+			m_pfXr[i / 2] = m_pfX[i]; // y grads
 		else
-			m_pfXqi[i / 2] = m_pfX[i]; // y grads
+			m_pfXi[i / 2] = m_pfX[i]; // y grads
 	}
 
 	int nDim = m_nDim / 2;
@@ -463,16 +471,16 @@ LONG RopeDataCpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 		T fCos = m_pfFreqCos[nIdx];
 		T fSin = m_pfFreqSin[nIdx];
 
-		m_pfXq_out_r[i] = m_pfXqr[i] * fCos + m_pfXqi[i] * fSin; // y grads
-		m_pfXq_out_i[i] = -m_pfXqr[i] * fSin + m_pfXqi[i] * fCos; // y grads
+		m_pfX_out_r[i] = m_pfXr[i] * fCos + m_pfXi[i] * fSin; // y grads
+		m_pfX_out_i[i] = -m_pfXr[i] * fSin + m_pfXi[i] * fCos; // y grads
 	}
 
 	for (int i = 0; i < n; i++)
 	{
 		if (i % 2 == 0)
-			m_pfY[i] = m_pfXq_out_r[i / 2]; // x grads
+			m_pfY[i] = m_pfX_out_r[i / 2]; // x grads
 		else
-			m_pfY[i] = m_pfXq_out_i[i / 2]; // x grads
+			m_pfY[i] = m_pfX_out_i[i / 2]; // x grads
 	}
 
 	if (lErr = updateToDevMemory(n, (T*)pX->Data()))
@@ -615,28 +623,28 @@ void RopeDataGpu<T>::CleanUp()
 		m_pfFreqSin = NULL;
 	}
 
-	if (m_pfXqr != NULL)
+	if (m_pfXr != NULL)
 	{
-		cudaFree(m_pfXqr);
-		m_pfXqr = NULL;
+		cudaFree(m_pfXr);
+		m_pfXr = NULL;
 	}
 
-	if (m_pfXqi != NULL)
+	if (m_pfXi != NULL)
 	{
-		cudaFree(m_pfXqi);
-		m_pfXqi = NULL;
+		cudaFree(m_pfXi);
+		m_pfXi = NULL;
 	}
 
-	if (m_pfXq_out_r != NULL)
+	if (m_pfX_out_r != NULL)
 	{
-		cudaFree(m_pfXq_out_r);
-		m_pfXq_out_r = NULL;
+		cudaFree(m_pfX_out_r);
+		m_pfX_out_r = NULL;
 	}
 
-	if (m_pfXq_out_i != NULL)
+	if (m_pfX_out_i != NULL)
 	{
-		cudaFree(m_pfXq_out_i);
-		m_pfXq_out_i = NULL;
+		cudaFree(m_pfX_out_i);
+		m_pfX_out_i = NULL;
 	}
 }
 
@@ -650,56 +658,56 @@ LONG RopeDataGpu<T>::allocGpu(int nCount)
 	{
 		LONG lErr;
 
-		if (m_pfXqr != NULL)
+		if (m_pfXr != NULL)
 		{
-			cudaFree(m_pfXqr);
-			m_pfXqr = NULL;
+			cudaFree(m_pfXr);
+			m_pfXr = NULL;
 		}
 
-		if (m_pfXqi != NULL)
+		if (m_pfXi != NULL)
 		{
-			cudaFree(m_pfXqi);
-			m_pfXqi = NULL;
+			cudaFree(m_pfXi);
+			m_pfXi = NULL;
 		}
 
-		if (m_pfXq_out_r != NULL)
+		if (m_pfX_out_r != NULL)
 		{
-			cudaFree(m_pfXq_out_r);
-			m_pfXq_out_r = NULL;
+			cudaFree(m_pfX_out_r);
+			m_pfX_out_r = NULL;
 		}
 
-		if (m_pfXq_out_i != NULL)
+		if (m_pfX_out_i != NULL)
 		{
-			cudaFree(m_pfXq_out_i);
-			m_pfXq_out_i = NULL;
+			cudaFree(m_pfX_out_i);
+			m_pfX_out_i = NULL;
 		}
 
 		int nSize = nCount / 2;
-		if (lErr = cudaMalloc(&m_pfXqr, nSize * sizeof(T)))
+		if (lErr = cudaMalloc(&m_pfXr, nSize * sizeof(T)))
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
 		}
 
-		if (lErr = cudaMalloc(&m_pfXqi, nSize * sizeof(T)))
+		if (lErr = cudaMalloc(&m_pfXi, nSize * sizeof(T)))
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
 		}
 
-		if (lErr = cudaMalloc(&m_pfXq_out_r, nSize * sizeof(T)))
+		if (lErr = cudaMalloc(&m_pfX_out_r, nSize * sizeof(T)))
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
 		}
 
-		if (lErr = cudaMalloc(&m_pfXq_out_i, nSize * sizeof(T)))
+		if (lErr = cudaMalloc(&m_pfX_out_i, nSize * sizeof(T)))
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
 		}
 
-		if (m_pfXqr == NULL || m_pfXqi == NULL || m_pfXq_out_r == NULL || m_pfXq_out_i == NULL)
+		if (m_pfXr == NULL || m_pfXi == NULL || m_pfX_out_r == NULL || m_pfX_out_i == NULL)
 		{
 			CleanUp();
 			return ERROR_MEMORY_OUT;
@@ -770,7 +778,7 @@ __global__ void copy_riToY_kernel(const int n, const T* xr, const T* xi, T* y)
 }
 
 template <class T>
-LONG RopeDataGpu<T>::Forward(int n, long hXdata, long hYdata)
+LONG RopeDataGpu<T>::Forward(int n, long hXdata, long hYdata, int nFreqOffset)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -786,26 +794,34 @@ LONG RopeDataGpu<T>::Forward(int n, long hXdata, long hYdata)
 	T* pfX = (T*)pX->Data();
 	T* pfY = (T*)pY->Data();
 
-	copy_xToRI_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, pfX, m_pfXqr, m_pfXqi);
+	copy_xToRI_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, pfX, m_pfXr, m_pfXi);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	int nDim = m_nDim / 2;
 	int nFullDim = nDim * m_nHeads;
 
-	copy_computeRI_kernel<T> << <CAFFE_GET_BLOCKS(n/2), CAFFE_CUDA_NUM_THREADS >> > (n/2, nDim, nFullDim, m_pfXqr, m_pfXqi, m_pfFreqCos, m_pfFreqSin, m_pfXq_out_r, m_pfXq_out_i);
+	T* pfFreqCos = m_pfFreqCos;
+	if (nFreqOffset > 0)
+		pfFreqCos += nFreqOffset;
+
+	T* pfFreqSin = m_pfFreqSin;
+	if (nFreqOffset > 0)
+		pfFreqSin += nFreqOffset;
+
+	copy_computeRI_kernel<T> << <CAFFE_GET_BLOCKS(n/2), CAFFE_CUDA_NUM_THREADS >> > (n/2, nDim, nFullDim, m_pfXr, m_pfXi, pfFreqCos, pfFreqSin, m_pfX_out_r, m_pfX_out_i);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
-	copy_riToY_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, m_pfXq_out_r, m_pfXq_out_i, pfY);
+	copy_riToY_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, m_pfX_out_r, m_pfX_out_i, pfY);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	return 0;
 }
 
-template LONG RopeDataGpu<double>::Forward(int n, long hXdata, long hYdata);
-template LONG RopeDataGpu<float>::Forward(int n, long hXdata, long hYdata);
+template LONG RopeDataGpu<double>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
+template LONG RopeDataGpu<float>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 
 
 template <class T>
@@ -825,18 +841,18 @@ LONG RopeDataGpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	T* pfXdiff = (T*)pX->Data();
 	T* pfYdiff = (T*)pY->Data();
 
-	copy_xToRI_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, pfYdiff, m_pfXqr, m_pfXqi);
+	copy_xToRI_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, pfYdiff, m_pfXr, m_pfXi);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	int nDim = m_nDim / 2;
 	int nFullDim = nDim * m_nHeads;
 
-	copy_computeRI_grad_kernel<T> << <CAFFE_GET_BLOCKS(n / 2), CAFFE_CUDA_NUM_THREADS >> > (n / 2, nDim, nFullDim, m_pfXqr, m_pfXqi, m_pfFreqCos, m_pfFreqSin, m_pfXq_out_r, m_pfXq_out_i);
+	copy_computeRI_grad_kernel<T> << <CAFFE_GET_BLOCKS(n / 2), CAFFE_CUDA_NUM_THREADS >> > (n / 2, nDim, nFullDim, m_pfXr, m_pfXi, m_pfFreqCos, m_pfFreqSin, m_pfX_out_r, m_pfX_out_i);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
-	copy_riToY_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, m_pfXq_out_r, m_pfXq_out_i, pfXdiff);
+	copy_riToY_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, m_pfX_out_r, m_pfX_out_i, pfXdiff);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
@@ -914,13 +930,13 @@ template long ropeHandle<float>::CleanUp();
 
 
 template <class T>
-long ropeHandle<T>::Forward(int n, long hXdata, long hYdata)
+long ropeHandle<T>::Forward(int n, long hXdata, long hYdata, int nFreqOffset)
 {
-	return m_pData->Forward(n, hXdata, hYdata);
+	return m_pData->Forward(n, hXdata, hYdata, nFreqOffset);
 }
 
-template long ropeHandle<double>::Forward(int n, long hXdata, long hYdata);
-template long ropeHandle<float>::Forward(int n, long hXdata, long hYdata);
+template long ropeHandle<double>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
+template long ropeHandle<float>::Forward(int n, long hXdata, long hYdata, int nFreqOffset);
 
 
 template <class T>

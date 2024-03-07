@@ -6189,12 +6189,13 @@ namespace MyCaffe.common
         /// <param name="n">Specifies the number of items in hYdata, hYdiff and hXdiff.</param>
         /// <param name="hXdata">Specifies the input data.</param>
         /// <param name="hYdata">Specifies the output data with added rope positional embedding.</param>
-        public void RopeForward(long hRope, int n, long hXdata, long hYdata)
+        /// <param name="nFreqOffset">Specifies a frequency offset to use within the rope positional embedding.</param>
+        public void RopeForward(long hRope, int n, long hXdata, long hYdata, int nFreqOffset = -1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_FWD, null, m_param.AsLong(hRope, n, hXdata, hYdata));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_FWD, null, m_param.AsLong(hRope, n, hXdata, hYdata, nFreqOffset));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_FWD, null, m_param.AsLong(hRope, n, hXdata, hYdata));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ROPE_FWD, null, m_param.AsLong(hRope, n, hXdata, hYdata, nFreqOffset));
         }
 
         /// <summary>
