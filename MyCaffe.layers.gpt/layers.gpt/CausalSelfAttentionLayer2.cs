@@ -174,6 +174,17 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
+        /// Set the layer options.
+        /// </summary>
+        /// <param name="strName">Specifies the layer option name.</param>
+        /// <param name="strVal">Specifies the layer option value.</param>
+        public override void SetLayerOption(string strName, string strVal)
+        {
+            base.SetLayerOption(strName, strVal);
+            m_mh_att.SetLayerOption(strName, strVal);
+        }
+
+        /// <summary>
         /// Reshape the bottom (input) and top (output) blobs.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
