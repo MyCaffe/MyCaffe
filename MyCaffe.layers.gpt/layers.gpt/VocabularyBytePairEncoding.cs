@@ -406,7 +406,9 @@ namespace MyCaffe.layers.gpt.layers.gpt
         }
     }
 
-    class Node
+#pragma warning disable 1591
+
+    class Node /** @private */
     {
         double m_mergePrio = 0;
         string m_strMergeToString = "";
@@ -480,7 +482,7 @@ namespace MyCaffe.layers.gpt.layers.gpt
     }
 
     // PriorityQueue implementation is copied from https://stackoverflow.com/a/42919752 with minor refactoring
-    class PriorityQueue
+    class PriorityQueue /** @private */
     {
         List<Node> m_rgHeap = new List<Node>();
 
@@ -565,4 +567,6 @@ namespace MyCaffe.layers.gpt.layers.gpt
             get { return m_rgHeap.Count == 0; }
         }
     }
+
+    #pragma warning restore 1591
 }
