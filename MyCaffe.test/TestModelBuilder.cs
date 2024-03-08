@@ -750,7 +750,7 @@ namespace MyCaffe.test
                 TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
 
                 PropertySet input = new PropertySet();
-                string strPrompt = "What is your name?";
+                string strPrompt = "[INST] What is your name? [/INST]";
                 int nMaxNewTokens = 50;
                 Blob<T> blobTokdata = net.FindBlob("tokdata");
                 Blob<T> blobLogits = net.FindBlob("logits");
@@ -791,7 +791,9 @@ namespace MyCaffe.test
 
                         List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
                         nTokenId = res[0].Item2;
-                        rgResponseTokens.Add(nTokenId);
+
+                        if (!tok.IsEOS(nTokenId))
+                            rgResponseTokens.Add(nTokenId);
                     }
 
                     sw.Stop();
@@ -800,6 +802,9 @@ namespace MyCaffe.test
                     m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i+1)).ToString("N3") + " ms.");
 
                     sw.Restart();
+
+                    if (tok.IsEOS(nTokenId))
+                        break;
                 }
 
                 string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
