@@ -364,18 +364,18 @@ namespace MyCaffe.model
                     fFirst = col[nIdxW1].GetDataAsFloat(0);
                     nIdx++;
 
-                    long lW2Count1 = (lW2Count / m_config.n_layers);
-                    long lW2LocalOffset = i * lW2Count1;
-                    col[nIdxW2].LoadFromBlobLoader(hBlobLoader, lW2Count1, lW2LocalOffset);
-                    col[nIdxW2].AddToBlobLoaderOffset(hBlobLoader, lW2Count);
-                    fFirst = col[nIdxW2].GetDataAsFloat(0);
-                    nIdx++;
-
                     long lW3Count1 = (lW3Count / m_config.n_layers);
                     long lW3LocalOffset = i * lW3Count1;
                     col[nIdxW3].LoadFromBlobLoader(hBlobLoader, lW3Count1, lW3LocalOffset);
                     col[nIdxW3].AddToBlobLoaderOffset(hBlobLoader, lW3Count);
                     fFirst = col[nIdxW3].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lW2Count1 = (lW2Count / m_config.n_layers);
+                    long lW2LocalOffset = i * lW2Count1;
+                    col[nIdxW2].LoadFromBlobLoader(hBlobLoader, lW2Count1, lW2LocalOffset);
+                    col[nIdxW2].AddToBlobLoaderOffset(hBlobLoader, lW2Count);
+                    fFirst = col[nIdxW2].GetDataAsFloat(0);
                     nIdx++;
 
                     col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + m_config.n_layers.ToString() + " ...", true);
@@ -477,6 +477,7 @@ namespace MyCaffe.model
                 enc.transformer_block_param.enable_layernorm_cuda_impl = false;
                 enc.transformer_block_param.enable_llama_style_head = true;
                 enc.transformer_block_param.enable_rotary_positional_embedding = true;
+                enc.transformer_block_param.enable_key_value_cache = true;
                 enc.transformer_block_param.bias_term = false;
                 enc.parameters.Add(new ParamSpec(1, 1));
                 enc.parameters.Add(new ParamSpec(1, 1));
