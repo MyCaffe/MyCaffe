@@ -50,6 +50,10 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobAttA;
         Blob<T> m_blobAttB;
         Blob<T> m_blobY;
+        Blob<T> m_blobKeyCache = null;
+        Blob<T> m_blobValCache = null;
+        Blob<T> m_blobWork2 = null;
+        Blob<T> m_blobWork3 = null;
         long m_hRope = 0;
         long m_hCudnn = 0;
         long m_hCudaAttention = 0;
@@ -240,10 +244,20 @@ namespace MyCaffe.layers.gpt
             m_blobAttB.Name = m_param.name + " AttB";
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = m_param.name + " Work";
-            m_blobY = createIntraLayerBlob("mth_y");    
+            m_blobY = createIntraLayerBlob("mth_y");
             //m_blobY = new Blob<T>(cuda, log);
             //m_blobY.Name = m_param.name + " Y";
 
+            if (m_param.multihead_attention_param.enable_key_value_cache)
+            {
+                m_blobKeyCache = new Blob<T>(cuda, log, false);
+                m_blobKeyCache.Name = m_param.name + ".KeyCache";
+                m_blobValCache = new Blob<T>(cuda, log, false);
+                m_blobValCache.Name = m_param.name + ".ValCache";
+                m_blobWork2 = createIntraLayerBlob("mth_work2", false);
+                m_blobWork3 = createIntraLayerBlob("mth_work3", false);
+            }
+            
             setup_internal_blobs(m_colInternalBlobs);
         }
 
@@ -274,6 +288,11 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobAttB);
             dispose(ref m_blobWork);
             dispose(ref m_blobY);
+
+            dispose(ref m_blobKeyCache);
+            dispose(ref m_blobValCache);
+            dispose(ref m_blobWork2);
+            dispose(ref m_blobWork3);
 
             if (m_hCudaAttention != 0)
             {
@@ -316,6 +335,17 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobAttB);
             col.Add(m_blobWork);
             col.Add(m_blobY);
+
+            if (m_blobKeyCache != null)
+                col.Add(m_blobKeyCache);
+
+            if (m_blobValCache != null)
+                col.Add(m_blobValCache);
+
+            if (m_blobWork2 != null)
+                col.Add(m_blobWork2);
+            if (m_blobWork3 != null)
+                col.Add(m_blobWork3);
 
             col.Add(m_c_attnQ.internal_blobs);
             col.Add(m_c_attnK.internal_blobs);
@@ -436,7 +466,7 @@ namespace MyCaffe.layers.gpt
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
             m_rgShape[2] = m_nBlockSize;
-            m_rgShape[3] = m_nBlockSize;
+            m_rgShape[3] = (m_param.multihead_attention_param.enable_key_value_cache) ? 1 : m_nBlockSize;
 
             shareLayerBlob(m_blobAttA, m_rgShape);
             m_blobAttA.Reshape(m_rgShape);
@@ -536,12 +566,32 @@ namespace MyCaffe.layers.gpt
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
             m_rgShape[2] = m_nT;
-            m_rgShape[3] = m_nT;
+            m_rgShape[3] = (m_param.multihead_attention_param.enable_key_value_cache) ? 1 : m_nT;
 
             shareLayerBlob(m_blobAttA, m_rgShape);
             m_blobAttA.Reshape(m_rgShape);
             shareLayerBlob(m_blobAttB, m_rgShape);
             m_blobAttB.Reshape(m_rgShape);
+
+            if (m_param.multihead_attention_param.enable_key_value_cache)
+            {
+                m_rgShape[0] = m_nB;
+                m_rgShape[1] = m_nHeads;
+                m_rgShape[2] = m_nT;
+                m_rgShape[3] = m_nSize;
+
+                shareLayerBlob(m_blobKeyCache, m_rgShape);
+                m_blobKeyCache.Reshape(m_rgShape);
+                shareLayerBlob(m_blobValCache, m_rgShape);
+                m_blobValCache.Reshape(m_rgShape);
+
+                m_rgShape[2] = 1;
+                m_rgShape[3] = 1;
+                shareLayerBlob(m_blobWork2, m_rgShape);
+                m_blobWork2.Reshape(m_rgShape);
+                shareLayerBlob(m_blobWork3, m_rgShape);
+                m_blobWork3.Reshape(m_rgShape);
+            }
 
             m_rgShape[0] = m_blobVt.num;
             m_rgShape[1] = m_blobVt.channels;
@@ -583,6 +633,7 @@ namespace MyCaffe.layers.gpt
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobMask = colBottom[3];
+            int nPos = m_options.GetPropertyAsInt("position", -1);
 
             m_blobX0.CopyFrom(colBottom[0]);
             m_blobX1.CopyFrom(colBottom[1]);
@@ -615,7 +666,6 @@ namespace MyCaffe.layers.gpt
             if (m_hRope != 0)
             {
                 int nFreqOffset = -1;
-                int nPos = m_options.GetPropertyAsInt("position", -1);
                 if (nPos > 0)
                     nFreqOffset = nPos * m_nSize / 2;
 
@@ -643,13 +693,34 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobKt, m_blobKt1);
                 m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
 
-                m_blobAttA.MatMul(m_blobQt, m_blobKt1);
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                m_blobAttA.scale_data(dfScale);
 
-                // Apply mask to attention matrix
-                // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
-                m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                if (m_param.multihead_attention_param.enable_key_value_cache)
+                {
+                    m_blobKeyCache.Reshape(nPos + 1, m_nHeads, m_nSize, 1);
+                    m_blobValCache.Reshape(nPos + 1, m_nHeads, 1, m_nSize);
+
+                    m_cuda.copy(m_blobKt1.count(), m_blobKt1.gpu_data, m_blobKeyCache.mutable_gpu_data, 0, nPos * m_blobKt1.count());
+                    m_cuda.copy(m_blobVt.count(), m_blobVt.gpu_data, m_blobValCache.mutable_gpu_data, 0, nPos * m_blobVt.count());
+
+                    m_blobAttA.Reshape(1, m_nHeads, 1, nPos + 1);
+
+                    for (int i=0; i<nPos+1; i++)
+                    {
+                        m_cuda.copy(m_blobKt1.count(), m_blobKeyCache.gpu_data, m_blobKt1.mutable_gpu_data, i * m_blobKt1.count(), 0);
+                        m_blobWork2.MatMul(m_blobQt, m_blobKt1, true);
+                        m_blobWork2.scale_data(dfScale);
+                        m_cuda.channel_copy(m_blobWork2.count(), 1, m_nHeads, nPos + 1, 1, i, m_blobAttA.mutable_gpu_data, m_blobWork2.gpu_data, DIR.BWD);
+                    }
+                }
+                else
+                {
+                    m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+                    m_blobAttA.scale_data(dfScale);
+                    // Apply mask to attention matrix
+                    // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
+                    m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                }
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
@@ -664,11 +735,31 @@ namespace MyCaffe.layers.gpt
                     m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
                 }
 
-                m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
-
                 // Multiply attention matrix with values
                 // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-                m_blobWork.MatMul(m_blobAttB, m_blobVt);
+                if (m_param.multihead_attention_param.enable_key_value_cache)
+                {
+                    m_blobWork.Reshape(1, m_nHeads, 1, m_nSize);
+                    m_blobWork3.Reshape(1, m_nHeads, 1, 1);
+                    m_blobWork2.Reshape(1, m_nHeads, 1, m_nSize);
+
+                    for (int i = 0; i < nPos + 1; i++)
+                    {
+                        m_cuda.copy(m_blobVt.count(), m_blobValCache.gpu_data, m_blobVt.mutable_gpu_data, i * m_blobVt.count(), 0);
+                        m_cuda.channel_copy(m_blobWork3.count(), 1, m_nHeads, nPos + 1, 1, i, m_blobAttB.gpu_data, m_blobWork3.mutable_gpu_data, DIR.FWD);
+
+                        m_blobWork2.MatMul(m_blobWork3, m_blobVt, true);
+
+                        if (i == 0)
+                            m_cuda.copy(m_blobWork.count(), m_blobWork2.gpu_data, m_blobWork.mutable_gpu_data);
+                        else
+                            m_cuda.add(m_blobWork.count(), m_blobWork2.gpu_data, m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
+                    }
+                }
+                else
+                {
+                    m_blobWork.MatMul(m_blobAttB, m_blobVt, true);
+                }
             }
 
             // Reassemble all head outputs side by side.

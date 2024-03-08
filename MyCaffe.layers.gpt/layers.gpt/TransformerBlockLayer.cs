@@ -119,6 +119,10 @@ namespace MyCaffe.layers.gpt
                 attn.causal_self_attention_param.enable_cuda_scaled_dot_product_attention = p.transformer_block_param.enable_cuda_scaled_dot_product_attention;
                 attn.causal_self_attention_param.enable_rotary_positional_embedding = p.transformer_block_param.enable_rotary_positional_embedding;
                 attn.causal_self_attention_param.bias_term = p.transformer_block_param.bias_term;
+
+                if (p.transformer_block_param.enable_key_value_cache)
+                    m_log.WriteLine("WARNING: The CausalSelfAttentionLayer does not support the 'enable_key_value_cache' option and will be ignored.  Use the CausalSelfAttentionLayer2 instead.");
+
                 attn.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
                 attn.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
                 m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn, p), evtCancel);
@@ -138,6 +142,7 @@ namespace MyCaffe.layers.gpt
                 attn.causal_self_attention_param.output_adapter_out = p.transformer_block_param.output_adapter_out;
                 attn.causal_self_attention_param.enable_cuda_scaled_dot_product_attention = p.transformer_block_param.enable_cuda_scaled_dot_product_attention;
                 attn.causal_self_attention_param.enable_rotary_positional_embedding = p.transformer_block_param.enable_rotary_positional_embedding;
+                attn.causal_self_attention_param.enable_key_value_cache = p.transformer_block_param.enable_key_value_cache;
                 attn.causal_self_attention_param.bias_term = p.transformer_block_param.bias_term;
                 attn.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
                 attn.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
@@ -159,6 +164,7 @@ namespace MyCaffe.layers.gpt
                 attn.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 attn.multihead_attention_param.enable_cuda_scaled_dot_product_attention = p.transformer_block_param.enable_cuda_scaled_dot_product_attention;
                 attn.multihead_attention_param.enable_rotary_positional_embedding = p.transformer_block_param.enable_rotary_positional_embedding;
+                attn.multihead_attention_param.enable_key_value_cache = p.transformer_block_param.enable_key_value_cache;
                 attn.multihead_attention_param.bias_term = p.transformer_block_param.bias_term;
                 attn.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
                 attn.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
@@ -198,6 +204,7 @@ namespace MyCaffe.layers.gpt
                 attn1.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 attn1.multihead_attention_param.enable_cuda_scaled_dot_product_attention = p.transformer_block_param.enable_cuda_scaled_dot_product_attention;
                 attn1.multihead_attention_param.enable_rotary_positional_embedding = p.transformer_block_param.enable_rotary_positional_embedding;
+                attn1.multihead_attention_param.enable_key_value_cache = p.transformer_block_param.enable_key_value_cache;
                 attn1.multihead_attention_param.bias_term = p.transformer_block_param.bias_term;
                 attn1.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
                 attn1.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
@@ -217,6 +224,7 @@ namespace MyCaffe.layers.gpt
                 attn2.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 attn2.multihead_attention_param.enable_cuda_scaled_dot_product_attention = p.transformer_block_param.enable_cuda_scaled_dot_product_attention;
                 attn2.multihead_attention_param.enable_rotary_positional_embedding = p.transformer_block_param.enable_rotary_positional_embedding;
+                attn2.multihead_attention_param.enable_key_value_cache = p.transformer_block_param.enable_key_value_cache;
                 attn2.multihead_attention_param.bias_term = p.transformer_block_param.bias_term;
                 attn2.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
                 attn2.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));

@@ -41,6 +41,7 @@ namespace MyCaffe.param.gpt
         bool m_bEnableRotaryPositionalEmbedding = false;
         bool m_bEnableLlamaStyleHead = false;
         bool m_bBiasTerm = true;
+        bool m_bEnableKeyValueCache = false;
         OutputAdapterParameter m_output_adapter_q = new OutputAdapterParameter("q");
         OutputAdapterParameter m_output_adapter_k = new OutputAdapterParameter("k");
         OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
@@ -251,6 +252,16 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
+        /// Specifies whether or not to enable the key value cache, which is used with Llama style models to save memory during inference.
+        /// </summary>
+        [Description]
+        public bool enable_key_value_cache
+        {
+            get { return m_bEnableKeyValueCache; }
+            set { m_bEnableKeyValueCache = value; }
+        }
+
+        /// <summary>
         /// Specifies to use a bias term in the multihead attention layer Linear layers (default = true).
         /// </summary>
         [Description("Specifies to use a bias term in the multihead attention layer Linear layers (default = true).")]
@@ -353,6 +364,7 @@ namespace MyCaffe.param.gpt
             m_bBiasTerm = p.bias_term;
             m_normalization = p.normalization_type;
             m_nMultipleOf = p.multiple_of;
+            m_bEnableKeyValueCache = p.enable_key_value_cache;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -386,6 +398,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("enable_cuda_scaled_dot_product_attention", enable_cuda_scaled_dot_product_attention.ToString());
             rgChildren.Add("enable_rotary_positional_embedding", enable_rotary_positional_embedding.ToString());
             rgChildren.Add("enable_llama_style_head", enable_llama_style_head.ToString());
+            rgChildren.Add("enable_key_value_cache", enable_key_value_cache.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
             rgChildren.Add("multiple_of", multiple_of.ToString());
             rgChildren.Add(output_adapter_q.ToProto("output_adapter_q"));
@@ -469,6 +482,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("enable_rotary_positional_embedding")) != null)
                 p.enable_rotary_positional_embedding = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_key_value_cache")) != null)
+                p.enable_key_value_cache = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("bias_term")) != null)
                 p.bias_term = bool.Parse(strVal);

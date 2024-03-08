@@ -55,6 +55,7 @@ namespace MyCaffe.layers.gpt
             p1.multihead_attention_param.enable_cuda_scaled_dot_product_attention = p.causal_self_attention_param.enable_cuda_scaled_dot_product_attention;
             p1.multihead_attention_param.enable_rotary_positional_embedding = p.causal_self_attention_param.enable_rotary_positional_embedding;
             p1.multihead_attention_param.rope_shared_index = p.causal_self_attention_param.rope_shared_index;
+            p1.multihead_attention_param.enable_key_value_cache = p.causal_self_attention_param.enable_key_value_cache;
             p1.multihead_attention_param.bias_term = p.causal_self_attention_param.bias_term;
             m_mh_att = new MultiheadAttentionLayer<T>(m_cuda, m_log, convertLayerParam(p1, p));
 
@@ -62,9 +63,12 @@ namespace MyCaffe.layers.gpt
             m_blobMask = new Blob<T>(cuda, log);
             m_blobMask.Name = m_param.name + " mask";
 
-            List<int> rgShape = new List<int>() { 1, 1, (int)p.causal_self_attention_param.block_size, (int)p.causal_self_attention_param.block_size };
-            m_blobMask.Reshape(rgShape);
-            fillMask(m_blobMask);
+            if (!p.causal_self_attention_param.enable_key_value_cache)
+            {
+                List<int> rgShape = new List<int>() { 1, 1, (int)p.causal_self_attention_param.block_size, (int)p.causal_self_attention_param.block_size };
+                m_blobMask.Reshape(rgShape);
+                fillMask(m_blobMask);
+            }
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -194,11 +198,14 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobX = colBottom[0];
             m_nT = blobX.channels;    // sequence length
 
-            if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
+            if (!m_param.causal_self_attention_param.enable_key_value_cache)
             {
-                List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
-                m_blobMask.Reshape(rgShape);
-                fillMask(m_blobMask);
+                if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
+                {
+                    List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
+                    m_blobMask.Reshape(rgShape);
+                    fillMask(m_blobMask);
+                }
             }
 
             addInternal(new List<Blob<T>> { blobX, blobX, blobX, m_blobMask }, colTop[0]);
