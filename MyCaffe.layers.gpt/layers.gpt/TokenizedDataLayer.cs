@@ -496,6 +496,16 @@ namespace MyCaffe.layers.gpt
 
             return rgData.Length - 1;
         }
+
+        /// <summary>
+        /// Returns true if the token is an end of sequence token (EOS).
+        /// </summary>
+        /// <param name="nToken">Specifies the token to test of EOS.</param>
+        /// <returns>If the token is an EOS token, true is returned.</returns>
+        public bool IsEOS(int nToken)
+        {
+            return m_data.EOS == nToken;
+        }
     }
 
     /// <summary>
