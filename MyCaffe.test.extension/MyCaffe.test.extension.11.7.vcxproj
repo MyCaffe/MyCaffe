@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cpp" />
     <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cpp" />
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\win.c" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MyCaffe.test.extension.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -31,6 +32,7 @@
     <None Include="MyCaffe.test.extension.11.5.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\blobloader.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\cpd.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\imgop.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\layernorm.h" />
@@ -41,11 +43,13 @@
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\nccl.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\pca.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\rnn8.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\rope.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd_core.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_g.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_gp.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\util.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\win.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -55,6 +59,7 @@
     <ResourceCompile Include="MyCaffe.test.extension.11.7.rc" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\blobloader.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\cpd.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\imgop.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\layernorm.cu" />
@@ -65,6 +70,7 @@
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\nccl.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\rnn8.cu" />
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\rope.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_g.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_gp.cu" />
