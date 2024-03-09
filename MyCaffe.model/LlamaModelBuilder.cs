@@ -14,45 +14,6 @@ using System.Threading.Tasks;
 namespace MyCaffe.model
 {
     /// <summary>
-    /// The Config structure defines the configuration of the model, which is also the header in Llama based models.
-    /// </summary>
-    struct Config
-    {
-        /// <summary>
-        /// Specifies the embed dimension of the model, for Llama7B this is 4096.
-        /// </summary>
-        public int dim;
-        /// <summary>
-        /// Specifies the hidden dimension of the model, for Llama7B this is 11008.
-        /// </summary>
-        public int hidden_dim;
-        /// <summary>
-        /// Specifies the number of layers in the model, for Llama7B this is 32.
-        /// </summary>
-        public int n_layers;
-        /// <summary>
-        /// Specifies the number of heads in the model, for Llama7B this is 32.
-        /// </summary>
-        public int n_heads;
-        /// <summary>
-        /// Specifies the number of key-value heads in the model, for Llama7B this is 32.
-        /// </summary>
-        public int n_kv_heads;
-        /// <summary>
-        /// Specifies the vocabulary size of the model, for Llama7B this is 32000.
-        /// </summary>
-        public int vocab_size;
-        /// <summary>
-        /// Specifies the sequence length of the model, for Llama7B this is 2048.
-        /// </summary>
-        public int seq_len;
-        /// <summary>
-        /// Specifies whether or not the classifier is shared, for Llama7B this is 0.
-        /// </summary>
-        public byte shared_classifier;
-    }
-
-    /// <summary>
     /// The LlamaModelBuilder creates a llama based model that supports the Llama models by Meta.
     /// </summary>
     public class LlamaModelBuilder<T> : ModelBuilder<T>
@@ -165,6 +126,13 @@ namespace MyCaffe.model
                     nDim = 4096;
                     nHiddenDim = 11008;
                     break;
+
+                case "Stories15M":
+                    nLayers = 6;
+                    nHeads = 6;
+                    nDim = 288;
+                    nHiddenDim = 768;
+                    break;
             }
 
             TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
@@ -198,14 +166,215 @@ namespace MyCaffe.model
         /// <returns>A byte array of the weights in MyCaffe format is returned and can be loaded using the MyCaffe.UpdateWeights method.</returns>
         /// <remarks>
         /// The following formats are supported:
-        ///     KPTH2 - supports the Karpathy format exported using 'export.py'.
+        ///     KPTH0 - supports the Karpathy original format exported using 'export.py'.
+        ///     KPTH1 - supports the Karpathy version 1 format exported using 'export.py'.
         ///     @see [llama2.c](https://github.com/karpathy/llama2.c) by Andrej Karpathy, 2023, GitHub.
         /// </remarks>
         public override byte[] LoadWeights(BlobCollection<T> col, string strModelFile, string strFmt = "KPTH1")
         {
-            if (strFmt != "KPTH1")
-                throw new Exception("The format '" + strFmt + "' is not supported!");
+            switch (strFmt)
+            {
+                case "KPTH0":
+                    return loadWeights_kpth0(col, strModelFile);
 
+                case "KPTH1":
+                    return loadWeights_kpth1(col, strModelFile);
+
+                default:
+                    throw new Exception("The format '" + strFmt + "' is not supported!");
+            }
+        }
+
+        private byte[] loadWeights_kpth0(BlobCollection<T> col, string strModelFile)
+        {
+            FileInfo fi = new FileInfo(strModelFile);
+            long lSize = fi.Length;
+            long lOffset = 0;
+            long hBlobLoader = 0;
+            long lHeaderSize = 28;
+
+            try
+            {
+                using (var mmf = MemoryMappedFile.CreateFromFile(strModelFile, FileMode.Open, "MyCaffeSharedMemory"))
+                {
+                    using (var accessor = mmf.CreateViewAccessor(lOffset, lSize, MemoryMappedFileAccess.Read))
+                    {
+                        byte[] rgHeader = new byte[lHeaderSize];
+                        accessor.ReadArray(0, rgHeader, 0, (int)lHeaderSize);
+
+                        using (MemoryStream ms = new MemoryStream(rgHeader))
+                        using (BinaryReader br = new BinaryReader(ms))
+                        {
+                            m_config.dim = br.ReadInt32();
+                            m_config.hidden_dim = br.ReadInt32();
+                            m_config.n_layers = br.ReadInt32();
+                            m_config.n_heads = br.ReadInt32();
+                            m_config.n_kv_heads = br.ReadInt32();
+                            m_config.vocab_size = br.ReadInt32();
+                            m_config.seq_len = br.ReadInt32();
+                            m_config.shared_classifier = m_config.vocab_size > 0 ? (byte)1 : (byte)0;
+                        }
+                    }
+                }
+
+                long nHeadSize = m_config.dim / m_config.n_heads;
+                int nIdx = 0;
+                float fFirst;
+
+                hBlobLoader = col[0].CreateBlobLoader(strModelFile, lOffset);
+                col[0].ResetBlobLoaderOffset(hBlobLoader, lHeaderSize);
+
+                // read in the token embedding table
+                long lTokenEmbeddingCount = m_config.vocab_size * m_config.dim;
+                lOffset += lTokenEmbeddingCount;
+
+                col[0].LoadFromBlobLoader(hBlobLoader, lTokenEmbeddingCount, 0);
+                col[0].AddToBlobLoaderOffset(hBlobLoader, lTokenEmbeddingCount);
+                fFirst = col[0].GetDataAsFloat(0);
+
+                // read in the rms_att_weights                    
+                long lRmsAttCount = m_config.n_layers * m_config.dim;
+                // read in the wq weights
+                long lWqCount = m_config.n_layers * m_config.dim * (m_config.n_heads * nHeadSize);
+                // read in the wk weights
+                long lWkCount = m_config.n_layers * m_config.dim * (m_config.n_kv_heads * nHeadSize);
+                // read in the wv weights
+                long lWvCount = m_config.n_layers * m_config.dim * (m_config.n_kv_heads * nHeadSize);
+                // read in the wo weights
+                long lWoCount = m_config.n_layers * (m_config.n_heads * nHeadSize) * m_config.dim;
+                // read in the rms_ffn_weights
+                long lRmsFfnCount = m_config.n_layers * m_config.dim;
+                // read in the w1 weights
+                long lW1Count = m_config.n_layers * m_config.dim * m_config.hidden_dim;
+                // read in the w2 weights
+                long lW2Count = m_config.n_layers * m_config.hidden_dim * m_config.dim;
+                // read in the w3 weights
+                long lW3Count = m_config.n_layers * m_config.dim * m_config.hidden_dim;
+
+                // Set the weight offset to Header + token_embedding
+                long lWeightStartOffset = lHeaderSize + lOffset * sizeof(float);
+
+                for (int i = 0; i < m_config.n_layers; i++)
+                {
+                    int nIdxRms1 = 1 + i * 9;
+                    int nIdxRms2 = 1 + i * 9 + 5;
+                    int nIdxWq = 2 + i * 9;
+                    int nIdxWk = nIdxWq + 1;
+                    int nIdxWv = nIdxWq + 2;
+                    int nIdxWo = nIdxWq + 3;
+                    int nIdxW1 = nIdxWq + 5;
+                    int nIdxW2 = nIdxWq + 6;
+                    int nIdxW3 = nIdxWq + 7;
+
+                    col[nIdxRms1].ResetBlobLoaderOffset(hBlobLoader, lWeightStartOffset);
+
+                    long lRmsAttCount1 = (lRmsAttCount / m_config.n_layers);
+                    long lRmsAttLocalOffset = i * lRmsAttCount1;
+                    col[nIdxRms1].LoadFromBlobLoader(hBlobLoader, lRmsAttCount1, lRmsAttLocalOffset);
+                    col[nIdxRms1].AddToBlobLoaderOffset(hBlobLoader, lRmsAttCount);
+                    fFirst = col[nIdxRms1].GetDataAsFloat(0);
+
+                    long lWqCount1 = (lWqCount / m_config.n_layers);
+                    long lWqLocalOffset = i * lWqCount1;
+                    col[nIdxWq].LoadFromBlobLoader(hBlobLoader, lWqCount1, lWqLocalOffset);
+                    col[nIdxWq].AddToBlobLoaderOffset(hBlobLoader, lWqCount);
+                    fFirst = col[nIdxWq].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lWkCount1 = (lWkCount / m_config.n_layers);
+                    long lWkLocalOffset = i * lWkCount1;
+                    col[nIdxWk].LoadFromBlobLoader(hBlobLoader, lWkCount1, lWkLocalOffset);
+                    col[nIdxWk].AddToBlobLoaderOffset(hBlobLoader, lWkCount);
+                    fFirst = col[nIdxWk].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lWvCount1 = (lWvCount / m_config.n_layers);
+                    long lWvLocalOffset = i * lWvCount1;
+                    col[nIdxWv].LoadFromBlobLoader(hBlobLoader, lWvCount1, lWvLocalOffset);
+                    col[nIdxWv].AddToBlobLoaderOffset(hBlobLoader, lWvCount);
+                    fFirst = col[nIdxWv].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lWoCount1 = (lWoCount / m_config.n_layers);
+                    long lWoLocalOffset = i * lWoCount1;
+                    col[nIdxWo].LoadFromBlobLoader(hBlobLoader, lWoCount1, lWoLocalOffset);
+                    col[nIdxWo].AddToBlobLoaderOffset(hBlobLoader, lWoCount);
+                    fFirst = col[nIdxWo].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lRmsFfnCount1 = (lRmsFfnCount / m_config.n_layers);
+                    long lRmsFfnLocalOffset = i * lRmsFfnCount1;
+                    col[nIdxRms2].LoadFromBlobLoader(hBlobLoader, lRmsFfnCount1, lRmsFfnLocalOffset);
+                    col[nIdxRms2].AddToBlobLoaderOffset(hBlobLoader, lRmsFfnCount);
+                    fFirst = col[nIdxRms2].GetDataAsFloat(0);
+
+                    long lW1Count1 = (lW1Count / m_config.n_layers);
+                    long lW1LocalOffset = i * lW1Count1;
+                    col[nIdxW1].LoadFromBlobLoader(hBlobLoader, lW1Count1, lW1LocalOffset);
+                    col[nIdxW1].AddToBlobLoaderOffset(hBlobLoader, lW1Count);
+                    fFirst = col[nIdxW1].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lW3Count1 = (lW3Count / m_config.n_layers);
+                    long lW3LocalOffset = i * lW3Count1;
+                    col[nIdxW3].LoadFromBlobLoader(hBlobLoader, lW3Count1, lW3LocalOffset);
+                    col[nIdxW3].AddToBlobLoaderOffset(hBlobLoader, lW3Count);
+                    fFirst = col[nIdxW3].GetDataAsFloat(0);
+                    nIdx++;
+
+                    long lW2Count1 = (lW2Count / m_config.n_layers);
+                    long lW2LocalOffset = i * lW2Count1;
+                    col[nIdxW2].LoadFromBlobLoader(hBlobLoader, lW2Count1, lW2LocalOffset);
+                    col[nIdxW2].AddToBlobLoaderOffset(hBlobLoader, lW2Count);
+                    fFirst = col[nIdxW2].GetDataAsFloat(0);
+                    nIdx++;
+
+                    col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + m_config.n_layers.ToString() + " ...", true);
+                    col[0].Log.Progress = ((double)i / (double)m_config.n_layers);
+                }
+
+                // read in the rms_final_weights
+                long lRmsFinalCount = m_config.dim;
+                lOffset += lRmsFinalCount;
+
+                int nIdxRmsFinal = 1 + m_config.n_layers * 9;
+                col[nIdxRmsFinal].LoadFromBlobLoader(hBlobLoader, m_config.dim, 0);
+                col[nIdxRmsFinal].AddToBlobLoaderOffset(hBlobLoader, m_config.dim);
+                fFirst = col[nIdxRmsFinal].GetDataAsFloat(0);
+
+                // read in the wcls weights
+                long lWclsCount = m_config.dim * m_config.vocab_size;
+                // Skip the freq_cis weights
+                col[nIdxRmsFinal].AddToBlobLoaderOffset(hBlobLoader, m_config.seq_len * nHeadSize / 2);
+                col[nIdxRmsFinal].AddToBlobLoaderOffset(hBlobLoader, m_config.seq_len * nHeadSize / 2);
+
+                int nIdxWcls = nIdxRmsFinal + 1;
+                if (m_config.shared_classifier == 0)
+                {
+                    col[nIdxWcls].LoadFromBlobLoader(hBlobLoader, lWclsCount, 0);
+                    fFirst = col[nIdxWcls].GetDataAsFloat(0);
+                }
+                else
+                {
+                    col[nIdxWcls].CopyFrom(col[0]);
+                    fFirst = col[nIdxWcls].GetDataAsFloat(0);
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                if (hBlobLoader != 0)
+                    col[0].FreeBlobLoader(hBlobLoader);
+            }
+
+            return null;
+        }
+
+        public byte[] loadWeights_kpth1(BlobCollection<T> col, string strModelFile)
+        {
             FileInfo fi = new FileInfo(strModelFile);
             long lSize = fi.Length;
             long lOffset = 0;
@@ -390,7 +559,7 @@ namespace MyCaffe.model
                 }
                 else
                 {
-                    col[nIdxWcls].CopyFrom(col[0]);    
+                    col[nIdxWcls].CopyFrom(col[0]);
                 }
             }
             catch (Exception excpt)
@@ -405,23 +574,6 @@ namespace MyCaffe.model
 
             return null;
         }
-
-        private float[] readWeights(MemoryMappedViewAccessor accessor, ref long lOffset, long nCount)
-        {
-            float[] rgWeights = new float[nCount];
-
-            for (int i = 0; i < nCount; i += 1000000)
-            {
-                long lCount = Math.Min(nCount - i, 1000000);
-                byte[] rgData = new byte[lCount * sizeof(float)];
-                lOffset += accessor.ReadArray(lOffset, rgData, 0, rgData.Length);
-
-                Buffer.BlockCopy(rgData, 0, rgWeights, i * sizeof(float), rgData.Length);
-            }
-
-            return rgWeights;
-        }
-
 
         private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase)
         {

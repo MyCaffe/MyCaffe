@@ -425,6 +425,26 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTinyStoriesModel_CreateTrainingModel()
+        {
+            TinyStoriesModelBuilderTest test = new TinyStoriesModelBuilderTest("Stories15M");
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestCreateTrainingModel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IModelBuilderTest : ITest
@@ -609,6 +629,267 @@ namespace MyCaffe.test
         {
             return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
         }
+
+        protected override void testCreateTrainingModel()
+        {
+            ModelBuilder<T> builder = create();
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
+            NetParameter net_param = builder.CreateModel(prop);
+            net_param.enable_memory_stats = true;
+            RawProto proto = net_param.ToProto("root");
+            string strNet = proto.ToString();
+
+            RawProto proto2 = RawProto.Parse(strNet);
+            NetParameter net_param2 = NetParameter.FromProto(proto2);
+
+            m_log.CHECK(net_param2.Compare(net_param), "The two net parameters should be the same!");
+
+            // verify creating the model.
+            SolverParameter solver = builder.CreateSolver();
+            RawProto protoSolver = solver.ToProto("root");
+            string strSolver = protoSolver.ToString();
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            int nDevCount = cuda.GetDeviceCount();
+            cuda.Dispose();
+
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.GpuIds = (nDevCount > 1) ? "1" : "0";
+            CancelEvent evtCancel = new CancelEvent();
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
+
+            try
+            {
+                save(strNet, strSolver, false);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+
+                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\models\\llama2_7b_chat.bin";
+                if (!File.Exists(strModelPath))
+                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH1");
+
+                TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
+
+                PropertySet input = new PropertySet();
+                string strPrompt = "[INST] What is your name? [/INST]";
+                int nMaxNewTokens = 50;
+                Blob<T> blobTokdata = net.FindBlob("tokdata");
+                Blob<T> blobLogits = net.FindBlob("logits");
+                int nCurIdx = 0;
+                float fTemperature = 0.1f;
+                Stopwatch sw = new Stopwatch();
+
+                int nSeqLen = 0;
+                input.SetProperty("InputData", strPrompt);
+                BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
+                blobTokdata.CopyFrom(colBtm[0], false, true);
+                List<float> rgTokenIds = new List<float>();
+                List<float> rgResponseTokens = new List<float>();
+
+                rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));
+
+                sw.Start();
+                double dfTotalTime = 0;
+                int nTokenId = (int)rgTokenIds[0];
+
+                int[] rgShape = new int[2] { 1, 1 };
+                blobTokdata.Reshape(rgShape);
+
+                for (int i = 0; i < nMaxNewTokens; i++)
+                {
+                    blobTokdata.SetData(nTokenId, 0);
+
+                    net.SetLayerOption("position", i);
+                    net.ForwardFromTo(3, 37);
+
+                    if (i < rgTokenIds.Count - 1)
+                    {
+                        nTokenId = (int)rgTokenIds[i + 1];
+                    }
+                    else
+                    {
+                        blobLogits.scale_data(1.0f / fTemperature);
+
+                        List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                        nTokenId = res[0].Item2;
+
+                        if (!tok.IsEOS(nTokenId))
+                            rgResponseTokens.Add(nTokenId);
+                    }
+
+                    sw.Stop();
+                    dfTotalTime += sw.Elapsed.TotalMilliseconds;
+
+                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i + 1)).ToString("N3") + " ms.", true);
+
+                    sw.Restart();
+
+                    if (tok.IsEOS(nTokenId))
+                        break;
+                }
+
+                string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
+                m_log.WriteLine("Output: " + strOutput);
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
+    }
+
+    class TinyStoriesModelBuilderTest : TestBase
+    {
+        string m_strModel = "Stories15M";
+
+        public TinyStoriesModelBuilderTest(string strModel)
+            : base("TinyStories 15M Model Builder Test", TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine.DEFAULT)
+        {
+            m_strModel = strModel;
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new TinyStoriesModelBuilderTest<double>(strName, nDeviceID, m_strModel, engine);
+            else
+                return new TinyStoriesModelBuilderTest<float>(strName, nDeviceID, m_strModel, engine);
+        }
+    }
+
+    class TinyStoriesModelBuilderTest<T> : ModelBuilderTest<T>
+    {
+        string m_strModel = "Stories15M";
+
+        public TinyStoriesModelBuilderTest(string strName, int nDeviceID, string strModel, EngineParameter.Engine engine)
+            : base(strName, nDeviceID, engine)
+        {
+            m_engine = engine;
+            m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
+            m_strModel = strModel;
+        }
+
+        protected override ModelBuilder<T> create()
+        {
+            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
+        }
+
+        protected override void testCreateTrainingModel()
+        {
+            ModelBuilder<T> builder = create();
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
+            NetParameter net_param = builder.CreateModel(prop);
+            net_param.enable_memory_stats = true;
+            RawProto proto = net_param.ToProto("root");
+            string strNet = proto.ToString();
+
+            RawProto proto2 = RawProto.Parse(strNet);
+            NetParameter net_param2 = NetParameter.FromProto(proto2);
+
+            m_log.CHECK(net_param2.Compare(net_param), "The two net parameters should be the same!");
+
+            // verify creating the model.
+            SolverParameter solver = builder.CreateSolver();
+            RawProto protoSolver = solver.ToProto("root");
+            string strSolver = protoSolver.ToString();
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            int nDevCount = cuda.GetDeviceCount();
+            cuda.Dispose();
+
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.GpuIds = (nDevCount > 1) ? "1" : "0";
+            CancelEvent evtCancel = new CancelEvent();
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
+
+            try
+            {
+                save(strNet, strSolver, false);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+
+                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\models\\stories15M.bin";
+                if (!File.Exists(strModelPath))
+                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
+
+                TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
+
+                PropertySet input = new PropertySet();
+                string strPrompt = "Once upon a time, ";
+                int nMaxNewTokens = 50;
+                Blob<T> blobTokdata = net.FindBlob("tokdata");
+                Blob<T> blobLogits = net.FindBlob("logits");
+                int nCurIdx = 0;
+                float fTemperature = 0.1f;
+                Stopwatch sw = new Stopwatch();
+
+                int nSeqLen = 0;
+                input.SetProperty("InputData", strPrompt);
+                BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
+                blobTokdata.CopyFrom(colBtm[0], false, true);
+                List<float> rgTokenIds = new List<float>();
+                List<float> rgResponseTokens = new List<float>();
+
+                rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));
+
+                sw.Start();
+                double dfTotalTime = 0;
+                int nTokenId = (int)rgTokenIds[0];
+
+                int[] rgShape = new int[2] { 1, 1 };
+                blobTokdata.Reshape(rgShape);
+
+                for (int i = 0; i < nMaxNewTokens; i++)
+                {
+                    blobTokdata.SetData(nTokenId, 0);
+
+                    net.SetLayerOption("position", i);
+                    net.ForwardFromTo(3, 11);
+
+                    if (i < rgTokenIds.Count - 1)
+                    {
+                        nTokenId = (int)rgTokenIds[i + 1];
+                    }
+                    else
+                    {
+                        blobLogits.scale_data(1.0f / fTemperature);
+
+                        List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                        nTokenId = res[0].Item2;
+
+                        if (!tok.IsEOS(nTokenId))
+                            rgResponseTokens.Add(nTokenId);
+                    }
+
+                    sw.Stop();
+                    dfTotalTime += sw.Elapsed.TotalMilliseconds;
+
+                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i + 1)).ToString("N3") + " ms.", true);
+
+                    sw.Restart();
+
+                    if (tok.IsEOS(nTokenId))
+                        break;
+                }
+
+                string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
+                m_log.WriteLine("Output: " + strOutput);
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
     }
 
     abstract class ModelBuilderTest<T> : TestEx<T>, IModelBuilderTest
@@ -706,114 +987,11 @@ namespace MyCaffe.test
 
         public void TestCreateTrainingModel()
         {
-            ModelBuilder<T> builder = create();
+            testCreateTrainingModel();
+        }
 
-            PropertySet prop = new PropertySet();
-            prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop);
-            net_param.enable_memory_stats = true;
-            RawProto proto = net_param.ToProto("root");
-            string strNet = proto.ToString();
-
-            RawProto proto2 = RawProto.Parse(strNet);
-            NetParameter net_param2 = NetParameter.FromProto(proto2);
-
-            m_log.CHECK(net_param2.Compare(net_param), "The two net parameters should be the same!");
-
-            // verify creating the model.
-            SolverParameter solver = builder.CreateSolver();
-            RawProto protoSolver = solver.ToProto("root");
-            string strSolver = protoSolver.ToString();
-
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            int nDevCount = cuda.GetDeviceCount();
-            cuda.Dispose();
-
-            SettingsCaffe settings = new SettingsCaffe();
-            settings.GpuIds = (nDevCount > 1) ? "1" : "0";
-            CancelEvent evtCancel = new CancelEvent();
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
-
-            try
-            {
-                save(strNet, strSolver, false);
-
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
-
-                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\models\\llama2_7b_chat.bin";
-                if (!File.Exists(strModelPath))
-                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
-
-                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH1");
-
-                TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
-
-                PropertySet input = new PropertySet();
-                string strPrompt = "[INST] What is your name? [/INST]";
-                int nMaxNewTokens = 50;
-                Blob<T> blobTokdata = net.FindBlob("tokdata");
-                Blob<T> blobLogits = net.FindBlob("logits");
-                int nCurIdx = 0;
-                float fTemperature = 0.1f;
-                Stopwatch sw = new Stopwatch();
-
-                int nSeqLen = 0;
-                input.SetProperty("InputData", strPrompt);
-                BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
-                blobTokdata.CopyFrom(colBtm[0], false, true);
-                List<float> rgTokenIds = new List<float>();
-                List<float> rgResponseTokens = new List<float>();
-
-                rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));   
-
-                sw.Start();
-                double dfTotalTime = 0;
-                int nTokenId = (int)rgTokenIds[0];
-
-                int[] rgShape = new int[2] { 1, 1 };
-                blobTokdata.Reshape(rgShape);
-
-                for (int i = 0; i < nMaxNewTokens; i++)
-                {
-                    blobTokdata.SetData(nTokenId, 0);
-
-                    net.SetLayerOption("position", i);
-                    net.ForwardFromTo(3, 37);
-
-                    if (i < rgTokenIds.Count - 1)
-                    {
-                        nTokenId = (int)rgTokenIds[i + 1];
-                    }
-                    else
-                    {
-                        blobLogits.scale_data(1.0f / fTemperature);
-
-                        List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
-                        nTokenId = res[0].Item2;
-
-                        if (!tok.IsEOS(nTokenId))
-                            rgResponseTokens.Add(nTokenId);
-                    }
-
-                    sw.Stop();
-                    dfTotalTime += sw.Elapsed.TotalMilliseconds;
-
-                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i+1)).ToString("N3") + " ms.", true);
-
-                    sw.Restart();
-
-                    if (tok.IsEOS(nTokenId))
-                        break;
-                }
-
-                string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
-                m_log.WriteLine("Output: " + strOutput);
-            }
-            finally
-            {
-                mycaffe.Dispose();
-            }
+        protected virtual void testCreateTrainingModel()
+        {
         }
 
         public void TestCreateDeployModel()
