@@ -799,7 +799,7 @@ namespace MyCaffe.test
                     sw.Stop();
                     dfTotalTime += sw.Elapsed.TotalMilliseconds;
 
-                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i+1)).ToString("N3") + " ms.");
+                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i+1)).ToString("N3") + " ms.", true);
 
                     sw.Restart();
 
