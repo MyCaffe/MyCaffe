@@ -144,18 +144,21 @@ namespace MyCaffe.layers.gpt
             m_rgVocabKeyToIdx.Clear();
 
             if (m_bAddEos)
-                rgKeys.Insert(0, EOS.ToString());
+                rgKeys.Insert(0, ((char)EOS).ToString());
             if (m_bAddBos)
-                rgKeys.Insert(0, BOS.ToString());
+                rgKeys.Insert(0, ((char)BOS).ToString());
             rgKeys.Insert(0, ((char)0).ToString());
 
             // index 0 reserved for pad.
             for (int i = 0; i < rgKeys.Count; i++)
             {
-                if (i <= 2 || (rgKeys[i][0] != 0 && rgKeys[i][0] != BOS && rgKeys[i][0] != EOS))
+                if (i <= 2 || (rgKeys[i][0] != 0 && rgKeys[i][0] != (char)BOS && rgKeys[i][0] != (char)EOS))
                 {
-                    m_rgVocabKeyToIdx.Add(rgKeys[i], i);
-                    m_rgVocabIdxToKey.Add(i, rgKeys[i]);
+                    if (!m_rgVocabKeyToIdx.ContainsKey(rgKeys[i]))
+                    {
+                        m_rgVocabKeyToIdx.Add(rgKeys[i], i);
+                        m_rgVocabIdxToKey.Add(i, rgKeys[i]);
+                    }
                 }
             }
 
@@ -240,9 +243,6 @@ namespace MyCaffe.layers.gpt
                         strWord1 = strWord1.Substring(0, strWord1.Length - 1);
                 }
             }
-
-            //if (rgTokens.Count == 0)
-            //    Trace.WriteLine("No tokens found!");
             
             return rgTokens;
         }

@@ -96,7 +96,7 @@ namespace MyCaffe.layers.gpt
             ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
             ipAttn.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipAttn.inner_product_param.axis = 2;
-            ipAttn.output_adapter = p.causal_self_attention_param.output_adapter_q;
+            ipAttn.weight_adapter = p.causal_self_attention_param.output_adapter_q;
             ipAttn.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttn.parameters.Add(new ParamSpec(1.0, 0.0));
             m_c_attn = Layer<T>.Create(cuda, log, convertLayerParam(ipAttn, p), null);
@@ -109,7 +109,7 @@ namespace MyCaffe.layers.gpt
             ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
             ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipProj.inner_product_param.axis = 2;
-            ipProj.output_adapter = p.causal_self_attention_param.output_adapter_out;
+            ipProj.weight_adapter = p.causal_self_attention_param.output_adapter_out;
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
@@ -683,7 +683,7 @@ namespace MyCaffe.layers.gpt
                     // att' = y' @ v^T 
                     // Gradient with respect to vt
                     // vt' = att^T @ y' 
-                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork);
+                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt);
 
                     // Apply attention dropout.
                     // att = self.attn_dropout(att)
@@ -705,7 +705,7 @@ namespace MyCaffe.layers.gpt
                     // Gradient with respect to qt
                     // qt' = att' @ kt
                     double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
+                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, dfScale);
 
                     // Transpose Kt1 back to Kt
                     addInternal(m_blobKt, m_blobKt1);

@@ -111,7 +111,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnQ.inner_product_param.axis = 2;
-            ipAttnQ.output_adapter = p.multihead_attention_param.output_adapter_q;
+            ipAttnQ.weight_adapter = p.multihead_attention_param.output_adapter_q;
             ipAttnQ.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnQ.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnQ = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnQ, p), null);
@@ -132,7 +132,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnK.inner_product_param.axis = 2;
-            ipAttnK.output_adapter = p.multihead_attention_param.output_adapter_k;
+            ipAttnK.weight_adapter = p.multihead_attention_param.output_adapter_k;
             ipAttnK.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnK.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnK = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnK, p), null);
@@ -153,7 +153,7 @@ namespace MyCaffe.layers.gpt
                 ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnV.inner_product_param.axis = 2;
-            ipAttnV.output_adapter = p.multihead_attention_param.output_adapter_v;
+            ipAttnV.weight_adapter = p.multihead_attention_param.output_adapter_v;
             ipAttnV.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipAttnV.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnV = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnV, p), null);
@@ -174,7 +174,7 @@ namespace MyCaffe.layers.gpt
                 ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipProj.inner_product_param.axis = 2;
-            ipProj.output_adapter = p.multihead_attention_param.output_adapter_out;
+            ipProj.weight_adapter = p.multihead_attention_param.output_adapter_out;
             ipProj.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
@@ -848,7 +848,7 @@ namespace MyCaffe.layers.gpt
                     // att' = y' @ v^T 
                     // Gradient with respect to vt
                     // vt' = att^T @ y' 
-                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork, 1);
+                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, 1);
 
                     // Apply attention dropout.
                     // att = self.attn_dropout(att)
@@ -870,7 +870,7 @@ namespace MyCaffe.layers.gpt
                     // Gradient with respect to qt
                     // qt' = att' @ kt
                     double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
+                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, dfScale);
 
                     // Transpose Kt1 back to Kt
                     addInternal(m_blobKt, m_blobKt1);
