@@ -633,10 +633,10 @@ namespace MyCaffe.model
 
                 if (bEnableLoRA)
                 {
-                    enc.transformer_block_param.output_adapter_q.enabled = true;
-                    enc.transformer_block_param.output_adapter_k.enabled = true;
-                    enc.transformer_block_param.output_adapter_v.enabled = true;
-                    enc.transformer_block_param.output_adapter_out.enabled = true;
+                    enc.transformer_block_param.weight_adapter_q.enabled = true;
+                    enc.transformer_block_param.weight_adapter_k.enabled = true;
+                    enc.transformer_block_param.weight_adapter_v.enabled = true;
+                    enc.transformer_block_param.weight_adapter_out.enabled = true;
                 }
 
                 enc.parameters.Add(new ParamSpec(1, 1));
