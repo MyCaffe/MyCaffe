@@ -21,7 +21,7 @@ namespace MyCaffe.param.gpt
     {
         int m_nAxis = 2;
         double m_dfEpsilon = 1e-5;
-        bool m_bEnableWeights = false;
+        bool m_bEnableWeights = true;
 
         /** @copydoc LayerParameterBase */
         public RMSNormParameter()
