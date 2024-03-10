@@ -815,7 +815,7 @@ namespace MyCaffe.test
             // att' = y' @ v^T 
             // Gradient with respect to vt
             // vt' = att^T @ y' 
-            y.MatMulGrad(m_blobAttB, v, m_blobWork, 1);
+            y.MatMulGrad(m_blobAttB, v);
 
             if (bDebug)
             {
@@ -856,7 +856,7 @@ namespace MyCaffe.test
             }
 
             double dfScale = 1.0 / Math.Sqrt(nSize);
-            m_blobAttA.MatMulGrad(q, m_blobKt1, m_blobWork, dfScale);
+            m_blobAttA.MatMulGrad(q, m_blobKt1, dfScale);
 
             if (bDebug)
             {

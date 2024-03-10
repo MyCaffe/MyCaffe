@@ -1896,7 +1896,7 @@ namespace MyCaffe.test
                 // MatMul Operation
                 //==================================
 
-                blobC.MatMulGrad(blobA, blobB, blobWork);
+                blobC.MatMulGrad(blobA, blobB);
 
                 // Verify values.
                 BlobCollection<T> colBtm = new BlobCollection<T>();
@@ -1969,7 +1969,7 @@ namespace MyCaffe.test
                 blobB2.CopyFrom(blobB1, false, true);
                 blobWork1.CopyFrom(blobWork2, false, true);
 
-                blobC1.MatMulGrad(blobA1, blobB1, blobWork1);
+                blobC1.MatMulGrad(blobA1, blobB1);
                 blobC2.MatMulGradEx(blobA2, blobB2, blobWork2);
 
                 if (!blobA1.Compare(blobA2, blobWork2, true, 1e-16))
@@ -1995,7 +1995,7 @@ namespace MyCaffe.test
                 blobB2.CopyFrom(blobB1, false, true);
                 blobWork1.CopyFrom(blobWork2, false, true);
 
-                blobC1.MatMulGrad(blobA1, blobB1, blobWork1);
+                blobC1.MatMulGrad(blobA1, blobB1);
                 blobC2.MatMulGradEx(blobA2, blobB2, blobWork2);
 
                 if (!blobA1.Compare(blobA2, blobWork2, true, 1e-16))
