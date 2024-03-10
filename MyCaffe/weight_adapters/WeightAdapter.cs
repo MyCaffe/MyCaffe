@@ -14,13 +14,13 @@ using System.Threading.Tasks;
 namespace MyCaffe.output_adapters
 {
     /// <summary>
-    /// Abstract base class for all output adapters.
+    /// Abstract base class for all weight adapters.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class OutputAdapter<T> : IDisposable
+    public abstract class WeightAdapter<T> : IDisposable
     {
         /// <summary>
-        /// Specifies the weight blobs of the output adapter.
+        /// Specifies the weight blobs of the weight adapter.
         /// </summary>
         protected BlobCollection<T> m_colBlobs = new BlobCollection<T>();
         /// <summary>
@@ -34,7 +34,7 @@ namespace MyCaffe.output_adapters
         /// <summary>
         /// Specifies the filler parameters.
         /// </summary>
-        protected OutputAdapterParameter m_param;
+        protected WeightAdapterParameter m_param;
         /// <summary>
         /// Internal top blobs for internal layer calls.
         /// </summary>
@@ -50,7 +50,7 @@ namespace MyCaffe.output_adapters
         /// <param name="cuda">Instance of CudaDnn - connection to cuda.</param>
         /// <param name="log">Log used for output.</param>
         /// <param name="p">OutputAdapter parameter that defines the adapter settings.</param>
-        public OutputAdapter(CudaDnn<T> cuda, Log log, OutputAdapterParameter p)
+        public WeightAdapter(CudaDnn<T> cuda, Log log, WeightAdapterParameter p)
         {
             m_cuda = cuda;
             m_log = log;
@@ -86,7 +86,7 @@ namespace MyCaffe.output_adapters
         /// <returns>If the Blob is shared, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         protected bool shareParameter(Blob<T> b, List<int> rgMinShape, bool bAllowEndsWithComparison = false)
         {
-            OutputAdapterParameterEx<T> paramEx = m_param as OutputAdapterParameterEx<T>;
+            WeightAdapterParameterEx<T> paramEx = m_param as WeightAdapterParameterEx<T>;
             if (paramEx == null)
                 return false;
 
@@ -117,20 +117,20 @@ namespace MyCaffe.output_adapters
         /// <param name="p">Specifies the output adapter parameters.</param>
         /// <returns>An instance of a new output adapter is returned.</returns>
         /// <exception cref="Exception">An exception is returned if an unsupported output adapter type is specified in the parameters.</exception>
-        public static OutputAdapter<T> Create(CudaDnn<T> cuda, Log log, OutputAdapterParameter p)
+        public static WeightAdapter<T> Create(CudaDnn<T> cuda, Log log, WeightAdapterParameter p)
         {
             string strType = p.type.ToLower();
 
             if (strType == "lora")
-                return new OutputAdapterLoRA<T>(cuda, log, p);
+                return new WeightAdapterLoRA<T>(cuda, log, p);
 
-            throw new Exception("Unknown OutputAdapter type: " + strType);
+            throw new Exception("Unknown WeightAdapter type: " + strType);
         }
 
         /// <summary>
         /// Returns the output adapter parameters.
         /// </summary>
-        public OutputAdapterParameter output_adapter_param
+        public WeightAdapterParameter weight_adapter_param
         {
             get { return m_param; }
         }
@@ -144,41 +144,40 @@ namespace MyCaffe.output_adapters
         }
 
         /// <summary>
-        /// Setup the output adapter. This method is called just after the layer Setup method is called.
+        /// Setup the weight adapter. This method is called just after the layer Setup method is called.
         /// </summary>
         /// <param name="p">Specifies the layer parameters.</param>
-        /// <param name="blobBottom">Specifies the input data.</param>
-        /// <param name="blobTop">Specifies the output data.</param>
-        public abstract void Setup(LayerParameter p, BlobCollection<T> blobBottom, BlobCollection<T> blobTop);
+        /// <param name="wt">Specifies the input data (which is the output of the layer's Forward call).</param>
+        public abstract void Setup(LayerParameter p, Blob<T> wt);
 
         /// <summary>
-        /// Reshape the output adapter. This method is called just after the layer's Reshape is called.
+        /// Reshape the weight adapter. This method is called just after the layer's Reshape is called.
         /// </summary>
-        /// <param name="colBottom">Specifies the input data.</param>
-        /// <param name="colTop">Specifies the output data.</param>
-        public abstract void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop);
+        /// <param name="wt">Specifies the input data (which is the output of the layer's Forward call).</param>
+        public abstract void Reshape(Blob<T> wt);
 
         /// <summary>
-        /// Forward propagate the output adapter. This method is called just after the layer's Forward is called.
+        /// Forward propagate the weight adapter. This method is called just after the layer's Forward is called and returns the new weights to use.
         /// </summary>
-        /// <param name="colBottom">Specifies the input data (which is the output of the layer's Forward call).</param>
-        /// <param name="colTop">Specifies the output data passed to the next layer.</param>
-        public abstract void Forward(BlobCollection<T> colBottom, BlobCollection<T> colTop);
+        /// <param name="wt">Specifies the input data (which is the output of the layer's Forward call).</param>
+        /// <returns>A handle to the GPU memory of the altered weights of the same shape as the input 'wt' is returned.</returns>
+        public abstract long Forward(Blob<T> wt);
 
         /// <summary>
-        /// Backward propagate the output adapter. This method is called just before the layer's Backward is called.
+        /// Backward propagate the weight adapter. This method is called just before the layer's Backward is called and returns the new weight gradients to use.
         /// </summary>
-        /// <param name="colTop">Specifies the input gradients.</param>
-        /// <param name="rgbPropagateDown">Specifies what gets propagated.</param>
-        /// <param name="colBottom">Specifies the output gradients (which are then the input gradients to the layer's Backward call).</param>
-        public abstract void Backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom);
+        /// <param name="colBtm">Specifies the input data (input to the Forward pass).</param>
+        /// <param name="colTop">Specifies the output data (output by the Forward pass).</param>
+        /// <param name="wt">Specifies the input gradients (which contains the grad before the Backward call).</param>
+        /// <returns>A handle to the GPU memory of the altered gradients of the same shape as the input 'wt' is returned.</returns>
+        public abstract long Backward(BlobCollection<T> colTop, BlobCollection<T> colBtm, Blob<T> wt);
     }
 
     /// <summary>
     /// The OutputAdapterParameterEx is used to pass the shared adapted blobs to the output adapter.
     /// </summary>
     /// <typeparam name="T">Specifies the double or float base type.</typeparam>
-    public class OutputAdapterParameterEx<T> : OutputAdapterParameter
+    public class WeightAdapterParameterEx<T> : WeightAdapterParameter
     {
         BlobCollection<T> m_colSharedBlobs = null;
 
@@ -187,7 +186,7 @@ namespace MyCaffe.output_adapters
         /// </summary>
         /// <param name="p">Specifies the original parameters.</param>
         /// <param name="colSharedBlobs">Specifies the shared adapted blobs.</param>
-        public OutputAdapterParameterEx(OutputAdapterParameter p, BlobCollection<T> colSharedBlobs) : base(p)
+        public WeightAdapterParameterEx(WeightAdapterParameter p, BlobCollection<T> colSharedBlobs) : base(p)
         {
             m_colSharedBlobs = colSharedBlobs;
         }

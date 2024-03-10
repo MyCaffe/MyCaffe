@@ -18,7 +18,7 @@ namespace MyCaffe.param
     /// </remarks>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class OutputAdapterParameter : BaseParameter, ICloneable
+    public class WeightAdapterParameter : BaseParameter, ICloneable
     {
         string m_strName;
         string m_strType;
@@ -33,7 +33,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Defines the output adapter type.
         /// </summary>
-        public enum OutputAdapterType
+        public enum WeightAdapterType
         {
             /// <summary>
             /// Specifies the NONE type, no adapter is used.
@@ -57,7 +57,7 @@ namespace MyCaffe.param
         /// <param name="dfAlpha">Specifies the alpha value.</param>
         /// <param name="nRank">Specifies the rank value.</param>
         /// <param name="dfDropoutRatio">Specifies the dropout_ratio.</param>
-        public OutputAdapterParameter(string strName, string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0)
+        public WeightAdapterParameter(string strName, string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0)
         {
             m_strName = strName;
             m_strType = strType;
@@ -71,7 +71,7 @@ namespace MyCaffe.param
         /// The constructor.
         /// </summary>
         /// <param name="p">Specifies the parameter to copy.</param>
-        public OutputAdapterParameter(OutputAdapterParameter p) : this(p.name, p.type, p.enabled, p.alpha, p.rank, p.dropout_ratio)
+        public WeightAdapterParameter(WeightAdapterParameter p) : this(p.name, p.type, p.enabled, p.alpha, p.rank, p.dropout_ratio)
         {
             foreach (ParamSpec ps in p.parameters)
             {
@@ -153,17 +153,17 @@ namespace MyCaffe.param
 
         [DisplayName("type")]
         [Description("Specifies the output adapter type.")]
-        public OutputAdapterType OutputAdapterTypeMethod /** @private */
+        public WeightAdapterType WeightAdapterTypeMethod /** @private */
         {
             get
             {
                 switch (m_strType)
                 {
                     case "lora":
-                        return OutputAdapterType.LORA;
+                        return WeightAdapterType.LORA;
 
                     case "none":
-                        return OutputAdapterType.NONE;
+                        return WeightAdapterType.NONE;
 
                     default:
                         throw new Exception("Unknown output adapter type '" + m_strType + "'");
@@ -179,14 +179,14 @@ namespace MyCaffe.param
         /// <param name="type">Specifies the OutputAdapterType.</param>
         /// <returns>The string associated with the OutputAdapterType is returned.</returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static string GetOutputAdapterName(OutputAdapterType type)
+        public static string GetOutputAdapterName(WeightAdapterType type)
         {
             switch (type)
             {
-                case OutputAdapterType.LORA:
+                case WeightAdapterType.LORA:
                     return "lora";
 
-                case OutputAdapterType.NONE:
+                case WeightAdapterType.NONE:
                     return "none";
 
                 default:
@@ -198,9 +198,9 @@ namespace MyCaffe.param
         /// Create a clone of this output adapter parameter.
         /// </summary>
         /// <returns>A new instance of this parameter is returned.</returns>
-        public OutputAdapterParameter Clone()
+        public WeightAdapterParameter Clone()
         {
-            OutputAdapterParameter type = new OutputAdapterParameter(m_strName, m_strType, m_bEnable);
+            WeightAdapterParameter type = new WeightAdapterParameter(m_strName, m_strType, m_bEnable);
             type.m_rgParams = Utility.Clone<ParamSpec>(m_rgParams);
             return type;
         }
@@ -233,7 +233,7 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static OutputAdapterParameter FromProto(RawProto rp)
+        public static WeightAdapterParameter FromProto(RawProto rp)
         {
             string strName;
             string strVal;
@@ -244,7 +244,7 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("type")) == null)
                 throw new Exception("Could not find 'type'");
 
-            OutputAdapterParameter p = new OutputAdapterParameter(strName, strVal);
+            WeightAdapterParameter p = new WeightAdapterParameter(strName, strVal);
 
             if ((strVal = rp.FindValue("enabled")) != null)
                 p.enabled = bool.Parse(strVal);

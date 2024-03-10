@@ -35,10 +35,10 @@ namespace MyCaffe.param.tft
         uint m_nNumHistoricalSteps = 0;  
         uint m_nNumFutureSteps = 0;
         bool m_bEnableSelfAttention = true;
-        OutputAdapterParameter m_output_adapter_q = new OutputAdapterParameter("q");
-        OutputAdapterParameter m_output_adapter_k = new OutputAdapterParameter("k");
-        OutputAdapterParameter m_output_adapter_v = new OutputAdapterParameter("v");
-        OutputAdapterParameter m_output_adapter_out = new OutputAdapterParameter("out");
+        WeightAdapterParameter m_output_adapter_q = new WeightAdapterParameter("q");
+        WeightAdapterParameter m_output_adapter_k = new WeightAdapterParameter("k");
+        WeightAdapterParameter m_output_adapter_v = new WeightAdapterParameter("v");
+        WeightAdapterParameter m_output_adapter_out = new WeightAdapterParameter("out");
 
         /** @copydoc LayerParameterBase */
         public MultiHeadAttentionInterpParameter()
@@ -144,7 +144,7 @@ namespace MyCaffe.param.tft
         /// Specifies the output adapter for the 'q' Linear layer.
         /// </summary>
         [Description("Specifies the output adapter for the 'q' Linear layer.")]
-        public OutputAdapterParameter output_adapter_q
+        public WeightAdapterParameter output_adapter_q
         {
             get { return m_output_adapter_q; }
             set { m_output_adapter_q = value; }
@@ -154,7 +154,7 @@ namespace MyCaffe.param.tft
         /// Specifies the output adapter for the 'q' Linear layer.
         /// </summary>
         [Description("Specifies the output adapter for the 'k' Linear layer.")]
-        public OutputAdapterParameter output_adapter_k
+        public WeightAdapterParameter output_adapter_k
         {
             get { return m_output_adapter_k; }
             set { m_output_adapter_k = value; }
@@ -164,7 +164,7 @@ namespace MyCaffe.param.tft
         /// Specifies the output adapter for the 'v' Linear layer.
         /// </summary>
         [Description("Specifies the output adapter for the 'v' Linear layer.")]
-        public OutputAdapterParameter output_adapter_v
+        public WeightAdapterParameter output_adapter_v
         {
             get { return m_output_adapter_v; }
             set { m_output_adapter_v = value; }
@@ -174,7 +174,7 @@ namespace MyCaffe.param.tft
         /// Specifies the output adapter for the 'out' Linear layer.
         /// </summary>
         [Description("Specifies the output adapter for the 'out' Linear layer.")]
-        public OutputAdapterParameter output_adapter_out
+        public WeightAdapterParameter output_adapter_out
         {
             get { return m_output_adapter_out; }
             set { m_output_adapter_out = value; }
@@ -304,19 +304,19 @@ namespace MyCaffe.param.tft
 
             RawProto rp1 = rp.FindChild("output_adapter_q");
             if (rp1 != null)
-                p.output_adapter_q = OutputAdapterParameter.FromProto(rp1);
+                p.output_adapter_q = WeightAdapterParameter.FromProto(rp1);
 
             rp1 = rp.FindChild("output_adapter_k");
             if (rp1 != null)
-                p.output_adapter_k = OutputAdapterParameter.FromProto(rp1);
+                p.output_adapter_k = WeightAdapterParameter.FromProto(rp1);
 
             rp1 = rp.FindChild("output_adapter_v");
             if (rp1 != null)
-                p.output_adapter_v = OutputAdapterParameter.FromProto(rp1);
+                p.output_adapter_v = WeightAdapterParameter.FromProto(rp1);
 
             rp1 = rp.FindChild("output_adapter_out");
             if (rp1 != null)
-                p.output_adapter_out = OutputAdapterParameter.FromProto(rp1);
+                p.output_adapter_out = WeightAdapterParameter.FromProto(rp1);
 
             return p;
         }

@@ -25,7 +25,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the output adapter for the layer (default = NONE type and disabled).
         /// </summary>
-        protected OutputAdapterParameter m_outputAdapter = new OutputAdapterParameter("");
+        protected WeightAdapterParameter m_weightAdapter = new WeightAdapterParameter("");
         /// <summary>
         /// Specifies the level of conversion support for the layer.
         /// </summary>
@@ -763,7 +763,7 @@ namespace MyCaffe.param
             m_bFreezeLearning = p.m_bFreezeLearning;
             m_bConnectLossEvent = p.m_bConnectLossEvent;
             m_bUseHalfSize = p.m_bUseHalfSize;           
-            m_outputAdapter = p.m_outputAdapter.Clone();
+            m_weightAdapter = p.m_weightAdapter.Clone();
             m_onnxConversionSupport = p.m_onnxConversionSupport;
             m_rgstrExpectedBottom = p.m_rgstrExpectedBottom;
             m_rgstrExpectedTop = p.m_rgstrExpectedTop;
@@ -1958,10 +1958,10 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the output adapter to process outputs just after running the layer forward pass, and just before running the layer backward pass.
         /// </summary>
-        public OutputAdapterParameter output_adapter
+        public WeightAdapterParameter weight_adapter
         {
-            get { return m_outputAdapter; }
-            set { m_outputAdapter = value; }
+            get { return m_weightAdapter; }
+            set { m_weightAdapter = value; }
         }
 
         /// <summary>
@@ -3160,7 +3160,7 @@ namespace MyCaffe.param
         {
             LayerParameter p = new LayerParameter(m_type, m_strName);
 
-            p.m_outputAdapter = m_outputAdapter.Clone();
+            p.m_weightAdapter = m_weightAdapter.Clone();
 
             p.m_rgstrBottom = Utility.Clone<string>(m_rgstrBottom);
             p.m_rgstrTop = Utility.Clone<string>(m_rgstrTop);
@@ -3663,7 +3663,7 @@ namespace MyCaffe.param
             rgChildren.Add<double>("loss_weight", loss_weight);
 
             if (m_type == LayerType.INNERPRODUCT)
-                rgChildren.Add(output_adapter.ToProto("output_adapter"));
+                rgChildren.Add(weight_adapter.ToProto("weight_adapter"));
 
             if (group_start)
                 rgChildren.Add("group_start", group_start.ToString());
@@ -3885,9 +3885,9 @@ namespace MyCaffe.param
 
             p.loss_weight = rp.FindArray<double>("loss_weight");
 
-            RawProto rpOutputAdapter = rp.FindChild("output_adapter");
-            if (rpOutputAdapter != null)
-                p.output_adapter = OutputAdapterParameter.FromProto(rpOutputAdapter);
+            RawProto rpWeightAdapter = rp.FindChild("weight_adapter");
+            if (rpWeightAdapter != null)
+                p.weight_adapter = WeightAdapterParameter.FromProto(rpWeightAdapter);
 
             if ((strVal = rp.FindValue("group_start")) != null)
                 p.group_start = bool.Parse(strVal);

@@ -274,6 +274,9 @@ namespace MyCaffe.layers
             }
 
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
+
+            if (m_weightAdatper != null)
+                m_weightAdatper.Setup(layer_param, m_colBlobs[0]);
         }
 
         /// <summary>
@@ -324,6 +327,9 @@ namespace MyCaffe.layers
                 m_blobBiasMultiplier.Reshape(rgBiasShape);
                 m_blobBiasMultiplier.SetData(1.0);
             }
+
+            if (m_weightAdatper != null)
+                m_weightAdatper.Reshape(m_colBlobs[0]);
         }
 
         /// <summary>
@@ -361,6 +367,9 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].mutable_gpu_data;
             long hWeight = m_colBlobs[0].gpu_data;
             long hBias = (m_bBiasTerm) ? m_colBlobs[1].gpu_data : 0;
+
+            if (m_weightAdatper != null)
+                hWeight = m_weightAdatper.Forward(m_colBlobs[0]);
 
             if (m_bEnableNoise && m_phase == Phase.TRAIN)
             {
@@ -412,6 +421,9 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             long hTopDiff = colTop[0].gpu_diff;
+
+            if (m_weightAdatper != null)
+                m_weightAdatper.Backward(colTop, colBottom, m_colBlobs[0]);
 
             // Gradient with respect to weight.
             if (m_rgbParamPropagateDown[0] && !layer_param.freeze_learning)

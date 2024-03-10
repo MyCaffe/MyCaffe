@@ -1368,11 +1368,11 @@ namespace MyCaffe.common
         {
             LayerParameter layer_param = m_rgLayers[layer_id].layer_param;
 
-            if (layer_param.output_adapter == null)
+            if (layer_param.weight_adapter == null)
                 return;
 
             ParamSpec default_param_spec = new ParamSpec();
-            ParamSpec param_spec = (layer_param.output_adapter.parameters.Count > adapted_param_id) ? layer_param.parameters[adapted_param_id] : default_param_spec;
+            ParamSpec param_spec = (layer_param.weight_adapter.parameters.Count > adapted_param_id) ? layer_param.parameters[adapted_param_id] : default_param_spec;
             Blob<T> blob = m_rgLayers[layer_id].blobs_adapted[adapted_param_id];
 
             m_colLearnableAdaptedParams.Add(blob);

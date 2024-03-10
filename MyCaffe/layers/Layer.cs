@@ -120,6 +120,11 @@ namespace MyCaffe.layers
         /// </summary>
         protected PropertySet m_options = new PropertySet();
 
+        /// <summary>
+        /// Specifies the weight adapters used.
+        /// </summary>
+        protected WeightAdapter<T> m_weightAdatper = null;
+
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
 
@@ -130,7 +135,6 @@ namespace MyCaffe.layers
         private double m_dfAverageInterval = 20.0;
         private Stopwatch m_swTiming = new Stopwatch();
         private WorkspaceArgs m_argsWs = new WorkspaceArgs(0, 0);
-        private OutputAdapter<T> m_outputAdatper = null;
         private BlobCollection<T> m_colBlobsAdaptedNone = new BlobCollection<T>();
 
         /// <summary>
@@ -484,7 +488,7 @@ namespace MyCaffe.layers
                 setup_internal_blobs(m_colInternalBlobs);
                 LayerSetUp(colBottom, colTop);
                 Reshape(colBottom, colTop);
-                setupOutputAdapter(colBottom, colTop);
+                setupWeightAdapter(colBottom, colTop);
                 setShapes(colBottom, colTop);
                 SetLossWeights(colTop);
 
@@ -508,15 +512,15 @@ namespace MyCaffe.layers
             }
         }
 
-        private void setupOutputAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        private void setupWeightAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Adapters currently only supported on InnerProduct layers.
             if (m_param.type != LayerParameter.LayerType.INNERPRODUCT)
                 return;
 
-            if (m_param.output_adapter == null ||
-                m_param.output_adapter.OutputAdapterTypeMethod == OutputAdapterParameter.OutputAdapterType.NONE ||
-                m_param.output_adapter.enabled == false)
+            if (m_param.weight_adapter == null ||
+                m_param.weight_adapter.WeightAdapterTypeMethod == WeightAdapterParameter.WeightAdapterType.NONE ||
+                m_param.weight_adapter.enabled == false)
                 return;
 
             LayerParameterEx<T> layerParameterEx = m_param as LayerParameterEx<T>;
@@ -526,14 +530,14 @@ namespace MyCaffe.layers
                     return;
             }
 
-            OutputAdapterParameter pOutputAdapter = m_param.output_adapter;
+            WeightAdapterParameter pWeightAdapter = m_param.weight_adapter;
             LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
             if (pEx != null && pEx.SharedAdaptedBlobs != null)
-                pOutputAdapter = new OutputAdapterParameterEx<T>(pOutputAdapter, pEx.SharedAdaptedBlobs);
+                pWeightAdapter = new WeightAdapterParameterEx<T>(pWeightAdapter, pEx.SharedAdaptedBlobs);
 
-            m_outputAdatper = OutputAdapter<T>.Create(m_cuda, m_log, pOutputAdapter);
-            m_outputAdatper.Setup(m_param, colBottom, colTop);
-            m_outputAdatper.Reshape(colBottom, colTop);
+            m_weightAdatper = WeightAdapter<T>.Create(m_cuda, m_log, pWeightAdapter);
+            m_weightAdatper.Setup(layer_param, m_colBlobs[0]);
+            m_weightAdatper.Reshape(m_colBlobs[0]);
         }
 
         /// <summary>
@@ -808,9 +812,6 @@ namespace MyCaffe.layers
 
                 forward(colBottom, colTop);
 
-                if (m_outputAdatper != null)
-                    m_outputAdatper.Forward(colTop, colTop);
-
                 for (int i = 0; i < colTop.Count; i++)
                 {
                     if (loss(i) == 0)
@@ -892,9 +893,6 @@ namespace MyCaffe.layers
 
                 convert(colBottom);
 
-                if (m_outputAdatper != null)
-                    m_outputAdatper.Backward(colTop, rgbPropagateDown, colTop);
-
                 backward(colTop, rgbPropagateDown, colBottom);
                 m_swTiming.Stop();
                 m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
@@ -953,7 +951,7 @@ namespace MyCaffe.layers
         /// </summary>
         public BlobCollection<T> blobs_adapted
         {
-            get { return (m_outputAdatper != null) ? m_outputAdatper.blobs : m_colBlobsAdaptedNone; }
+            get { return (m_weightAdatper != null) ? m_weightAdatper.blobs : m_colBlobsAdaptedNone; }
         }
 
         /// <summary>
