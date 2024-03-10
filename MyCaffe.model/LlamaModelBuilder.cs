@@ -106,11 +106,10 @@ namespace MyCaffe.model
         /// Create the training model.
         /// </summary>
         /// <param name="prop">Specifies optional properties.</param>
-        /// <param name="bDeploy">Optionally, specifies to create a deployment model (default = false).</param>
-        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
+        /// <param name="phase">Optionally, specifies the phase to use when creating the model (default = TRAIN).</param>
+        /// <param name="bEnableLoRA">Optionally, specifies whether or not to enable LoRA (default = false).</param>
+        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false)
         {
-            Phase phase = (bDeploy) ? Phase.RUN : Phase.TRAIN;
-
             m_net = createNet(m_strModel);
 
             uint nLayers = 0;
@@ -144,7 +143,7 @@ namespace MyCaffe.model
                     vocabType = (TokenizedDataParameter.VOCABULARY_TYPE)nVocabType;
             }
 
-            string strModel = buildModel(vocabType, m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase);
+            string strModel = buildModel(vocabType, m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase, bEnableLoRA);
 
             return m_net;
         }
@@ -154,7 +153,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(null, true);
+            return CreateModel(null, Phase.RUN);
         }
 
         /// <summary>
@@ -575,7 +574,7 @@ namespace MyCaffe.model
             return null;
         }
 
-        private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase)
+        private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase, bool bEnableLoRA)
         {
             net.enable_lora = true;
             net.enable_lora_only_load = true;
@@ -631,6 +630,15 @@ namespace MyCaffe.model
                 enc.transformer_block_param.enable_rotary_positional_embedding = true;
                 enc.transformer_block_param.enable_key_value_cache = true;
                 enc.transformer_block_param.bias_term = false;
+
+                if (bEnableLoRA)
+                {
+                    enc.transformer_block_param.output_adapter_q.enabled = true;
+                    enc.transformer_block_param.output_adapter_k.enabled = true;
+                    enc.transformer_block_param.output_adapter_v.enabled = true;
+                    enc.transformer_block_param.output_adapter_out.enabled = true;
+                }
+
                 enc.parameters.Add(new ParamSpec(1, 1));
                 enc.parameters.Add(new ParamSpec(1, 1));
                 enc.parameters.Add(new ParamSpec(1, 1));

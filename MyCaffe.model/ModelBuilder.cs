@@ -87,8 +87,9 @@ namespace MyCaffe.model
         /// Create the training/testing/deploy model to use.
         /// </summary>
         /// <param name="prop">Specifies optional properties.</param>
-        /// <param name="bDeploy">Specifies to create the deploy model.</param>
-        public abstract NetParameter CreateModel(PropertySet prop, bool bDeploy = false);
+        /// <param name="phase">Specifies the phase to use when creating the model.</param>
+        /// <param name="bEnableLoRA">Optionally, specifies to enable LoRA when available.</param>
+        public abstract NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false);
 
         /// <summary>
         /// Create the deploy model to use.

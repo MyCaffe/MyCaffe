@@ -353,13 +353,16 @@ namespace MyCaffe.model
         /// Create the training SSD model for the pascal dataset.
         /// </summary>
         /// <param name="prop">Specifies the property set containing the optional properties.</param>
-        /// <param name="bDeploy">Optionally, specifies to create the deloy model.</param>
-        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
+        /// <param name="phase">Optionally, specifies the phase to use when creating the model (default = TRAIN).</param>
+        /// <param name="bEnableLoRA">Optionally, specifies whether or not to enable LoRA (default = false).</param>
+        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false)
         {
             string strLabelMapFile = getFileName(m_strLabelMapFile, null);
             LayerParameter data = null;
 
             m_net = createNet(m_strModel);
+
+            bool bDeploy = (phase != Phase.TRAIN) ? true : false;
 
             if (!bDeploy)
                 addAnnotatedDataLayer(m_strTrainDataSource, Phase.TRAIN, m_nBatchSizePerDevice, true, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTrain, m_rgBatchSampler);
@@ -482,7 +485,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(null, true);
+            return CreateModel(null, Phase.RUN);
         }
 
         /// <summary>

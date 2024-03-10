@@ -157,8 +157,9 @@ namespace MyCaffe.model
         /// Create the training model.
         /// </summary>
         /// <param name="prop">Specifies the property set containing the optional properties.</param>
-        /// <param name="bDeploy">Optionally, specifies to create a deployment model (default = false).</param>
-        public override NetParameter CreateModel(PropertySet prop, bool bDeploy = false)
+        /// <param name="phase">Optionally, specifies the phase to use when creating the model (default = TRAIN).</param>
+        /// <param name="bEnableLoRA">Optionally, specifies whether or not to enable LoRA (default = false).</param>
+        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false)
         {
             LayerParameter lastLayer = null;
             LayerParameter data = null;
@@ -180,6 +181,8 @@ namespace MyCaffe.model
                 strLayerPostfix = "_p";
                 bNamedParams = true;
             }
+
+            bool bDeploy = (phase != Phase.TRAIN) ? true : false;
 
             if (!bDeploy)
                 addDataLayer(m_strTrainDataSource, Phase.TRAIN, m_nBatchSize, true, m_transformTrain, strDataName, m_bSiamese);
@@ -329,7 +332,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateDeployModel()
         {
-            return CreateModel(null, true);
+            return CreateModel(null, Phase.RUN);
         }
 
         /// <summary>
