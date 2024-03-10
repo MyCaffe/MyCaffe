@@ -4113,12 +4113,11 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="blobA">Specifies the blobA where blobA gradients are placed (in diff values).</param>
         /// <param name="blobB">Specifies the blobB where blobB gradients are placed (in diff values).</param>
-        /// <param name="blobWork">Specifies a work blob.</param>
         /// <param name="dfScale">Specifies a scale to be applied to the diffs in this blob before the MatMul (default = 1.0).</param>
         /// <remarks>
         /// @see [PyGrad:functions.py](https://github.com/jaketae/pygrad/blob/master/pygrad/functions.py) by Jake Tae, 2020, GitHub:jaketae/pygrad
         /// </remarks>
-        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, Blob<T> blobWork, double dfScale = 1.0)
+        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, double dfScale = 1.0)
         {
             if (dfScale != 1.0)
                 scale_diff(dfScale);
