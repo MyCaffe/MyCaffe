@@ -42,7 +42,17 @@ namespace MyCaffe.fillers
         {
             m_log.CHECK(nCount > 0, "There is no data to fill!");
             m_log.CHECK_LT(m_param.min, m_param.max, "The min must be less than the max for the uniform filler!");
-            m_cuda.rng_uniform(nCount, m_param.min, m_param.max, hMem);
+
+            double dfMin = m_param.min;
+            double dfMax = m_param.max;
+
+            if (m_param.min == 0 && m_param.max == 1 && m_param.std > 0)
+            {
+                dfMin = -m_param.std;
+                dfMax = m_param.std;
+            }
+
+            m_cuda.rng_uniform(nCount, dfMin, dfMax, hMem);
         }
     }
 }
