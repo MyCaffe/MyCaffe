@@ -12,7 +12,7 @@ using MyCaffe.solvers;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestOutputAdapter
+    public class TestWeightAdapter
     {
         [TestMethod]
         public void TestLayerForwardLoRADisabled()
@@ -292,6 +292,7 @@ namespace MyCaffe.test
         {
             NetParameter pNet = new NetParameter();
             pNet.name = "lora_test";
+            pNet.enable_lora = bEnableLoRA;
 
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
             data.input_param.shape.Add(new BlobShape(new List<int>() { nN, nC, nH, nW }));
@@ -306,13 +307,13 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip");
             p.inner_product_param.num_output = (uint)nNumOut;
-            p.inner_product_param.bias_term = true;
+            p.inner_product_param.bias_term = false;
             p.inner_product_param.axis = nAxis;
             p.freeze_learning = bEnableLoRA;
-            p.output_adapter.type = strLoRAType;
-            p.output_adapter.alpha = 1.0;
-            p.output_adapter.rank = 4;
-            p.output_adapter.enabled = bEnableLoRA;
+            p.weight_adapter.type = strLoRAType;
+            p.weight_adapter.alpha = 1.0;
+            p.weight_adapter.rank = 2;
+            p.weight_adapter.enabled = bEnableLoRA;
             p.bottom.Add("x");
             p.top.Add("ip");
             pNet.layer.Add(p);
@@ -334,48 +335,53 @@ namespace MyCaffe.test
             return pNet.ToProto("root").ToString();
         }
 
-        public void TestLayerForward(bool bEnabled, string strType, SolverParameter.SolverType type)
+        public void TestLayerForward(bool bEnableLoRA, string strType, SolverParameter.SolverType type)
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
 
             try
             {
                 string strSolver = buildSolver(type);
-                string strModel = buildModel(bEnabled, strType, 2, 3, 1, 1, false);
+                string strModel = buildModel(bEnableLoRA, strType, 64, 350, 288, 1, false, 2, 288);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Blob<T> blobX = net.FindBlob("x");
+                string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\test\\";
 
-                float[] rgBottom = new float[] { 1, 2, 3, 4, 5, 6 };
-                blobX.mutable_cpu_data = convert(rgBottom);
-              
+                blobX.LoadFromNumpy(strPath + "x.npy");
+
+                m_log.CHECK_EQ(blobX.num, 64, "The batch size should be 64.");
+                m_log.CHECK_EQ(blobX.channels, 350, "The channels should be 350.");
+                m_log.CHECK_EQ(blobX.height, 288, "The height should be 288.");
+                m_log.CHECK_EQ(blobX.width, 1, "The width should be 1.");
+
                 Layer<T> layer = net.FindLayer(LayerParameter.LayerType.INNERPRODUCT, "ip");
-                float[] rgWeight = new float[] { 0.0461305f };
-                float[] rgBias = new float[] { 0.0f };
-                layer.blobs[0].mutable_cpu_data = convert(rgWeight);
-                layer.blobs[1].mutable_cpu_data = convert(rgBias);
 
-                if (bEnabled)
+                layer.blobs[0].LoadFromNumpy(strPath + "wq.npy");
+
+                if (bEnableLoRA)
                 {
-                    float[] rgLoraA = new float[] { 0.2012014f, -0.5057645f, 0.1083691f, -0.3061365f };
-                    float[] rgLoraB = new float[] { 0.0f, 0.0f, 0.0f, 0.0f };
-                    layer.blobs_adapted[0].mutable_cpu_data = convert(rgLoraA);
-                    layer.blobs_adapted[1].mutable_cpu_data = convert(rgLoraB);
+                    m_log.CHECK_EQ(layer.blobs_adapted.Count, 2, "The number of adapted blobs should be 2.");
+                    m_log.CHECK_EQ(layer.blobs_adapted[0].num, layer.layer_param.weight_adapter.rank, "The num of the A adapted blob should be equal to rank " + layer.layer_param.weight_adapter.rank.ToString());
+                    m_log.CHECK_EQ(layer.blobs_adapted[0].channels, 288, "The channels of the adapted blob should be 288.");
+                    m_log.CHECK_EQ(layer.blobs_adapted[1].channels, layer.layer_param.weight_adapter.rank, "The channels of the B adapted blob should be equal to rank " + layer.layer_param.weight_adapter.rank.ToString());
+                    m_log.CHECK_EQ(layer.blobs_adapted[1].num, 288, "The num of the B adapted blob should be 288.");
+
+                    layer.blobs_adapted[0].LoadFromNumpy(strPath + "lora_a.npy");
+                    layer.blobs_adapted[1].LoadFromNumpy(strPath + "lora_b.npy");
                 }
 
                 BlobCollection<T> colTop = net.Forward();
-                float[] rgTop = convertF(colTop[0].mutable_cpu_data);
 
-                float[] rgExpected = new float[] { 0.0461305f, 0.0922609f, 0.1383914f, 0.1845219f, 0.2306523f, 0.2767828f };
-                for (int i = 0; i < rgTop.Length; i++)
-                {
-                    m_log.EXPECT_NEAR(rgTop[i], rgExpected[i], 3e-07);
-                }
+                blobVal.LoadFromNumpy(strPath + "xq.npy");
+                m_log.CHECK(blobVal.Compare(colTop[0], blobWork), "The outputs are not as expected.");
             }
             finally
             {
