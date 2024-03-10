@@ -382,7 +382,7 @@ namespace MyCaffe.layers.tft
                 ipQ.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipQ.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipQ.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipQ.output_adapter = m_param.multihead_attention_interp_param.output_adapter_q;
+                ipQ.weight_adapter = m_param.multihead_attention_interp_param.output_adapter_q;
 
                 m_ipQLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipQ, m_param), null);
 
@@ -414,7 +414,7 @@ namespace MyCaffe.layers.tft
                 ipK.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipK.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipK.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipK.output_adapter = m_param.multihead_attention_interp_param.output_adapter_k;
+                ipK.weight_adapter = m_param.multihead_attention_interp_param.output_adapter_k;
 
                 m_ipKLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipK, m_param), null);
                 m_blobK.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
@@ -434,7 +434,7 @@ namespace MyCaffe.layers.tft
                 ipV.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipV.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipV.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipV.output_adapter = m_param.multihead_attention_interp_param.output_adapter_v;
+                ipV.weight_adapter = m_param.multihead_attention_interp_param.output_adapter_v;
 
                 m_ipVLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipV, m_param), null);
                 m_blobV.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
@@ -505,7 +505,7 @@ namespace MyCaffe.layers.tft
                 ipOut.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipOut.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipOut.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipOut.output_adapter = m_param.multihead_attention_interp_param.output_adapter_out;
+                ipOut.weight_adapter = m_param.multihead_attention_interp_param.output_adapter_out;
 
                 m_ipOutLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipOut, m_param), null);
 
@@ -791,14 +791,14 @@ namespace MyCaffe.layers.tft
             //-----------------------------------------
             {
                 // Multiply the softmax with the values to get the attention outputs.
-                m_blobAttnOutputAllHeads.MatMulGrad(m_blobAttnScoresAllHeads, m_blobIpVt, m_blobWork);
+                m_blobAttnOutputAllHeads.MatMulGrad(m_blobAttnScoresAllHeads, m_blobIpVt);
 
                 // Calculate the softmax gradient for the most imporant parts of the data (e.g. where to focus the attention)
                 addBtmTop(m_blobAttnScores1, m_blobAttnScoresAllHeads);
                 m_softmax.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
                 // Calculate the Qt and Kt1 gradients.
-                m_blobAttnScores1.MatMulGrad(m_blobIpQt, m_blobIpKt1, m_blobWork, m_dfScale);
+                m_blobAttnScores1.MatMulGrad(m_blobIpQt, m_blobIpKt1, m_dfScale);
 
                 // Transform the gradients back to Kt.
                 m_blobIpKt.CopyFromAndTransposeHeightWidth(m_blobIpKt1, true);
