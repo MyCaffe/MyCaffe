@@ -28,6 +28,8 @@ namespace MyCaffe.layers.gpt
         int m_nInnerNum = 0;
         Blob<T> m_blobRms1;
         Blob<T> m_blobRms;
+        Blob<T> m_blobRms1Full;
+        Blob<T> m_blobOut;
         List<int> m_rgWeightShape = new List<int>() { 1 };
  
         /// <summary>
@@ -46,8 +48,12 @@ namespace MyCaffe.layers.gpt
 
             m_blobRms1 = new Blob<T>(cuda, log);
             m_blobRms1.Name = m_param.name + ".rms1";
+            m_blobRms1Full = new Blob<T>(cuda, log);
+            m_blobRms1Full.Name = m_param.name + ".rms1full";
             m_blobRms = new Blob<T>(cuda, log);
             m_blobRms.Name = m_param.name + ".rms";
+            m_blobOut = new Blob<T>(cuda, log);
+            m_blobOut.Name = m_param.name + ".out";
             setup_internal_blobs(m_colInternalBlobs);
         }
 
@@ -56,6 +62,8 @@ namespace MyCaffe.layers.gpt
         {
             dispose(ref m_blobRms1);
             dispose(ref m_blobRms);
+            dispose(ref m_blobRms1Full);
+            dispose(ref m_blobOut);
             base.dispose();
         }
 
@@ -135,6 +143,8 @@ namespace MyCaffe.layers.gpt
 
             m_blobRms1.Reshape(m_nOuterNum, m_nChannels, 1, 1);
             m_blobRms.Reshape(m_nOuterNum, m_nChannels, 1, 1);
+            m_blobOut.ReshapeLike(colBottom[0]);
+            m_blobRms1Full.ReshapeLike(colBottom[0]);
 
             colTop[0].ReshapeLike(colBottom[0]);
         }
@@ -148,18 +158,26 @@ namespace MyCaffe.layers.gpt
         ///  -# @f$ (N \times C \times H \times W) @f$ the outputs.</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            // x1 = x.pow(2)
             m_cuda.powx(m_nCount, colBottom[0].gpu_data, 2.0, colTop[0].mutable_gpu_data); 
+            // x2 = x1.mean(-1, keepdim=True)
             m_cuda.channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, colTop[0].gpu_data, m_blobRms.mutable_gpu_data); 
+            // x4 = (x2 + eps).sqrt()
             m_cuda.sqrt(m_blobRms.count(), m_blobRms.gpu_data, m_blobRms.mutable_gpu_data, m_param.rms_norm_param.epsilon);
+            // x5 = 1.0/x4
             m_cuda.invert(m_blobRms1.count(), m_blobRms.gpu_data, m_blobRms1.mutable_gpu_data);
-
-            m_cuda.channel_duplicate(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobRms1.gpu_data, colTop[0].mutable_gpu_data); 
-            m_cuda.mul(m_nCount, colBottom[0].gpu_data, colTop[0].gpu_data, colTop[0].mutable_gpu_data);
+            // x6 = x * x5
+            m_cuda.channel_duplicate(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobRms1.gpu_data, m_blobRms1Full.mutable_gpu_data); 
+            m_cuda.mul(m_nCount, colBottom[0].gpu_data, m_blobRms1Full.gpu_data, m_blobOut.mutable_gpu_data);
 
             if (m_param.rms_norm_param.enable_weights)
             {
-                m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_colBlobs[0].gpu_data, colBottom[0].mutable_gpu_diff);
-                m_cuda.mul(m_nCount, colBottom[0].gpu_diff, colTop[0].gpu_data, colTop[0].mutable_gpu_data);
+                m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_colBlobs[0].gpu_data, m_blobOut.mutable_gpu_diff);
+                m_cuda.mul(m_nCount, m_blobOut.gpu_diff, m_blobOut.gpu_data, colTop[0].mutable_gpu_data);
+            }
+            else
+            {
+                colTop[0].CopyFrom(m_blobOut);
             }
         }
 
@@ -175,51 +193,41 @@ namespace MyCaffe.layers.gpt
         {
             if (rgbPropagateDown[0])
             {
-                // Compute the gradient with respect to the weights.
-                if (!m_param.freeze_learning && m_param.rms_norm_param.enable_weights)
+                if (m_param.rms_norm_param.enable_weights)
                 {
-                    // grad_weight = torch.sum(grad_output * x, dim=-1, keepdim=True)
-                    m_cuda.mul(m_nCount, colTop[0].gpu_diff, colBottom[0].gpu_data, colBottom[0].mutable_gpu_diff);
-                    m_cuda.channel_sum_all(m_nInnerNum, m_nOuterNum, m_nChannels, colBottom[0].gpu_diff, m_colBlobs[0].mutable_gpu_diff, 1.0 / (m_nOuterNum * m_nChannels));
+                    // grad wrt wts
+                    m_cuda.mul(m_nCount, colTop[0].gpu_diff, m_blobOut.gpu_data, m_blobOut.mutable_gpu_data);
+                    m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobOut.gpu_data, m_colBlobs[0].mutable_gpu_diff);
 
-                    // grad_x4 = grad_output * self.g
-                    m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_colBlobs[0].gpu_data, colBottom[0].mutable_gpu_diff);
-                    m_cuda.mul(m_nCount, colTop[0].gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
-                }
-                else
-                {
-                    m_cuda.copy(m_nCount, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+                    // grad wrt x
+                    m_cuda.mul(m_nCount, colTop[0].gpu_diff, m_blobOut.gpu_diff, m_blobOut.mutable_gpu_diff);
                 }
 
-                // grad_rms1 = torch.sum(grad_x4 * x, dim=-1, keepdim=True)
-                m_cuda.mul(m_nCount, colBottom[0].gpu_diff, colBottom[0].gpu_data, colBottom[0].mutable_gpu_diff);
-                m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, colBottom[0].gpu_diff, m_blobRms1.mutable_gpu_diff, false);
+                // x6 = x * x5 -> dx 
+                m_cuda.mul(m_nCount, m_blobOut.gpu_diff, m_blobRms1Full.gpu_data, colBottom[0].mutable_gpu_diff);
+                // x6 = x * x5 -> dx5
+                m_cuda.mul(m_nCount, m_blobOut.gpu_diff, colBottom[0].gpu_data, m_blobRms1Full.mutable_gpu_diff);
+                m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobRms1Full.gpu_diff, m_blobRms1.mutable_gpu_diff, false);
 
-                // grad_x = grad_output * self.rms1 (accumulated)
-                m_cuda.channel_duplicate(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobRms1.gpu_data, colBottom[0].mutable_gpu_diff);
-                m_cuda.mul(m_nCount, colBottom[0].gpu_diff, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
-
-                // grad_rms = -1/(self.rms.pow(2)) * grad_rms1
+                // x5 = 1.0/x4 -> dx4
                 m_cuda.powx(m_blobRms.count(), m_blobRms.gpu_data, 2.0, m_blobRms.mutable_gpu_diff);
-                m_cuda.invert(m_blobRms.count(), m_blobRms.gpu_diff, m_blobRms.mutable_gpu_diff, 0, 0, -1.0);
-                m_cuda.mul(m_blobRms.count(), m_blobRms.gpu_diff, m_blobRms1.gpu_diff, m_blobRms1.mutable_gpu_diff);
+                m_cuda.invert(m_blobRms.count(), m_blobRms.gpu_diff, m_blobRms.mutable_gpu_diff, 0, 0, -1);
+                m_cuda.mul(m_blobRms1.count(), m_blobRms1.gpu_diff, m_blobRms.gpu_diff, m_blobRms.mutable_gpu_diff);
 
-                // grad_x3 = 1/(2*self.rms) * grad_rms
-                m_cuda.invert(m_blobRms.count(), m_blobRms.gpu_data, m_blobRms.mutable_gpu_diff, 0, 0, 1, 2.0);
-                m_cuda.mul(m_blobRms.count(), m_blobRms.gpu_diff, m_blobRms1.gpu_diff, m_blobRms1.mutable_gpu_diff);
+                // x4 = (x2 + eps).sqrt() -> dx2
+                m_cuda.invert(m_blobRms1.count(), m_blobRms.gpu_data, m_blobRms1.mutable_gpu_diff, 0, 0, 1, 2);
+                m_cuda.mul(m_blobRms.count(), m_blobRms1.gpu_diff, m_blobRms.gpu_diff, m_blobRms.mutable_gpu_diff);
 
-                // grad_x1 = grad_x2 / x.size(-1)
-                int nN = colBottom[0].count(2);
-                float fScale = 1.0f / nN;
-                m_cuda.scale(m_nCount, fScale, m_blobRms1.gpu_diff, m_blobRms1.mutable_gpu_diff);
+                // x2 = x1.mean(-1, keepdim=True) -> dx1
+                m_cuda.channel_duplicate(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobRms.gpu_diff, m_blobRms1Full.mutable_gpu_diff);
+                m_cuda.scal(m_blobRms1Full.count(), 1.0/m_nInnerNum, m_blobRms1Full.mutable_gpu_diff);
 
-                // grad_x1 = grad_x1.repeat_interleave(x.size(-1), dim=-1)
-                m_cuda.channel_duplicate(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobRms1.gpu_diff, colTop[0].mutable_gpu_diff);
+                // x1 = x.pow(2) -> dx
+                m_cuda.scale(m_nCount, 2.0, colBottom[0].gpu_data, m_blobOut.mutable_gpu_diff);;
+                m_cuda.mul(m_nCount, m_blobOut.gpu_diff, m_blobRms1Full.gpu_diff, m_blobOut.mutable_gpu_diff);
 
-                // grad_x = grad_x + 2 * x * grad_x1
-                m_cuda.mul(m_nCount, colTop[0].gpu_diff, colBottom[0].gpu_data, colTop[0].mutable_gpu_diff);
-                m_cuda.scale(m_nCount, 2.0, colTop[0].gpu_diff, colTop[0].mutable_gpu_diff);
-                m_cuda.add(m_nCount, colBottom[0].gpu_diff, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+                // x = dx1 + dx2
+                m_cuda.add(m_nCount, m_blobOut.gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
             }
         }
     }
