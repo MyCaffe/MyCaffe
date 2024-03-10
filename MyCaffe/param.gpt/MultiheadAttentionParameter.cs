@@ -21,10 +21,10 @@ namespace MyCaffe.param.gpt
         uint m_nBlockSize = 128;
         uint m_nLayers = 6;
         WEIGHT_INIT m_weightInit = WEIGHT_INIT.ENCODER_DECODER;
-        WeightAdapterParameter m_output_adapter_q = new WeightAdapterParameter("q");
-        WeightAdapterParameter m_output_adapter_k = new WeightAdapterParameter("k");
-        WeightAdapterParameter m_output_adapter_v = new WeightAdapterParameter("v");
-        WeightAdapterParameter m_output_adapter_out = new WeightAdapterParameter("out");
+        WeightAdapterParameter m_weight_adapter_q = new WeightAdapterParameter("q");
+        WeightAdapterParameter m_weight_adapter_k = new WeightAdapterParameter("k");
+        WeightAdapterParameter m_weight_adapter_v = new WeightAdapterParameter("v");
+        WeightAdapterParameter m_weight_adapter_out = new WeightAdapterParameter("out");
         bool m_bEnableCudaScaledDotProductAttention = false;
         bool m_bEnableRotaryPositionalEmbedding = false;
         bool m_bEnableKeyValueCache = false;
@@ -167,43 +167,43 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies the output adapter for the 'q' Linear layer.
+        /// Specifies the weight adapter for the 'q' Linear layer.
         /// </summary>
-        [Description("Specifies the output adapter for the 'q' Linear layer.")]
-        public WeightAdapterParameter output_adapter_q
+        [Description("Specifies the weight adapter for the 'q' Linear layer.")]
+        public WeightAdapterParameter weight_adapter_q
         {
-            get { return m_output_adapter_q; }
-            set { m_output_adapter_q = value; }
+            get { return m_weight_adapter_q; }
+            set { m_weight_adapter_q = value; }
         }
 
         /// <summary>
-        /// Specifies the output adapter for the 'q' Linear layer.
+        /// Specifies the weight adapter for the 'q' Linear layer.
         /// </summary>
-        [Description("Specifies the output adapter for the 'k' Linear layer.")]
-        public WeightAdapterParameter output_adapter_k
+        [Description("Specifies the weight adapter for the 'k' Linear layer.")]
+        public WeightAdapterParameter weight_adapter_k
         {
-            get { return m_output_adapter_k; }
-            set { m_output_adapter_k = value; }
+            get { return m_weight_adapter_k; }
+            set { m_weight_adapter_k = value; }
         }
 
         /// <summary>
-        /// Specifies the output adapter for the 'v' Linear layer.
+        /// Specifies the weight adapter for the 'v' Linear layer.
         /// </summary>
-        [Description("Specifies the output adapter for the 'v' Linear layer.")]
-        public WeightAdapterParameter output_adapter_v
+        [Description("Specifies the weight adapter for the 'v' Linear layer.")]
+        public WeightAdapterParameter weight_adapter_v
         {
-            get { return m_output_adapter_v; }
-            set { m_output_adapter_v = value; }
+            get { return m_weight_adapter_v; }
+            set { m_weight_adapter_v = value; }
         }
 
         /// <summary>
-        /// Specifies the output adapter for the 'out' Linear layer.
+        /// Specifies the weight adapter for the 'out' Linear layer.
         /// </summary>
-        [Description("Specifies the output adapter for the 'out' Linear layer.")]
-        public WeightAdapterParameter output_adapter_out
+        [Description("Specifies the weight adapter for the 'out' Linear layer.")]
+        public WeightAdapterParameter weight_adapter_out
         {
-            get { return m_output_adapter_out; }
-            set { m_output_adapter_out = value; }
+            get { return m_weight_adapter_out; }
+            set { m_weight_adapter_out = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -230,10 +230,10 @@ namespace MyCaffe.param.gpt
             m_dfAttnDropout = p.attn_dropout;
             m_dfResidDropout = p.resid_dropout;
             m_weightInit = p.weight_init;
-            m_output_adapter_q = p.output_adapter_q.Clone();
-            m_output_adapter_k = p.output_adapter_k.Clone();
-            m_output_adapter_v = p.output_adapter_v.Clone();
-            m_output_adapter_out = p.output_adapter_out.Clone();
+            m_weight_adapter_q = p.weight_adapter_q.Clone();
+            m_weight_adapter_k = p.weight_adapter_k.Clone();
+            m_weight_adapter_v = p.weight_adapter_v.Clone();
+            m_weight_adapter_out = p.weight_adapter_out.Clone();
             m_bEnableCudaScaledDotProductAttention = p.enable_cuda_scaled_dot_product_attention;
             m_bEnableRotaryPositionalEmbedding = p.enable_rotary_positional_embedding;
             m_nRopeSharedIndex = p.rope_shared_index;
@@ -270,10 +270,10 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("rope_shared_index", rope_shared_index.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
             rgChildren.Add("enable_key_value_cache", enable_key_value_cache.ToString());
-            rgChildren.Add(output_adapter_q.ToProto("output_adapter_q"));
-            rgChildren.Add(output_adapter_k.ToProto("output_adapter_k"));
-            rgChildren.Add(output_adapter_v.ToProto("output_adapter_v"));
-            rgChildren.Add(output_adapter_out.ToProto("output_adapter_out"));
+            rgChildren.Add(weight_adapter_q.ToProto("weight_adapter_q"));
+            rgChildren.Add(weight_adapter_k.ToProto("weight_adapter_k"));
+            rgChildren.Add(weight_adapter_v.ToProto("weight_adapter_v"));
+            rgChildren.Add(weight_adapter_out.ToProto("weight_adapter_out"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -331,21 +331,21 @@ namespace MyCaffe.param.gpt
             if ((strVal = rp.FindValue("enable_key_value_cache")) != null)
                 p.enable_key_value_cache = bool.Parse(strVal);
 
-            RawProto rp1 = rp.FindChild("output_adapter_q");
+            RawProto rp1 = rp.FindChild("weight_adapter_q");
             if (rp1 != null)
-                p.output_adapter_q = WeightAdapterParameter.FromProto(rp1);
+                p.weight_adapter_q = WeightAdapterParameter.FromProto(rp1);
 
-            rp1 = rp.FindChild("output_adapter_k");
+            rp1 = rp.FindChild("weight_adapter_k");
             if (rp1 != null)
-                p.output_adapter_k = WeightAdapterParameter.FromProto(rp1);
+                p.weight_adapter_k = WeightAdapterParameter.FromProto(rp1);
 
-            rp1 = rp.FindChild("output_adapter_v");
+            rp1 = rp.FindChild("weight_adapter_v");
             if (rp1 != null)
-                p.output_adapter_v = WeightAdapterParameter.FromProto(rp1);
+                p.weight_adapter_v = WeightAdapterParameter.FromProto(rp1);
 
-            rp1 = rp.FindChild("output_adapter_out");
+            rp1 = rp.FindChild("weight_adapter_out");
             if (rp1 != null)
-                p.output_adapter_out = WeightAdapterParameter.FromProto(rp1);
+                p.weight_adapter_out = WeightAdapterParameter.FromProto(rp1);
 
             return p;
         }
