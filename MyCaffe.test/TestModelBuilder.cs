@@ -397,7 +397,7 @@ namespace MyCaffe.test
                 {
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestCreateTrainingModel();
+                    t.TestCreateInferenceModel();
                 }
             }
             finally
@@ -656,7 +656,7 @@ namespace MyCaffe.test
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.RUN);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TEST, true);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
