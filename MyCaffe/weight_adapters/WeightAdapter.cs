@@ -78,6 +78,61 @@ namespace MyCaffe.output_adapters
         }
 
         /// <summary>
+        /// Release a Blob and set it to null.
+        /// </summary>
+        /// <param name="b">Specifies the blob to free.</param>
+        protected void dispose(ref Blob<T> b)
+        {
+            if (b != null)
+            {
+                b.Dispose();
+                b = null;
+            }
+        }
+
+        /// <summary>
+        /// Create an intra layer blob with the given name.  If the blob has already been created, reuse the already created one.  The intra layer blobs are are only shared
+        /// between layers when the 'enable_lora_load' is set to <i>true</i> in the LayerParameterEx.
+        /// </summary>
+        /// <param name="strName">Specifies the generic name of the blob - the name should not include the layer name.</param>
+        /// <param name="bCreateDiff">Specifies to create the diff portion.</param>
+        /// <param name="bShareDiffOnly">Specifies to share the diff portion only.</param>
+        /// <returns>The new blob or shared blob is returned.</returns>
+        /// <exception cref="Exception">An exception occurs if the layer parameter is not of type LayerParameterEx.</exception>
+        /// <remarks>The net managing the shared intra layer blobs calls dispose on each blob on cleanup.</remarks>
+        protected Blob<T> createIntraLayerBlob(string strName, bool bCreateDiff = true, bool bShareDiffOnly = false)
+        {
+            Blob<T> b = null;
+
+            WeightAdapterParameterEx<T> paramEx = m_param as WeightAdapterParameterEx<T>;
+            if (paramEx != null && paramEx.SharedIntraLayerBlobs != null)
+            {
+                b = paramEx.SharedIntraLayerBlobs.FindBlob(strName);
+                if (b != null)
+                {
+                    if (!bShareDiffOnly || !bCreateDiff)
+                        return b;
+
+                    Blob<T> b1 = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                    b1.Name = m_param.name + "." + strName;
+                    b1.ShareDiff(b, true);
+                    return b1;
+                }
+
+                b = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                b.Name = strName;
+                paramEx.SharedIntraLayerBlobs.Add(b);
+            }
+            else
+            {
+                b = new Blob<T>(m_cuda, m_log, bCreateDiff);
+                b.Name = m_param.name + "." + strName;
+            }
+
+            return b;
+        }
+
+        /// <summary>
         /// Attempts to share a parameter Blob if another parameter Blob with the same name and accpetable size is found.
         /// </summary>
         /// <param name="b">Specifies the Blob to share.</param>
@@ -180,15 +235,18 @@ namespace MyCaffe.output_adapters
     public class WeightAdapterParameterEx<T> : WeightAdapterParameter
     {
         BlobCollection<T> m_colSharedBlobs = null;
+        BlobCollection<T> m_rgSharedIntraLayerBlobs = null;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="p">Specifies the original parameters.</param>
         /// <param name="colSharedBlobs">Specifies the shared adapted blobs.</param>
-        public WeightAdapterParameterEx(WeightAdapterParameter p, BlobCollection<T> colSharedBlobs) : base(p)
+        /// <param name="rgSharedIntraLayerBlobs">Specifies blobs shared across layers.  Note, when used, these blobs are disposed by the Net.</param>
+        public WeightAdapterParameterEx(WeightAdapterParameter p, BlobCollection<T> colSharedBlobs, BlobCollection<T> rgSharedIntraLayerBlobs) : base(p)
         {
             m_colSharedBlobs = colSharedBlobs;
+            m_rgSharedIntraLayerBlobs = rgSharedIntraLayerBlobs;
         }
 
         /// <summary>
@@ -197,6 +255,14 @@ namespace MyCaffe.output_adapters
         public BlobCollection<T> SharedBlobs
         {
             get { return m_colSharedBlobs; }
+        }
+
+        /// <summary>
+        /// Specifies blobs shared across layers.
+        /// </summary>
+        public BlobCollection<T> SharedIntraLayerBlobs
+        {
+            get { return m_rgSharedIntraLayerBlobs; }
         }
     }
 }

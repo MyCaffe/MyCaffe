@@ -533,7 +533,15 @@ namespace MyCaffe.layers
             WeightAdapterParameter pWeightAdapter = m_param.weight_adapter;
             LayerParameterExFull<T> pEx = m_param as LayerParameterExFull<T>;
             if (pEx != null && pEx.SharedAdaptedBlobs != null)
-                pWeightAdapter = new WeightAdapterParameterEx<T>(pWeightAdapter, pEx.SharedAdaptedBlobs);
+            {
+                pWeightAdapter = new WeightAdapterParameterEx<T>(pWeightAdapter, pEx.SharedAdaptedBlobs, pEx.SharedIntraLayerBlobs);
+            }
+            else
+            {
+                LayerParameterEx<T> pEx2 = m_param as LayerParameterEx<T>;
+                if (pEx2 != null && pEx2.SharedIntraLayerBlobs != null)
+                    pWeightAdapter = new WeightAdapterParameterEx<T>(pWeightAdapter, null, pEx2.SharedIntraLayerBlobs);
+            }
 
             m_weightAdatper = WeightAdapter<T>.Create(m_cuda, m_log, pWeightAdapter);
             m_weightAdatper.Setup(layer_param, m_colBlobs[0]);

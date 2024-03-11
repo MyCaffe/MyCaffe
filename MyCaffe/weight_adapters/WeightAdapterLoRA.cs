@@ -50,17 +50,8 @@ namespace MyCaffe.output_adapters
                 m_dropout = null;
             }
 
-            if (m_blobDrop != null)
-            {
-                m_blobDrop.Dispose();
-                m_blobDrop = null;
-            }
-
-            if (m_blobC != null)
-            {
-                m_blobC.Dispose();
-                m_blobC = null;
-            }
+            dispose(ref m_blobDrop);
+            dispose(ref m_blobC);
 
             base.dispose();
         }
@@ -83,8 +74,9 @@ namespace MyCaffe.output_adapters
                 addBtmTop(wt, wt);
                 m_dropout.Setup(m_colBtm, m_colTop);
 
-                m_blobDrop = new Blob<T>(m_cuda, m_log);
-                m_blobDrop.Name = p.name + ".LoRA.dropout";
+                m_blobDrop = createIntraLayerBlob("lora_drop", true, true);
+                //m_blobDrop = new Blob<T>(m_cuda, m_log);
+                //m_blobDrop.Name = p.name + ".LoRA.dropout";
                 m_blobDrop.ReshapeLike(wt);
             }
 
@@ -126,8 +118,9 @@ namespace MyCaffe.output_adapters
             }
             m_colBlobs.Add(blob);
 
-            m_blobC = new Blob<T>(m_cuda, m_log);
-            m_blobC.Name = p.name + ".LoRA.C";
+            m_blobC = createIntraLayerBlob("lora_c");
+            //m_blobC = new Blob<T>(m_cuda, m_log);
+            //m_blobC.Name = p.name + ".LoRA.C";
 
             m_dfScale = m_param.alpha / m_param.rank;
         }
@@ -143,6 +136,13 @@ namespace MyCaffe.output_adapters
                 addBtmTop(wt, m_blobDrop);
                 m_dropout.Reshape(m_colBtm, m_colTop);
             }
+
+            m_rgShape.Clear();
+            m_rgShape.Add(1);
+            m_rgShape.Add(1);
+            m_rgShape.Add(wt.shape(0));
+            m_rgShape.Add(wt.shape(1));
+            m_blobC.Reshape(m_rgShape);
         }
 
         private void unsqueeze(Blob<T> b)
