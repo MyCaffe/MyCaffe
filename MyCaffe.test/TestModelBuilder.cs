@@ -706,9 +706,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
-                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\models\\llama2_7b_chat.bin";
-                if (!File.Exists(strModelPath))
-                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+                string strModelPath = getTestDataLlamaPath("llama7b", "llama2_7b_chat.bin");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH1");
@@ -829,7 +827,7 @@ namespace MyCaffe.test
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.RUN, bEnableLoRA);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TEST, bEnableLoRA);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -859,9 +857,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
-                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\models\\stories15M.bin";
-                if (!File.Exists(strModelPath))
-                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
@@ -971,9 +967,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
-                string strModelPath = "C:\\temp\\projects\\llama2\\llama2\\llama2\\models\\stories15M.bin";
-                if (!File.Exists(strModelPath))
-                    throw new Exception("Could not find the model file '" + strModelPath + "'!");
+                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
@@ -1139,6 +1133,19 @@ namespace MyCaffe.test
             SolverParameter solverParam2 = SolverParameter.FromProto(proto2);
 
             m_log.CHECK(solverParam2.Compare(solverParam), "The two solver parameters should be the same!");
+        }
+
+        protected string getTestDataLlamaPath(string strSubPath, string strFile)
+        {
+            if (!string.IsNullOrEmpty(strSubPath))
+                strSubPath += "\\";
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + strFile;
+
+            if (!File.Exists(strPath))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
+
+            return strPath;
         }
 
         public void TestCreateTrainingModel()
