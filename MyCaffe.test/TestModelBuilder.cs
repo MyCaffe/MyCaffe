@@ -857,7 +857,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
-                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin");
+                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin", "https://huggingface.co/karpathy/tinyllamas/resolve/main/");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
@@ -967,7 +967,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
 
-                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin");
+                string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin", "https://huggingface.co/karpathy/tinyllamas/resolve/main/");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
@@ -1135,17 +1135,19 @@ namespace MyCaffe.test
             m_log.CHECK(solverParam2.Compare(solverParam), "The two solver parameters should be the same!");
         }
 
-        protected string getTestDataLlamaPath(string strSubPath, string strFile)
+        protected string getTestDataLlamaPath(string strSubPath, string strFile, string strUrl = null)
         {
-            if (!string.IsNullOrEmpty(strSubPath))
-                strSubPath += "\\";
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath;
 
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\" + strSubPath + strFile;
+            if (!File.Exists(strPath + "\\" + strFile))
+            {
+                if (string.IsNullOrEmpty(strUrl))
+                    throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
 
-            if (!File.Exists(strPath))
-                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | Llama' menu item.");
+                return downloadTestData(strUrl, strPath, strFile);
+            }
 
-            return strPath;
+            return strPath + "\\" + strFile;
         }
 
         public void TestCreateTrainingModel()

@@ -678,15 +678,21 @@ namespace MyCaffe.test
 
         protected string downloadTestData(string strPath, string strFileName)
         {
+            return downloadTestData("https://signalpopcdn.blob.core.windows.net/mycaffesupport/", strPath, strFileName);
+        }
+
+        protected string downloadTestData(string strUrl, string strPath, string strFileName)
+        {
             if (!Directory.Exists(strPath))
                 Directory.CreateDirectory(strPath);
 
             string strTestDataFile = strPath + "\\" + strFileName;
             if (!File.Exists(strTestDataFile))
             {
+                strUrl = strUrl + strFileName;
+
                 using (WebClient webClient = new WebClient())
                 {
-                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/" + strFileName;
                     string strFile1 = strFileName;
                     string strFile = strPath + "\\" + strFile1;
 
