@@ -46,14 +46,11 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.RMSNORM;
 
-            m_blobRms1 = new Blob<T>(cuda, log);
-            m_blobRms1.Name = m_param.name + ".rms1";
-            m_blobRms1Full = new Blob<T>(cuda, log);
-            m_blobRms1Full.Name = m_param.name + ".rms1full";
-            m_blobRms = new Blob<T>(cuda, log);
-            m_blobRms.Name = m_param.name + ".rms";
-            m_blobOut = new Blob<T>(cuda, log);
-            m_blobOut.Name = m_param.name + ".out";
+            m_blobRms1 = createIntraLayerBlob("rms1", true, true);
+            m_blobRms1Full = createIntraLayerBlob("rms1full", true, true);
+            m_blobRms = createIntraLayerBlob("rms", true, true);
+            m_blobOut = createIntraLayerBlob("rmsOut", true, true);
+
             setup_internal_blobs(m_colInternalBlobs);
         }
 
