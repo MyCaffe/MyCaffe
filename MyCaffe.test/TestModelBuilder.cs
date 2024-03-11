@@ -53,7 +53,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -107,7 +107,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -161,7 +161,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -215,7 +215,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -269,7 +269,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -323,7 +323,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -397,7 +397,27 @@ namespace MyCaffe.test
                 {
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLlamaModel_CreateInferenceModelNoLoRA()
+        {
+            LlamaModelBuilderTest test = new LlamaModelBuilderTest("Llama7B");
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestCreateInferenceModel(false);
                 }
             }
             finally
@@ -437,7 +457,7 @@ namespace MyCaffe.test
                 {
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestCreateInferenceModel();
+                    t.TestCreateInferenceModel(true);
                 }
             }
             finally
@@ -471,7 +491,7 @@ namespace MyCaffe.test
     {
         void TestCreateSolver();
         void TestCreateTrainingModel();
-        void TestCreateInferenceModel();
+        void TestCreateInferenceModel(bool bEnableLoRA);
     }
 
     class ResNetModelBuilderTest : TestBase
@@ -650,13 +670,13 @@ namespace MyCaffe.test
             return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
         }
 
-        protected override void testCreateInferenceModel()
+        protected override void testCreateInferenceModel(bool bEnableLoRA)
         {
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.TEST, true);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TEST, bEnableLoRA);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -803,13 +823,13 @@ namespace MyCaffe.test
             return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
         }
 
-        protected override void testCreateInferenceModel()
+        protected override void testCreateInferenceModel(bool bEnableLoRA)
         {
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.RUN);
+            NetParameter net_param = builder.CreateModel(prop, Phase.RUN, bEnableLoRA);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -1154,12 +1174,12 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TestCreateInferenceModel()
+        public void TestCreateInferenceModel(bool bEnableLoRA)
         {
-            testCreateInferenceModel();
+            testCreateInferenceModel(bEnableLoRA);
         }
 
-        protected virtual void testCreateInferenceModel()
+        protected virtual void testCreateInferenceModel(bool bEnableLoRA)
         {
             ModelBuilder<T> builder = create();
 
