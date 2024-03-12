@@ -20,6 +20,7 @@ namespace MyCaffe.param.gpt
         string m_strSource;
         int? m_nSeed = null;
         bool m_bShuffle = true;
+        int? m_nPadToken = null;
         VOCABULARY_TYPE m_vocabType = VOCABULARY_TYPE.LLAMA2;
         SAMPLE_METHOD m_sampleMethod = SAMPLE_METHOD.PROBABILITY;
 
@@ -56,8 +57,19 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
+        /// Optionally, specifies the pad token, or null to ignore (default = null).
+        /// </summary>
+        [Description("Optionally, specifies the pad token, or null to ignore (default = null).")]
+        public int? pad_token
+        {
+            get { return m_nPadToken; }
+            set { m_nPadToken = value; }
+        }
+
+        /// <summary>
         /// Specifies the seed used to initialize the random number generator (normally only for testing).
         /// </summary>
+        [Description("Specifies the seed used to initialize the random number generator (normally only for testing).")]
         public int? seed
         {
             get { return m_nSeed; }
@@ -67,6 +79,7 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies to shuffle the data (default = true).
         /// </summary>
+        [Description("Specifies to shuffle the data (default = true).")]
         public bool shuffle
         {
             get { return m_bShuffle; }
@@ -146,6 +159,7 @@ namespace MyCaffe.param.gpt
             m_vocabType = p.vocabulary_type;       
             m_sampleMethod = p.sample_method;
             m_bShuffle = p.shuffle;
+            m_nPadToken = p.pad_token;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -171,6 +185,9 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("batch_size", batch_size.ToString());
             rgChildren.Add("block_size", block_size.ToString());
             rgChildren.Add("shuffle", shuffle.ToString().ToLower());
+
+            if (pad_token != null)
+                rgChildren.Add("pad_token", pad_token.ToString());
 
             if (seed != null)
                 rgChildren.Add("seed", seed.ToString());
@@ -199,6 +216,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("pad_token")) != null)
+                p.pad_token = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("shuffle")) != null)
                 p.shuffle = bool.Parse(strVal);
