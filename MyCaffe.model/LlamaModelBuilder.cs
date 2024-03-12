@@ -26,24 +26,15 @@ namespace MyCaffe.model
         double m_dfDropout = 0.1;
         string m_strModel;
         double m_dfBaseLr = 0.01;
+        int m_nIterSize = 1;
         Config m_config;
-
-        /// <summary>
-        /// Defines the type of model to create.
-        /// </summary>
-        public enum MODEL
-        {
-            /// <summary>
-            /// Specifies to create a Llama7B model.
-            /// </summary>
-            LLAMA_7B
-        }
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="strBaseDirectory">Specifies the base directory that contains the data and models.</param>
         /// <param name="strModel">Specifies the model to create.</param>
+        /// <param name="nIterSize">Specifies the number of iterations to accumulate gradients over.</param>
         /// <param name="nBatchSize">specifies the batch size.</param>
         /// <param name="nSeqLen">Specifies the sequence length.</param>
         /// <param name="nVocabSize">Specifies the vocabulary size.</param> 
@@ -51,7 +42,7 @@ namespace MyCaffe.model
         /// <param name="dfLearningRate">Specifies the base learning rate.</param>
         /// <param name="rgGpuId">Optionally, specifies a set of GPU ID's to use (when null, GPU=0 is used).</param>
         /// <param name="net">Specifies the 'base' net parameter that is to be altered.</param>
-        public LlamaModelBuilder(string strBaseDirectory, string strModel, uint nBatchSize = 1, uint nSeqLen = 512, uint nVocabSize = 32000, double dfDropout = 0.0, double dfLearningRate = 0.01, List<int> rgGpuId = null, NetParameter net = null) 
+        public LlamaModelBuilder(string strBaseDirectory, string strModel, int nIterSize, uint nBatchSize = 1, uint nSeqLen = 512, uint nVocabSize = 32000, double dfDropout = 0.0, double dfLearningRate = 5e-04, List<int> rgGpuId = null, NetParameter net = null) 
             : base(strBaseDirectory, net)
         {
             if (rgGpuId == null)
@@ -60,6 +51,7 @@ namespace MyCaffe.model
                 m_rgGpuID = new List<int>(rgGpuId);
 
             m_strModel = strModel;
+            m_nIterSize = nIterSize;
             m_nBatchSize = nBatchSize;
             m_nSeqLen = nSeqLen;
             m_nVocabSize = nVocabSize;
@@ -76,14 +68,14 @@ namespace MyCaffe.model
         public override SolverParameter CreateSolver()
         {
             m_solver = new SolverParameter();
-            m_solver.type = SolverParameter.SolverType.SGD;
+            m_solver.type = SolverParameter.SolverType.ADAMW;
             m_solver.base_lr = m_dfBaseLr;
-            m_solver.weight_decay = 0.0005;
+            m_solver.weight_decay = 0;
             m_solver.LearningRatePolicy = SolverParameter.LearningRatePolicyType.MULTISTEP;
             m_solver.stepvalue = new List<int>() { 80000, 100000, 120000 };
             m_solver.gamma = 0.1;
             m_solver.momentum = 0.9;
-            m_solver.iter_size = 1;
+            m_solver.iter_size = m_nIterSize;
             m_solver.max_iter = 120000;
             m_solver.snapshot = 80000;
             m_solver.display = 100;
@@ -116,6 +108,8 @@ namespace MyCaffe.model
             uint nDim = 0;
             uint nHiddenDim = 0;
             uint nHeads = 0;
+            bool bPreTokenizer = false;
+            bool bEnableKeyValueCache = true;
 
             switch (m_strModel)
             {
@@ -132,6 +126,15 @@ namespace MyCaffe.model
                     nDim = 288;
                     nHiddenDim = 768;
                     break;
+
+                case "Stories15M_Instruct":
+                    nLayers = 6;
+                    nHeads = 6;
+                    nDim = 288;
+                    nHiddenDim = 768;
+                    bPreTokenizer = true;
+                    bEnableKeyValueCache = false;
+                    break;
             }
 
             TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
@@ -143,7 +146,7 @@ namespace MyCaffe.model
                     vocabType = (TokenizedDataParameter.VOCABULARY_TYPE)nVocabType;
             }
 
-            string strModel = buildModel(vocabType, m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase, bEnableLoRA);
+            string strModel = buildModel(vocabType, m_net, m_nBatchSize, m_nSeqLen, m_nVocabSize, nDim, nHiddenDim, nHeads, nLayers, m_dfDropout, phase, bEnableLoRA, bPreTokenizer, bEnableKeyValueCache);
 
             return m_net;
         }
@@ -574,29 +577,48 @@ namespace MyCaffe.model
             return null;
         }
 
-        private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase, bool bEnableLoRA)
+        private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase, bool bEnableLoRA, bool bPreTokenizer, bool bEnableKeyValueCache)
         {
             net.enable_lora = true;
             net.enable_lora_only_load = true;
 
-            LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA, "data");
-            tok.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
-            tok.tokenized_data_param.sample_method = TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY;
-            tok.tokenized_data_param.vocabulary_type = vocabType;
-            tok.tokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\input.txt";
-            tok.tokenized_data_param.batch_size = nBatch;
-            tok.tokenized_data_param.block_size = nBlockSize;
-            tok.freeze_learning = true;
-            tok.top.Add("tokdata");
-            tok.top.Add("pos");
-            if (phase != Phase.RUN)
-                tok.top.Add("tgt");
-            net.layer.Add(tok);
+            if (bPreTokenizer)
+            {
+                LayerParameter tok = new LayerParameter(LayerParameter.LayerType.PRETOKENIZED_DATA, "data");
+                tok.pretokenized_data_param.sample_method = PreTokenizedDataParameter.SAMPLE_METHOD.PROBABILITY;
+                tok.pretokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\llama\\test\\stories\\instruct_dataset\\";
+                tok.pretokenized_data_param.batch_size = nBatch;
+                tok.pretokenized_data_param.block_size = nBlockSize;
+                tok.pretokenized_data_param.shuffle = false;
+                tok.pretokenized_data_param.pad_token = -100;
+                tok.pretokenized_data_param.vocabulary_type = PreTokenizedDataParameter.VOCABULARY_TYPE.LLAMA2;
+                tok.freeze_learning = true;
+                tok.top.Add("tokdata");
+                if (phase != Phase.RUN)
+                    tok.top.Add("tgt");
+                net.layer.Add(tok);
+            }
+            else
+            {
+                LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA, "data");
+                tok.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+                tok.tokenized_data_param.sample_method = TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY;
+                tok.tokenized_data_param.vocabulary_type = vocabType;
+                tok.tokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\input.txt";
+                tok.tokenized_data_param.batch_size = nBatch;
+                tok.tokenized_data_param.block_size = nBlockSize;
+                tok.freeze_learning = true;
+                tok.top.Add("tokdata");
+                tok.top.Add("pos");
+                if (phase != Phase.RUN)
+                    tok.top.Add("tgt");
+                net.layer.Add(tok);
 
-            LayerParameter silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
-            silence.bottom.Add("pos");
-            silence.freeze_learning = true;
-            net.layer.Add(silence);
+                LayerParameter silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("pos");
+                silence.freeze_learning = true;
+                net.layer.Add(silence);
+            }
 
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "wte";
@@ -628,7 +650,7 @@ namespace MyCaffe.model
                 enc.transformer_block_param.enable_layernorm_cuda_impl = false;
                 enc.transformer_block_param.enable_llama_style_head = true;
                 enc.transformer_block_param.enable_rotary_positional_embedding = true;
-                enc.transformer_block_param.enable_key_value_cache = true;
+                enc.transformer_block_param.enable_key_value_cache = bEnableKeyValueCache;
                 enc.transformer_block_param.bias_term = false;
 
                 if (bEnableLoRA)
@@ -687,6 +709,7 @@ namespace MyCaffe.model
                 LayerParameter loss = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
                 loss.name = "loss";
                 loss.nll_loss_param.axis = 2;
+                loss.loss_param.ignore_label = -1;
                 loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
                 loss.bottom.Add("prob");
                 loss.bottom.Add("tgt");
@@ -695,7 +718,9 @@ namespace MyCaffe.model
 
                 LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
                 accuracy.name = "accuracy";
+                accuracy.accuracy_param.enable_simple_accuracy = true;
                 accuracy.accuracy_param.axis = 2;
+                accuracy.accuracy_param.ignore_labels.Add(-1);
                 accuracy.bottom.Add("prob");
                 accuracy.bottom.Add("tgt");
                 accuracy.top.Add("accuracy");
