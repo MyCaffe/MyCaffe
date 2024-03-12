@@ -181,7 +181,6 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Currently using cpu version for gpu version fails in the auto tests.
             if (m_bEnableSimpleAccuracy)
                 forward_gpu(colBottom, colTop);
             else if (m_bDirectLabels)
