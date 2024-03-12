@@ -193,8 +193,11 @@ namespace MyCaffe.layers.gpt
                 if (m_param.rms_norm_param.enable_weights)
                 {
                     // grad wrt wts
-                    m_cuda.mul(m_nCount, colTop[0].gpu_diff, m_blobOut.gpu_data, m_blobOut.mutable_gpu_data);
-                    m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobOut.gpu_data, m_colBlobs[0].mutable_gpu_diff);
+                    if (!m_param.freeze_learning)
+                    {
+                        m_cuda.mul(m_nCount, colTop[0].gpu_diff, m_blobOut.gpu_data, m_blobOut.mutable_gpu_data);
+                        m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobOut.gpu_data, m_colBlobs[0].mutable_gpu_diff);
+                    }
 
                     // grad wrt x
                     m_cuda.mul(m_nCount, colTop[0].gpu_diff, m_blobOut.gpu_diff, m_blobOut.mutable_gpu_diff);
