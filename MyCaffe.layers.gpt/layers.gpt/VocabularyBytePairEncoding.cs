@@ -163,15 +163,25 @@ namespace MyCaffe.layers.gpt.layers.gpt
         /// <param name="rgf">Specifies the token values to be detokenized.</param>
         /// <param name="bIgnoreBos">Specifies to ignore the BOS tokens.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS tokens.</param>
+        /// <param name="nStartIdx">Optionally, specifies a starting index (default = 0).</param>
+        /// <param name="nCount">Optionally, specifies the number of items to process (default = -1, for all items).</param>
+        /// <param name="nPadToken">Optionally, specifies a pad token that is ignored.</param>
         /// <returns>The Detokenized string is returned.</returns>
-        public string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos)
+        public string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos, int nStartIdx = 0, int nCount = -1, int? nPadToken = null)
         {
-            int nStart = (m_bAddBos) ? 1 : 0;
+            int nStart = (m_bAddBos) ? nStartIdx + 1 : nStartIdx;
             List<byte> rgUtf8Bytes = new List<byte>();
 
-            for (int i=nStart; i<rgf.Count(); i++)
+            if (nCount <= 0)
+                nCount = rgf.Count();
+
+            for (int i=nStart; i<nStartIdx + nCount; i++)
             {
                 int nTokenId = (int)rgf[i];
+
+                if (nPadToken.HasValue && nTokenId == nPadToken.Value)
+                    continue;
+
                 string strToken = m_rgVocabById[nTokenId];
 
                 if (strToken.StartsWith("<0x") && strToken.EndsWith(">"))

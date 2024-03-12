@@ -316,13 +316,24 @@ namespace MyCaffe.layers.gpt
         /// <param name="rgf">Specifies the array of tokens to detokenize.</param>
         /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <param name="nStartIdx">Optionally, specifies a starting index (default = 0).</param>
+        /// <param name="nCount">Optionally, specifies the number of items to process (default = -1, for all items).</param>
+        /// <param name="nPadToken">Optionally, specifies a pad token that is ignored.</param>
         /// <returns>The detokenized string is returned.</returns>
-        public string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos)
+        public string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos, int nStartIdx = 0, int nCount = -1, int? nPadToken = null)
         {
             string str = "";
 
-            foreach (float f in rgf)
+            if (nCount < 0)
+                nCount = rgf.Length;
+
+            for (int i = nStartIdx; i < nStartIdx + nCount; i++)
             {
+                float f = rgf[i];
+
+                if (nPadToken.HasValue && f == nPadToken.Value)
+                    continue;
+
                 string str1 = Detokenize((int)f, bIgnoreBos, bIgnoreEos);
 
                 if (!string.IsNullOrEmpty(str1))

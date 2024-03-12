@@ -69,8 +69,11 @@ namespace MyCaffe.layers.gpt
         /// <param name="rgf">Specifies the array of tokens to detokenize.</param>
         /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <param name="nStartIdx">Optionally, specifies a starting index (default = 0).</param>
+        /// <param name="nCount">Optionally, specifies the number of items to process (default = -1, for all items).</param>
+        /// <param name="nPadToken">Optionally, specifies a pad token that is ignored.</param>
         /// <returns>The detokenized string is returned.</returns>
-        string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos);
+        string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos, int nStartIdx = 0, int nCount = -1, int? nPadToken = null);
         /// <summary>
         /// Detokenize an index token into its corresponding character.
         /// </summary>
