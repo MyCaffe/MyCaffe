@@ -223,9 +223,14 @@ namespace MyCaffe.output_adapters
         /// </summary>
         /// <param name="colBtm">Specifies the input data (input to the Forward pass).</param>
         /// <param name="colTop">Specifies the output data (output by the Forward pass).</param>
-        /// <param name="wt">Specifies the input gradients (which contains the grad before the Backward call).</param>
+        /// <param name="wt">Specifies the weight blob.</param>
         /// <returns>A handle to the GPU memory of the altered gradients of the same shape as the input 'wt' is returned.</returns>
         public abstract long Backward(BlobCollection<T> colTop, BlobCollection<T> colBtm, Blob<T> wt);
+
+        /// <summary>
+        /// Returns the weight blob.
+        /// </summary>
+        public abstract Blob<T> Weight { get; }
     }
 
     /// <summary>

@@ -210,11 +210,19 @@ namespace MyCaffe.output_adapters
         }
 
         /// <summary>
+        /// Returns the weight blob.
+        /// </summary>
+        public override Blob<T> Weight
+        {
+            get { return m_blobC; }
+        }
+
+        /// <summary>
         /// Backward propagate the output adapter. This method is called just before the layer's Backward is called.
         /// </summary>
         /// <param name="colBtm">Specifies the input data (input to the Forward pass).</param>
         /// <param name="colTop">Specifies the output data (output by the Forward pass).</param>
-        /// <param name="wt">Specifies the input gradients (which is used by the Backward call after being altered).</param>
+        /// <param name="wt">Specifies the weight blob.</param>
         /// <remarks>
         /// As per the LoRA algorithm, the gradients are calculated and then added to the original input gradients.  
         /// </remarks>
@@ -222,17 +230,13 @@ namespace MyCaffe.output_adapters
         {
             Blob<T> blobA = m_colBlobs[0];
             Blob<T> blobB = m_colBlobs[1];
-            int nNumAxes = wt.num_axes;
-
-            if (nNumAxes != 2)
-                throw new Exception("The LoRA output adapter currently only supports 2D data.");
 
             unsqueeze(blobA);
             unsqueeze(blobB);
             unsqueeze(m_blobC);
 
             m_cuda.scale(wt.count(), m_dfScale, wt.gpu_diff, m_blobC.mutable_gpu_diff);
-            m_blobC.MatMulGrad(blobB, blobA);
+            m_blobC.MatMulGrad(blobB, blobA, 1, true);
 
             squeeze(blobA);
             squeeze(blobB);
