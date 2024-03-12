@@ -201,6 +201,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.gpt\PreTokenizedDataParameter.cs" />
     <Compile Include="weight_adapters\WeightAdapter.cs" />
     <Compile Include="weight_adapters\WeightAdapterLoRA.cs" />
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />

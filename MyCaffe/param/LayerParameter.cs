@@ -621,6 +621,10 @@ namespace MyCaffe.param
             /// </summary>
             TOKENIZED_DATA_PAIRS_PY,
             /// <summary>
+            /// Initializes a parameter for the PreTokenizedDataLayer.
+            /// </summary>
+            PRETOKENIZED_DATA,
+            /// <summary>
             /// Initializes a parameter for the TransposeLayer.
             /// </summary>
             TRANSPOSE,
@@ -1847,6 +1851,13 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TokenizedDataParameter();
                     break;
 
+                case LayerType.PRETOKENIZED_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("pos");
+                    expected_top.Add("tgt");
+                    m_rgLayerParameters[lt] = new PreTokenizedDataParameter();
+                    break;
+
                 case LayerType.TOKENIZED_DATA_PAIRS:
                 case LayerType.TOKENIZED_DATA_PAIRS_PY:
                     expected_top.Add("enc");
@@ -3013,6 +3024,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.PRETOKENIZED_DATA
+        /// </summary>
+        public PreTokenizedDataParameter pretokenized_data_param
+        {
+            get { return (PreTokenizedDataParameter)m_rgLayerParameters[LayerType.PRETOKENIZED_DATA]; }
+            set { m_rgLayerParameters[LayerType.PRETOKENIZED_DATA] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TOKENIZED_DATA_PAIRS
         /// </summary>
         public TokenizedDataPairsParameter tokenized_data_pairs_param
@@ -3612,6 +3632,9 @@ namespace MyCaffe.param
                 case LayerType.TOKENIZED_DATA:
                     return "TokenizedData";
 
+                case LayerType.PRETOKENIZED_DATA:
+                    return "PreTokenizedData";
+
                 case LayerType.TOKENIZED_DATA_PAIRS:
                     return "TokenizedDataPairs";
 
@@ -3799,6 +3822,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(pretokenized_data_param, "pretokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(nll_loss_param, "nll_loss_param"));
 
             // TFT Layers
@@ -4190,6 +4214,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("tokenized_data_pairs_param")) != null)
                 p.tokenized_data_pairs_param = TokenizedDataPairsParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("pretokenized_data_param")) != null)
+                p.pretokenized_data_param = PreTokenizedDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("nll_loss_param")) != null)
                 p.nll_loss_param = NLLLossParameter.FromProto(rpp);
@@ -4753,6 +4780,9 @@ namespace MyCaffe.param
 
                 case "tokenizeddata":
                     return LayerType.TOKENIZED_DATA;
+
+                case "pretokenizeddata":
+                    return LayerType.PRETOKENIZED_DATA;
 
                 case "tokenizeddatapairs":
                     return LayerType.TOKENIZED_DATA_PAIRS;
