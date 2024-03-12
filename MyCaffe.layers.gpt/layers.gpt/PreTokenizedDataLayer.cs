@@ -117,6 +117,14 @@ namespace MyCaffe.layers.gpt
             return rg;
         }
 
+        private string getSource(string strPath)
+        {
+            string strTarget = "$ProgramData$";
+            string strReplace = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strPath = strPath.Replace(strTarget, strReplace);
+            return strPath;
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -124,7 +132,8 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            string[] rgstrFileShards = Directory.GetFiles(m_param.pretokenized_data_param.source, "*.ibin");
+            string strSource = getSource(m_param.pretokenized_data_param.source);
+            string[] rgstrFileShards = Directory.GetFiles(strSource, "*.ibin");
             List<string> rgData = new List<string>();
             List<string> rgLabels = new List<string>();
 
@@ -134,7 +143,7 @@ namespace MyCaffe.layers.gpt
             if (rgData.Count != rgLabels.Count)
                 throw new Exception("The number of data and label files must match.");
 
-            for (int i = 0; i < rgData.Count; i++)
+            for (int i = 1; i < rgData.Count; i++)
             {
                 string strData = Path.GetFileNameWithoutExtension(rgData[i]);
                 string strLabel = Path.GetFileNameWithoutExtension(rgLabels[i]);
@@ -169,8 +178,9 @@ namespace MyCaffe.layers.gpt
             int nBatchSize = (int)m_param.pretokenized_data_param.batch_size;
             int nBlockSize = (int)m_param.pretokenized_data_param.block_size;
 
-            colTop[0].Reshape(nBatchSize, nBlockSize, 1, 1);
-            colTop[1].Reshape(nBatchSize, nBlockSize, 1, 1);
+            int[] rgShape = new int[2] { nBatchSize, nBlockSize };
+            colTop[0].Reshape(rgShape);
+            colTop[1].Reshape(rgShape);
         }
 
         /// <summary>
@@ -207,7 +217,7 @@ namespace MyCaffe.layers.gpt
                             m_rgShardIdx = m_rgFileShards.Keys.ToList();
                     }
 
-                    Tuple<string, string> shard = m_rgFileShards[nIdx];
+                    Tuple<string, string> shard = m_rgFileShards[nIdx+1];
                     FileInfo fi = new FileInfo(shard.Item1);
 
                     m_rgDataRaw = readFile(shard.Item1);
@@ -233,8 +243,20 @@ namespace MyCaffe.layers.gpt
                 if (m_rgLabel == null)
                     m_rgLabel = new float[nCount * nBatchSize];
 
-                Array.Copy(m_rgDataRaw, nStart, m_rgData, i * nCount, nCount);
-                Array.Copy(m_rgLabelRaw, nStart+1, m_rgLabel, i * nCount, nCount);
+                short? nPad = null;
+                if (m_param.pretokenized_data_param.pad_token.HasValue)
+                    nPad = (short)m_param.pretokenized_data_param.pad_token.Value;
+
+                for (int j = 0; j < nCount + 1; j++)
+                {
+                    short sValData = m_rgDataRaw[nStart + j];
+                    short sValLabel = m_rgLabelRaw[nStart + j];
+
+                    if (j < nCount)
+                       m_rgData[i * nCount + j] = (nPad.HasValue && nPad.Value == sValData) ? 2 : sValData;
+                    if (j > 0)
+                        m_rgLabel[i * nCount + j - 1] = (nPad.HasValue && nPad.Value == sValLabel) ? -1 : sValLabel;
+                }
             }
 
             colTop[0].mutable_cpu_data = convert(m_rgData);
@@ -282,10 +304,10 @@ namespace MyCaffe.layers.gpt
         /// <param name="nCount">Specifies the number of tokens to detokenize.</param>
         /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
-        /// <param name="nPadToken">Optionally, specifies a pad token to ignore (default = null).</param>
         /// <returns>The detokenized string is returned.</returns>
-        public string Detokenize(float[] rg, int nStartIdx, int nCount, bool bIgnoreBos = true, bool bIgnoreEos = true, int? nPadToken = null)
+        public string Detokenize(float[] rg, int nStartIdx, int nCount, bool bIgnoreBos = true, bool bIgnoreEos = true)
         {
+            int? nPadToken = m_param.pretokenized_data_param.pad_token;
             return m_ivocab.Detokenize(rg, bIgnoreBos, bIgnoreEos, nStartIdx, nCount, nPadToken);
         }
 
