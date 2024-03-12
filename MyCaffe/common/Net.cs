@@ -2057,7 +2057,11 @@ namespace MyCaffe.common
 
             if (step != TRAIN_STEP.FORWARD)
             {
-                Backward(int.MaxValue, m_nLastNonFrozenLayerIdx);
+                int nEnd = m_nLastNonFrozenLayerIdx;
+                if (m_param.enable_lora)
+                    nEnd = 0;
+
+                Backward(int.MaxValue, nEnd);
             }
 
             return true;
