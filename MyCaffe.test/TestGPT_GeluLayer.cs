@@ -15,7 +15,7 @@ using MyCaffe.param.gpt;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestGeluLayer
+    public class TestGPT_GeluLayer
     {
         [TestMethod]
         public void TestForwardBert()

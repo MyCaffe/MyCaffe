@@ -21,7 +21,7 @@ using MyCaffe.layers.gpt;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestMultiheadAttentionLayer
+    public class TestGPT_MultiheadAttentionLayer
     {
         [TestMethod]
         public void TestForward()

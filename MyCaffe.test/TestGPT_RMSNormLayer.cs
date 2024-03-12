@@ -19,7 +19,7 @@ using System.Threading;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestRMSNORMLayer
+    public class TestGPT_RMSNormLayer
     {
         [TestMethod]
         public void TestGradient()

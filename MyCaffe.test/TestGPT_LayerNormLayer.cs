@@ -19,7 +19,7 @@ using System.Threading;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestLayerNormLayer
+    public class TestGPT_LayerNormLayer
     {
         [TestMethod]
         public void TestForward()

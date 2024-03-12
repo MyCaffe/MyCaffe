@@ -18,7 +18,7 @@ using System.IO.Compression;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestEncoderBlockLayer
+    public class TestGPT_EncoderBlockLayer
     {
         [TestMethod]
         public void TestForward()

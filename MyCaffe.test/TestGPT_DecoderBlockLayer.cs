@@ -23,7 +23,7 @@ using System.Windows.Forms;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGPT_TestDecoderBlockLayer
+    public class TestGPT_DecoderBlockLayer
     {
         [TestMethod]
         public void TestForward()
