@@ -420,16 +420,19 @@ namespace MyCaffe.layers
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            long hBottomData = colBottom[0].gpu_data;
             long hTopDiff = colTop[0].gpu_diff;
 
             if (m_weightAdatper != null)
-                m_weightAdatper.Backward(colTop, colBottom, m_colBlobs[0]);
+            {
+                Blob<T> wt = m_weightAdatper.Weight;
+                m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tOne, wt.mutable_gpu_diff);
+                m_weightAdatper.Backward(colTop, colBottom, wt);
+            }
 
             // Gradient with respect to weight.
             if (m_rgbParamPropagateDown[0] && !layer_param.freeze_learning)
             {
-                long hBottomData = colBottom[0].gpu_data;
-
                 if (m_bTranspose)
                     m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tOne, m_colBlobs[0].mutable_gpu_diff);
                 else
