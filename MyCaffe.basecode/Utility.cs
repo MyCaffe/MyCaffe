@@ -1122,5 +1122,20 @@ namespace MyCaffe.basecode
             return DateTime.MinValue.Add(new TimeSpan(0, (((int)t.TotalMinutes) / nMinutes) * nMinutes, 0));
         }
 
+        /// <summary>
+        /// Load a sequence of integers into a list.
+        /// </summary>
+        /// <param name="rg">Specifies the list to load.</param>
+        /// <param name="nStart">Specifies the start value.</param>
+        /// <param name="nEnd">Specifies the end value, inclusive.</param>
+        public static void LoadSequence(List<int> rg, int nStart, int nEnd)
+        {
+            rg.Clear();
+
+            for (int i = nStart; i <= nEnd; i++)
+            {
+                rg.Add(i);
+            }
+        }
     }
 }
