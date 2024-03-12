@@ -7096,10 +7096,11 @@ namespace MyCaffe.common
         /// <param name="dfScale">Specifies the scale value applied to matrix B in hB (default = 1.0)</param>
         /// <param name="bTransA">Specifies to transpose matrix A (default = false).</param>
         /// <param name="bTransB">Specifies to transpose matrix B (default = false).</param>
+        /// <param name="bAccumulate">Optionally, specifies to accumulate the gradients.</param>
         /// <remarks>
         /// @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
         /// </remarks>
-        public void matmul(uint nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
+        public void matmul(uint nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false, bool bAccumulate = false)
         {
             uint ldb = (bTransB) ? (uint)k : (uint)n;
             uint lda = (bTransA) ? (uint)m : (uint)k;
@@ -7107,8 +7108,9 @@ namespace MyCaffe.common
             uint strideb = (uint)(k * n);
             uint stridea = (uint)(m * k);
             uint stridec = (uint)(m * n);
+            double dfBeta = (bAccumulate) ? 1.0 : 0.0;
 
-            gemm(bTransB, bTransA, n, m, k, dfScale, hB, hA, 0.0, hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
+            gemm(bTransB, bTransA, n, m, k, dfScale, hB, hA, dfBeta, hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
         }
 
         /// <summary>
