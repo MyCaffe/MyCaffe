@@ -4043,7 +4043,8 @@ namespace MyCaffe.common
         /// <param name="bADiff">Specifies to use the diff values in blobA, otherwise the data values are used (default = false).</param>
         /// <param name="bBDiff">Specifies to use the diff values in blobB, otherwise the data values are used (default = false).</param>
         /// <param name="bCDiff">Specifies to use the diff values in blobC, otherwise the data values are used (default = false).</param>
-        public void MatMul(Blob<T> blobA, Blob<T> blobB, bool bReshape = false, bool bTransA = false, bool bTransB = false, double dfScale = 1.0, bool bADiff = false, bool bBDiff = false, bool bCDiff = false)
+        /// <param name="bAccumulate">Optionally, specifies to accumulate the gradients.</param>
+        public void MatMul(Blob<T> blobA, Blob<T> blobB, bool bReshape = false, bool bTransA = false, bool bTransB = false, double dfScale = 1.0, bool bADiff = false, bool bBDiff = false, bool bCDiff = false, bool bAccumulate = false)
         {
             m_log.CHECK_EQ(blobA.num_axes, 4, "The blobA must have 4 axes!");
             m_log.CHECK_EQ(blobB.num_axes, 4, "The blobB must have 4 axes!");
@@ -4082,7 +4083,7 @@ namespace MyCaffe.common
             long hB = (bBDiff) ? blobB.gpu_diff : blobB.gpu_data;
             long hC = (bCDiff) ? mutable_gpu_diff : mutable_gpu_data;
 
-            m_cuda.matmul(nOuterCount, m, n, k, hA, hB, hC, dfScale, bTransA, bTransB);
+            m_cuda.matmul(nOuterCount, m, n, k, hA, hB, hC, dfScale, bTransA, bTransB, bAccumulate);
         }
 
         /// <summary>
@@ -4114,16 +4115,17 @@ namespace MyCaffe.common
         /// <param name="blobA">Specifies the blobA where blobA gradients are placed (in diff values).</param>
         /// <param name="blobB">Specifies the blobB where blobB gradients are placed (in diff values).</param>
         /// <param name="dfScale">Specifies a scale to be applied to the diffs in this blob before the MatMul (default = 1.0).</param>
+        /// <param name="bAccumulate">Optionally, specifies to accumulate the gradients (default = false).</param>
         /// <remarks>
         /// @see [PyGrad:functions.py](https://github.com/jaketae/pygrad/blob/master/pygrad/functions.py) by Jake Tae, 2020, GitHub:jaketae/pygrad
         /// </remarks>
-        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, double dfScale = 1.0)
+        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, double dfScale = 1.0, bool bAccumulate = false)
         {
             if (dfScale != 1.0)
                 scale_diff(dfScale);
 
-            blobA.MatMul(this, blobB, false, false, true, 1, true, false, true);
-            blobB.MatMul(blobA, this, false, true, false, 1, false, true, true);
+            blobA.MatMul(this, blobB, false, false, true, 1, true, false, true, bAccumulate);
+            blobB.MatMul(blobA, this, false, true, false, 1, false, true, true, bAccumulate);
         }
 
         /// <summary>
