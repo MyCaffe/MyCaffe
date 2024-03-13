@@ -121,6 +121,7 @@ namespace MyCaffe.test
             p.pretokenized_data_param.block_size = (uint)nBlockSize;
             p.pretokenized_data_param.source = "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\instruct_dataset\\";
             p.pretokenized_data_param.seed = 1701;
+            p.pretokenized_data_param.pad_token = -100;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
             try
@@ -156,7 +157,7 @@ namespace MyCaffe.test
                         float fExpected = rgData[i * nBlockSize + j + 1];
                         float fActual = rgTarget[i * nBlockSize + j];
 
-                        if (fActual != -100)
+                        if (fActual >= 1)
                             m_log.CHECK_EQ(fActual, fExpected, "The token in batch " + i.ToString() + " at block " + j.ToString() + " is not correct.");
                     }
                 }
@@ -167,8 +168,8 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    string strData = ((PreTokenizedDataLayer<T>)layer).Detokenize(rgData, i * nBlockSize, nBlockSize, true, true, -100);
-                    string strTarget = ((PreTokenizedDataLayer<T>)layer).Detokenize(rgTarget, i * nBlockSize, nBlockSize, true, true, -100);
+                    string strData = ((PreTokenizedDataLayer<T>)layer).Detokenize(rgData, i * nBlockSize, nBlockSize);
+                    string strTarget = ((PreTokenizedDataLayer<T>)layer).Detokenize(rgTarget, i * nBlockSize, nBlockSize);
 
                     rgDataOut.Add(new Tuple<string, string>(strData, strTarget));
                 }
