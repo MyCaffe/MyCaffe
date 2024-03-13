@@ -60,6 +60,46 @@ namespace MyCaffe.model
         }
 
         /// <summary>
+        /// Return the model type of the model file.
+        /// </summary>
+        /// <param name="strModelFile">Specifies the model who's type is to be returned.</param>
+        /// <returns>The model type is returned.</returns>
+        public override string GetModelType(string strModelFile)
+        {
+            try
+            {
+                FileInfo fi = new FileInfo(strModelFile);
+                long lSize = 256;
+                long lOffset = 0;
+                long lHeaderSize = 256;
+
+                using (var mmf = MemoryMappedFile.CreateFromFile(strModelFile, FileMode.Open, "MyCaffeSharedMemory"))
+                {
+                    using (var accessor = mmf.CreateViewAccessor(lOffset, lSize, MemoryMappedFileAccess.Read))
+                    {
+                        byte[] rgHeader = new byte[lHeaderSize];
+                        accessor.ReadArray(0, rgHeader, 0, (int)lHeaderSize);
+
+                        using (MemoryStream ms = new MemoryStream(rgHeader))
+                        using (BinaryReader br = new BinaryReader(ms))
+                        {
+                            uint uiMagic = br.ReadUInt32();
+                            if (uiMagic != 0x616b3432)
+                                return "KPTH0";
+
+                            int nVersion = br.ReadInt32();
+                            return "KPTH" + nVersion.ToString();
+                        }
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+        }
+
+        /// <summary>
         /// Create the base solver to use.
         /// </summary>
         /// <returns>
@@ -83,7 +123,8 @@ namespace MyCaffe.model
             m_solver.device_id = m_nGpuID;
             m_solver.debug_info = false;
             m_solver.snapshot_after_train = true;
-            m_solver.clip_gradients = 1;
+            m_solver.clip_gradients = -1;
+            m_solver.use_test_net_for_running = true;
 
             // Test parameters.
             m_solver.test_iter.Clear();
@@ -581,6 +622,7 @@ namespace MyCaffe.model
         {
             net.enable_lora = true;
             net.enable_lora_only_load = true;
+            net.model_type = NetParameter.MODEL_TYPE.LLAMA;
 
             if (bPreTokenizer)
             {

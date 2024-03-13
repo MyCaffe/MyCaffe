@@ -63,6 +63,17 @@ namespace MyCaffe.model
             m_solver = solver;
         }
 
+
+        /// <summary>
+        /// Return the model type of the model file.
+        /// </summary>
+        /// <param name="strModelFile">Specifies the model who's type is to be returned.</param>
+        /// <returns>The model type is returned.</returns>
+        public virtual string GetModelType(string strModelFile)
+        {
+            return "";
+        }
+
         /// <summary>
         /// Load the model weights from the specified model file, using the specified format.
         /// </summary>
