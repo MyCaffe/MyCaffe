@@ -72,7 +72,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -126,7 +126,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -180,7 +180,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -234,7 +234,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -288,7 +288,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -342,7 +342,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -360,7 +360,7 @@ namespace MyCaffe.test
             {
                 foreach (IModelBuilderTest t in test.Tests)
                 {
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
                 }
             }
             finally
@@ -468,7 +468,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTinyStoriesModel_CreateTrainingModel()
+        public void TestTinyStoriesModel_CreateTrainingModel_NoFineTune()
         {
             TinyStoriesModelBuilderTest test = new TinyStoriesModelBuilderTest("Stories15M");
 
@@ -478,7 +478,27 @@ namespace MyCaffe.test
                 {
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestCreateTrainingModel();
+                    t.TestCreateTrainingModel(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTinyStoriesModel_CreateTrainingModel_FineTune()
+        {
+            TinyStoriesModelBuilderTest test = new TinyStoriesModelBuilderTest("Stories15M");
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestCreateTrainingModel(true);
                 }
             }
             finally
@@ -491,7 +511,7 @@ namespace MyCaffe.test
     interface IModelBuilderTest : ITest
     {
         void TestCreateSolver();
-        void TestCreateTrainingModel();
+        void TestCreateTrainingModel(bool bFineTune);
         void TestCreateInferenceModel(bool bEnableLoRA);
     }
 
@@ -781,7 +801,7 @@ namespace MyCaffe.test
             }
         }
 
-        protected override void testCreateTrainingModel()
+        protected override void testCreateTrainingModel(bool bFineTune)
         {
         }
     }
@@ -936,17 +956,17 @@ namespace MyCaffe.test
             }
         }
 
-        protected override void testCreateTrainingModel()
+        protected override void testCreateTrainingModel(bool bFineTune)
         {
             m_strModel = "Stories15M_Instruct";
             m_nBatchSize = 64;
             m_nSeqLen = 350;
-            m_nIterSize = 8;
+            m_nIterSize = (bFineTune) ? 8 : 1;
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.TRAIN, true);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TRAIN, bFineTune);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -976,6 +996,7 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
                 mycaffe.OnTrainingIteration += MyCaffe_OnTrainingIteration;
+                mycaffe.OnSnapshot += MyCaffe_OnSnapshot;
 
                 string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin", "https://huggingface.co/karpathy/tinyllamas/resolve/main/");
 
@@ -992,6 +1013,10 @@ namespace MyCaffe.test
             {
                 mycaffe.Dispose();
             }
+        }
+
+        private void MyCaffe_OnSnapshot(object sender, SnapshotArgs e)
+        {
         }
 
         private int countWords(string str, string strWord)
@@ -1202,12 +1227,12 @@ namespace MyCaffe.test
             return strPath + "\\" + strFile;
         }
 
-        public void TestCreateTrainingModel()
+        public void TestCreateTrainingModel(bool bFineTune)
         {
-            testCreateTrainingModel();
+            testCreateTrainingModel(bFineTune);
         }
 
-        protected virtual void testCreateTrainingModel()
+        protected virtual void testCreateTrainingModel(bool bFineTune)
         {
             ModelBuilder<T> builder = create();
 
