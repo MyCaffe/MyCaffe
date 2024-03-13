@@ -417,6 +417,13 @@ namespace MyCaffe.layers.gpt
             m_colInternalTop.Add(top);
         }
 
+        private void reshape(Blob<T> b, params int[] rgShape)
+        {
+            m_rgShape.Clear();
+            m_rgShape.AddRange(rgShape);
+            b.Reshape(m_rgShape);
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -436,6 +443,10 @@ namespace MyCaffe.layers.gpt
             m_blobX1.ReshapeLike(colBottom[1]);
             shareLayerBlob(m_blobX2, colBottom[2].shape());
             m_blobX2.ReshapeLike(colBottom[2]);
+
+            reshape(m_blobX0, m_blobX0.num, m_blobX0.channels, 1, m_blobX0.count(2));
+            reshape(m_blobX1, m_blobX1.num, m_blobX1.channels, 1, m_blobX1.count(2));
+            reshape(m_blobX2, m_blobX2.num, m_blobX2.channels, 1, m_blobX2.count(2));
 
             addInternal(m_blobX0, m_blobQ);
             m_c_attnQ.Setup(m_colInternalBottom, m_colInternalTop);
@@ -534,9 +545,9 @@ namespace MyCaffe.layers.gpt
             m_nC = colBottom[0].height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
 
-            m_blobX0.ReshapeLike(colBottom[0]);
-            m_blobX1.ReshapeLike(colBottom[1]);
-            m_blobX2.ReshapeLike(colBottom[2]);
+            reshape(m_blobX0, m_blobX0.num, m_blobX0.channels, 1, m_blobX0.count(2));
+            reshape(m_blobX1, m_blobX1.num, m_blobX1.channels, 1, m_blobX1.count(2));
+            reshape(m_blobX2, m_blobX2.num, m_blobX2.channels, 1, m_blobX2.count(2));
 
             shareLayerBlob(m_blobK, m_rgShape);
             m_blobK.Reshape(m_rgShape);
@@ -635,9 +646,9 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobMask = colBottom[3];
             int nPos = m_options.GetPropertyAsInt("position", -1);
 
-            m_blobX0.CopyFrom(colBottom[0]);
-            m_blobX1.CopyFrom(colBottom[1]);
-            m_blobX2.CopyFrom(colBottom[2]);
+            m_blobX0.CopyFrom(colBottom[0], false, false, 0, true);
+            m_blobX1.CopyFrom(colBottom[1], false, false, 0, true);
+            m_blobX2.CopyFrom(colBottom[2], false, false, 0, true);
 
             // Calculate query, for all heads in batch and move head forward to be the batch dim.
             // q  = self.c_attnQ(x1)
