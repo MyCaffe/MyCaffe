@@ -156,6 +156,9 @@ namespace MyCaffe.layers.gpt
             double dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
             double dfFinalLoss = dfLoss / dfNormalizer;
 
+            if (m_param.loss_param.loss_scale != 1.0)
+                dfFinalLoss *= m_param.loss_param.loss_scale;
+
             colTop[0].SetData(dfFinalLoss, 0);
 
             if (colTop.Count == 2)

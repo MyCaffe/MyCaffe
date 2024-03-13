@@ -17,6 +17,7 @@ namespace MyCaffe.param
         int? m_nIgnoreLabel = null;
         NormalizationMode? m_normalization = NormalizationMode.VALID;
         bool m_bNormalize = false;
+        double m_dfLossScale = 1.0;
 
         /// <summary>
         /// How to normalize the loss for loss layers that aggregate across batches,
@@ -61,6 +62,16 @@ namespace MyCaffe.param
         public LossParameter(NormalizationMode norm = NormalizationMode.VALID)
         {
             m_normalization = norm;
+        }
+
+        /// <summary>
+        /// Specifies the loss scale (default = 1.0).
+        /// </summary>
+        [Description("Specifies the loss scale (default = 1.0).")]
+        public double loss_scale
+        {
+            get { return m_dfLossScale; }
+            set { m_dfLossScale = value; }
         }
 
         /// <summary>
@@ -116,6 +127,7 @@ namespace MyCaffe.param
             m_nIgnoreLabel = p.m_nIgnoreLabel;
             m_normalization = p.m_normalization;
             m_bNormalize = p.m_bNormalize;
+            m_dfLossScale = p.m_dfLossScale;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -139,6 +151,7 @@ namespace MyCaffe.param
                 rgChildren.Add("ignore_label", ignore_label);
 
             rgChildren.Add("normalization", normalization.ToString());
+            rgChildren.Add("loss_scale", loss_scale.ToString());
 
             if (normalization == NormalizationMode.NONE && normalize != false)
                 rgChildren.Add("normalize", normalize.ToString());
@@ -185,6 +198,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("normalize")) != null)
                 p.normalize = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("loss_scale")) != null)
+                p.loss_scale = double.Parse(strVal);
 
             return p;
         }
