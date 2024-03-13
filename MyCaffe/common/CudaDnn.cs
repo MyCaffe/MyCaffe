@@ -974,6 +974,7 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CudaDnn<T> : ICudaDnn, IDisposable
     {
+        const int IGNORE_LABEL_NOP = -9999;
         Params m_param = new Params();
         CudaDnnMemoryTracker<T> m_memTracker;
         int m_nDeviceId;

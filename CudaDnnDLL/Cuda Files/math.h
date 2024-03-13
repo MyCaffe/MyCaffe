@@ -360,11 +360,11 @@ class Math
 		long prelu_bwd(int nCount, int nChannels, int nDim, long hTOpDiff, long hBottomData, long hBottomDiff, long hSlopeData, int nDivFactor);
 		long prelu_bwd_param(int nCDim, int nNum, int nTopOffset, long hTopDiff, long hBottomData, long hBackBuffDiff);
 
-		long nllloss_fwd(int nCount, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-		long nllloss_bwd(int nCount, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+		long nllloss_fwd(int nCount, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+		long nllloss_bwd(int nCount, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 		
-		long softmaxloss_fwd(int nCount, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-		long softmaxloss_bwd(int nCount, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+		long softmaxloss_fwd(int nCount, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+		long softmaxloss_bwd(int nCount, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 
 		long min_fwd(int nCount, long hA, long hB, int nIdx, long hY, long hMask);
 		long min_bwd(int nCount, long hX, int nIdx, long hMask, long hY);

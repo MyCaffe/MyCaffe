@@ -12224,7 +12224,7 @@ __global__ void softmaxloss_fwd_param_kernel1(int nthreads, const T* prob_data, 
 }
 
 template <class T> 
-long Math<T>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+long Math<T>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel)
 {
 	LONG lErr;
 	MemoryItem* pProbData;
@@ -12249,7 +12249,7 @@ long Math<T>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossDat
 	T* loss_data = (T*)pLossData->Data();
 	T* counts = (T*)pCounts->Data();
 
-	if (nIgnoreLabel == -1)
+	if (!bHasIgnoreLabel)
 		softmaxloss_fwd_param_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts);
 	else
 		softmaxloss_fwd_param_kernel1<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
@@ -12257,8 +12257,8 @@ long Math<T>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossDat
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-template long Math<float>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<double>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 
 
 template<typename T>
@@ -12304,7 +12304,7 @@ __global__ void softmaxloss_bwd_param_kernel1(int nthreads, const T* top, const 
 }
 
 template <class T> 
-long Math<T>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+long Math<T>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel)
 {
 	LONG lErr;
 	MemoryItem* pTopData;
@@ -12329,7 +12329,7 @@ long Math<T>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDi
 	T* bottom_diff = (T*)pBottomDiff->Data();
 	T* counts = (T*)pCounts->Data();
 
-	if (nIgnoreLabel == -1)
+	if (!bHasIgnoreLabel)
 		softmaxloss_bwd_param_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts);
 	else
 		softmaxloss_bwd_param_kernel1<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
@@ -12337,8 +12337,8 @@ long Math<T>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDi
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-template long Math<float>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<double>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 
 
 template<typename T>
@@ -12377,7 +12377,7 @@ __global__ void nllloss_fwd_param_kernel1(int nthreads, const T* prob_data, cons
 }
 
 template <class T>
-long Math<T>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+long Math<T>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel)
 {
 	LONG lErr;
 	MemoryItem* pProbData;
@@ -12402,7 +12402,7 @@ long Math<T>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, i
 	T* loss_data = (T*)pLossData->Data();
 	T* counts = (T*)pCounts->Data();
 
-	if (nIgnoreLabel == -1)
+	if (!bHasIgnoreLabel)
 		nllloss_fwd_param_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts);
 	else
 		nllloss_fwd_param_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
@@ -12410,8 +12410,8 @@ long Math<T>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, i
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-template long Math<float>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<double>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 
 
 template<typename T>
@@ -12457,7 +12457,7 @@ __global__ void nllloss_bwd_param_kernel1(int nthreads, const T* top, const T* l
 }
 
 template <class T>
-long Math<T>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+long Math<T>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel)
 {
 	LONG lErr;
 	MemoryItem* pTopData;
@@ -12482,7 +12482,7 @@ long Math<T>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, 
 	T* bottom_diff = (T*)pBottomDiff->Data();
 	T* counts = (T*)pCounts->Data();
 
-	if (nIgnoreLabel == -1)
+	if (!bHasIgnoreLabel)
 		nllloss_bwd_param_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts);
 	else
 		nllloss_bwd_param_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
@@ -12490,8 +12490,8 @@ long Math<T>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-template long Math<float>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<double>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, bool bHasIgnoreLabel, int nIgnoreLabel);
 
 
 template<typename T>

@@ -26,6 +26,8 @@ const int DEVPROP_NAME					= 2;
 const int DEVPROP_MULTIGPUBOARDGROUPID	= 3;
 const int DEVPROP_COMPUTELEVEL			= 4;
 
+const int IGNORE_LABEL_NOP = -9999;
+
 const int MAX_ARG = 4096 * 10;
 const int MAX_DIM = 4096 * 10;
 
@@ -4867,11 +4869,15 @@ inline long Device<T>::cuda_nllloss_fwd(long lInput, T* pfInput, long llInput, L
 	int nInnerNum = (int)plInput[6];
 	long hCounts = (long)plInput[7];
 	int nIgnoreLabel = -1;
+	bool bHasIgnoreLabel = false;
 
-	if (llInput > 8)
+	if (llInput > 8 && (int)plInput[8] != IGNORE_LABEL_NOP)
+	{
+		bHasIgnoreLabel = true;
 		nIgnoreLabel = (int)plInput[8];
+	}
 
-	return m_math.nllloss_fwd(nCount, hProbData, hLabels, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+	return m_math.nllloss_fwd(nCount, hProbData, hLabels, hLossData, nOuterNum, nDim, nInnerNum, hCounts, bHasIgnoreLabel, nIgnoreLabel);
 }
 
 template <class T>
@@ -4891,11 +4897,15 @@ inline long Device<T>::cuda_nllloss_bwd(long lInput, T* pfInput, long llInput, L
 	int nInnerNum = (int)plInput[6];
 	long hCounts = (long)plInput[7];
 	int nIgnoreLabel = -1;
+	bool bHasIgnoreLabel = false;
 
-	if (llInput > 8)
+	if (llInput > 8 && (int)plInput[8] != IGNORE_LABEL_NOP)
+	{
+		bHasIgnoreLabel = true;
 		nIgnoreLabel = (int)plInput[8];
+	}
 
-	return m_math.nllloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+	return m_math.nllloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, bHasIgnoreLabel, nIgnoreLabel);
 }
 
 
@@ -4916,11 +4926,15 @@ inline long Device<T>::cuda_softmaxloss_fwd(long lInput, T* pfInput, long llInpu
 	int nInnerNum = (int)plInput[6];
 	long hCounts = (long)plInput[7];
 	int nIgnoreLabel = -1;
+	bool bHasIgnoreLabel = false;
 
-	if (llInput > 8)
+	if (llInput > 8 && plInput[8] != IGNORE_LABEL_NOP)
+	{
+		bHasIgnoreLabel = true;
 		nIgnoreLabel = (int)plInput[8];
+	}
 
-	return m_math.softmaxloss_fwd(nCount, hProbData, hLabels, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+	return m_math.softmaxloss_fwd(nCount, hProbData, hLabels, hLossData, nOuterNum, nDim, nInnerNum, hCounts, bHasIgnoreLabel, nIgnoreLabel);
 }
 
 template <class T>
@@ -4940,11 +4954,15 @@ inline long Device<T>::cuda_softmaxloss_bwd(long lInput, T* pfInput, long llInpu
 	int nInnerNum = (int)plInput[6];
 	long hCounts = (long)plInput[7];
 	int nIgnoreLabel = -1;
+	bool bHasIgnoreLabel = false;
 
-	if (llInput > 8)
+	if (llInput > 8 && (int)plInput[8] != IGNORE_LABEL_NOP)
+	{
+		bHasIgnoreLabel = true;
 		nIgnoreLabel = (int)plInput[8];
+	}
 
-	return m_math.softmaxloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+	return m_math.softmaxloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, bHasIgnoreLabel, nIgnoreLabel);
 }
 
 template <class T>
