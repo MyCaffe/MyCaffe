@@ -75,6 +75,7 @@ namespace MyCaffe.param
         int m_nAverageAccuracyWindow = 0;
         bool m_bEnableClipGradientOutput = false;
         bool m_bVerboseOptimizationOutput = true;
+        bool m_bUseTestNetForRunning = false;
 
         // SSD Parameters
         EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
@@ -261,6 +262,16 @@ namespace MyCaffe.param
         {
             get { return m_bVerboseOptimizationOutput; }
             set { m_bVerboseOptimizationOutput = value; }
+        }
+
+        /// <summary>
+        /// When enabled the test net is used for running in the RUN phase which can save memory (default = false).
+        /// </summary>
+        [Description("When enabled the test net is used for running in the RUN phase which can save memory (default = false).")]
+        public bool use_test_net_for_running
+        {
+            get { return m_bUseTestNetForRunning; }
+            set { m_bUseTestNetForRunning = value; }
         }
 
         /// <summary>
@@ -1101,6 +1112,7 @@ namespace MyCaffe.param
             rgChildren.Add("show_per_class_result", show_per_class_result.ToString());
             rgChildren.Add("accuracy_average_window", accuracy_average_window.ToString());
             rgChildren.Add("verbose_optimization_output", verbose_optimization_output.ToString());
+            rgChildren.Add("use_test_net_for_running", use_test_net_for_running.ToString());
             
             return new RawProto(strName, "", rgChildren);
         }
@@ -1355,6 +1367,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("verbose_optimization_output")) != null)
                 p.verbose_optimization_output = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_test_net_for_running")) != null)
+                p.use_test_net_for_running = bool.Parse(strVal);
 
             return p;
         }
