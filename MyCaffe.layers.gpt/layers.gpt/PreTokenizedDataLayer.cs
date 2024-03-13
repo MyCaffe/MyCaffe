@@ -320,8 +320,26 @@ namespace MyCaffe.layers.gpt
         /// <returns>The bottom blob collection is returned.</returns>
         public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
-            nSeqLen = 0;
-            return null;
+            nSeqLen = (int)m_param.pretokenized_data_param.block_size;
+
+            Blob<T> blobIdx = new Blob<T>(m_cuda, m_log, false);
+
+            string strInput = customInput.GetProperty("InputData");
+            if (string.IsNullOrEmpty(strInput))
+                strInput = " ";
+
+
+            List<int> rgTokens = m_ivocab.Tokenize(strInput);
+            float[] rgInput = rgTokens.Select(tok => (float)tok).ToArray();
+
+            int[] rgShape = new int[2];
+            rgShape[0] = 1;
+            rgShape[1] = rgInput.Length;
+
+            blobIdx.Reshape(rgShape);
+            blobIdx.mutable_cpu_data = convert(rgInput);
+
+            return new BlobCollection<T>() { blobIdx };
         }
 
         /// <summary>
@@ -413,7 +431,7 @@ namespace MyCaffe.layers.gpt
             softmax.Forward(colBottom, colTop);
 
             float[] rgProb = convertF(m_blobY.mutable_cpu_data);
-            int nTokenId = (m_param.tokenized_data_param.sample_method == TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY) ? sample(rgProb) : argmax(rgProb);
+            int nTokenId = sample(rgProb);
 
             string str = "";
 
