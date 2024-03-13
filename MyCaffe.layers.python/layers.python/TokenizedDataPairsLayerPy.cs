@@ -16,7 +16,7 @@ namespace MyCaffe.layers.python.layers.python
     /// The PythonLayer provides a wrapper for the TokenizedDataPairsLayer layer implemented in Python.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class TokenizedDataPairsLayerPy<T> : Layer<T>
+    public class TokenizedDataPairsLayerPy<T> : BaseTokenizedDataLayer<T>
     {
         Random m_random;
         long m_lNum;
