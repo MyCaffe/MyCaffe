@@ -375,7 +375,7 @@ namespace MyCaffe.model
             return null;
         }
 
-        public byte[] loadWeights_kpth1(BlobCollection<T> col, string strModelFile)
+        private byte[] loadWeights_kpth1(BlobCollection<T> col, string strModelFile)
         {
             FileInfo fi = new FileInfo(strModelFile);
             long lSize = fi.Length;
