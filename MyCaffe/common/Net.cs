@@ -2820,6 +2820,51 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Finds a Blob in the Net by name.
+        /// </summary>
+        /// <param name="strName">Specifies the Blob name.</param>
+        /// <param name="bFindLayerWithTop">Specifies to find the layer with the blob as a top (true) or bottom (false).</param>
+        /// <param name="nLayerIdx">Returns the layer index of the blob.</param>
+        /// <returns>If found, the Blob is returned, otherwise <i>null</i> is returned.</returns>
+        public Blob<T> FindBlobEx(string strName, bool bFindLayerWithTop, out int nLayerIdx)
+        {
+            nLayerIdx = -1;
+
+            foreach (Blob<T> blob in blobs)
+            {
+                if (blob.Name == strName)
+                {
+                    if (bFindLayerWithTop)
+                    {
+                        for (int i = 0; i < m_rgcolTopVecs.Count; i++)
+                        {
+                            if (m_rgcolTopVecs[i].Contains(blob))
+                            {
+                                nLayerIdx = i;
+                                return blob;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < m_rgcolBottomVecs.Count; i++)
+                        {
+                            if (m_rgcolBottomVecs[i].Contains(blob))
+                            {
+                                nLayerIdx = i;
+                                return blob;
+                            }
+                        }
+                    }
+
+                    return blob;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Returns the collection of bottom blobs for a given layer.
         /// </summary>
         /// <param name="strLayer">Specifies the layer name.</param>
