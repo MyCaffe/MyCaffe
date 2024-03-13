@@ -1216,6 +1216,21 @@ namespace MyCaffe
                 if (p == null || !bCreateRunNet)
                     return true;
 
+                if (m_solver.parameter.use_test_net_for_running)
+                {
+                    m_log.WriteLine("WARNING: Using the test net for running as specified in the solver parameter 'use_test_net_for_running' = true.", true);
+                    m_net = m_solver.TestingNet;
+
+                    if (m_net == null)
+                    {
+                        m_log.WriteLine("WARNING: TestNet is null, falling back to training net.", true);
+                        m_net = m_solver.TrainingNet;
+                    }
+
+                    m_bOwnRunNet = false;
+                    return true;
+                }
+
                 TransformationParameter tp = null;
                 NetParameter netParam = createNetParameterForRunning(p, out tp);
 
@@ -1422,6 +1437,21 @@ namespace MyCaffe
                     return true;
                 }
 
+                if (m_solver.parameter.use_test_net_for_running)
+                {
+                    m_log.WriteLine("WARNING: Using the test net for running as specified in the solver parameter 'use_test_net_for_running' = true.", true);
+                    m_net = m_solver.TestingNet;
+
+                    if (m_net == null)
+                    {
+                        m_log.WriteLine("WARNING: TestNet is null, falling back to training net.", true);
+                        m_net = m_solver.TrainingNet;
+                    }
+
+                    m_bOwnRunNet = false;
+                    return true;
+                }
+
                 TransformationParameter tp = null;
                 NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
 
@@ -1561,6 +1591,21 @@ namespace MyCaffe
                     if (phase == Phase.RUN)
                         throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
 
+                    return true;
+                }
+
+                if (m_solver.parameter.use_test_net_for_running)
+                {
+                    m_log.WriteLine("WARNING: Using the test net for running as specified in the solver parameter 'use_test_net_for_running' = true.", true);
+                    m_net = m_solver.TestingNet;
+
+                    if (m_net == null)
+                    {
+                        m_log.WriteLine("WARNING: TestNet is null, falling back to training net.", true);
+                        m_net = m_solver.TrainingNet;
+                    }
+
+                    m_bOwnRunNet = false;
                     return true;
                 }
 
@@ -3004,10 +3049,99 @@ namespace MyCaffe
         /// <returns>The results are returned as in a property set.</returns>
         public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
         {
+            if (m_net.net_param.model_type == NetParameter.MODEL_TYPE.LLAMA)
+                return generate_llama(customInput, nK, dfThreshold, nMax, bBeamSearch);
+            else
+                return generate_legacy(customInput, nK, dfThreshold, nMax, bBeamSearch);
+        }
+
+        private PropertySet generate_llama(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
+        {
+            Layer<T> tok1 = m_net.FindLayer(LayerParameter.LayerType.PRETOKENIZED_DATA, "data");
+            if (tok1 == null)
+                tok1 = m_net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data");
+
+            if (tok1 == null)
+                throw new Exception("Could not find the PreTokenizedData or TokenizedData layer!");
+
+            BaseTokenizedDataLayer<T> tok = tok1 as BaseTokenizedDataLayer<T>;
+            if (tok == null)
+                throw new Exception("The PreTokenizedData or TokenizedData layer is not of the correct type!");
+
+            int nMaxNewTokens = nMax;
+            int nStartLayerIdx;
+            Blob<T> blobTokdata = m_net.FindBlobEx("tokdata", false, out nStartLayerIdx);
+            int nEndLayerIdx;
+            Blob<T> blobLogits = m_net.FindBlobEx("logits", true, out nEndLayerIdx);
+
+            if (blobTokdata == null)
+                throw new Exception("Could not find the 'tokdata' blob!");
+            if (blobLogits == null)
+                throw new Exception("Could not find the 'logits' blob!");
+
+            int nCurIdx = 0;
+            float fTemperature = 0.1f;
+            Stopwatch sw = new Stopwatch();
+
+            int nSeqLen = 0;
+            BlobCollection<T> colBtm = tok.PreProcessInput(customInput, out nSeqLen);
+            blobTokdata.CopyFrom(colBtm[0], false, true);
+            List<float> rgTokenIds = new List<float>();
+            List<float> rgResponseTokens = new List<float>();
+
+            rgTokenIds.AddRange(Utility.ConvertVecF(blobTokdata.update_cpu_data()));
+
+            sw.Start();
+            double dfTotalTime = 0;
+            int nTokenId = (int)rgTokenIds[0];
+
+            int[] rgShape = new int[2] { 1, 1 };
+            blobTokdata.Reshape(rgShape);
+
+            for (int i = 0; i < nMaxNewTokens; i++)
+            {
+                blobTokdata.SetData(nTokenId, 0);
+
+                m_net.SetLayerOption("position", i);
+                m_net.ForwardFromTo(nStartLayerIdx, nEndLayerIdx);
+
+                if (i < rgTokenIds.Count - 1)
+                {
+                    nTokenId = (int)rgTokenIds[i + 1];
+                }
+                else
+                {
+                    blobLogits.scale_data(1.0f / fTemperature);
+
+                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                    nTokenId = res[0].Item2;
+
+                    if (!tok.IsEOS(nTokenId))
+                        rgResponseTokens.Add(nTokenId);
+                }
+
+                sw.Stop();
+                dfTotalTime += sw.Elapsed.TotalMilliseconds;
+
+                m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i + 1)).ToString("N3") + " ms.", true);
+
+                sw.Restart();
+
+                if (tok.IsEOS(nTokenId))
+                    break;
+            }
+
+            string strFinal = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
+            strFinal = clean(strFinal);
+            return new PropertySet("Results=" + strFinal);
+        }
+
+        private PropertySet generate_legacy(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
+        {
             m_log.CHECK_GE(nK, 1, "The K must be >= 1!");
 
             BlobCollection<T> colBottom = null;
-            Layer<T> layerInput = null;
+            BaseTokenizedDataLayer<T> layerInput = null;
             string strInput = customInput.GetProperty("InputData");
             string[] rgstrInput = strInput.Split('|');
             List<string> rgstrOutput = new List<string>();
@@ -3022,11 +3156,15 @@ namespace MyCaffe
                 {
                     foreach (Layer<T> layer in m_net.layers)
                     {
+                        BaseTokenizedDataLayer<T> layerT = layer as BaseTokenizedDataLayer<T>;
+                        if (layerT == null)
+                            continue;
+
                         int nSeqLen1;
-                        colBottom = layer.PreProcessInput(input, out nSeqLen1, colBottom);
+                        colBottom = layerT.PreProcessInput(input, out nSeqLen1, colBottom);
                         if (colBottom != null)
                         {
-                            layerInput = layer;
+                            layerInput = layerT;
                             nSeqLen = nSeqLen1;
                             break;
                         }
