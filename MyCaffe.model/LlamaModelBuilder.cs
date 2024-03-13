@@ -42,7 +42,7 @@ namespace MyCaffe.model
         /// <param name="dfLearningRate">Specifies the base learning rate.</param>
         /// <param name="rgGpuId">Optionally, specifies a set of GPU ID's to use (when null, GPU=0 is used).</param>
         /// <param name="net">Specifies the 'base' net parameter that is to be altered.</param>
-        public LlamaModelBuilder(string strBaseDirectory, string strModel, int nIterSize, uint nBatchSize = 1, uint nSeqLen = 512, uint nVocabSize = 32000, double dfDropout = 0.0, double dfLearningRate = 5e-04, List<int> rgGpuId = null, NetParameter net = null) 
+        public LlamaModelBuilder(string strBaseDirectory, string strModel, int nIterSize, uint nBatchSize = 1, uint nSeqLen = 512, uint nVocabSize = 32000, double dfDropout = 0.1, double dfLearningRate = 5e-04, List<int> rgGpuId = null, NetParameter net = null) 
             : base(strBaseDirectory, net)
         {
             if (rgGpuId == null)
@@ -589,7 +589,7 @@ namespace MyCaffe.model
                 tok.pretokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\llama\\test\\stories\\instruct_dataset\\";
                 tok.pretokenized_data_param.batch_size = nBatch;
                 tok.pretokenized_data_param.block_size = nBlockSize;
-                tok.pretokenized_data_param.shuffle = false;
+                tok.pretokenized_data_param.shuffle = true;
                 tok.pretokenized_data_param.pad_token = -100;
                 tok.pretokenized_data_param.vocabulary_type = PreTokenizedDataParameter.VOCABULARY_TYPE.LLAMA2;
                 tok.freeze_learning = true;
@@ -711,6 +711,7 @@ namespace MyCaffe.model
                 loss.nll_loss_param.axis = 2;
                 loss.loss_param.ignore_label = -1;
                 loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
+                loss.loss_param.loss_scale = 1.0 / m_nIterSize;
                 loss.bottom.Add("prob");
                 loss.bottom.Add("tgt");
                 loss.top.Add("loss");
