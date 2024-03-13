@@ -30,11 +30,27 @@ namespace MyCaffe.param
         bool m_bEnableMemoryStats = false;
         bool m_bEnableLoraOnlyLoad = false;
         bool m_bEnableLora = false;
+        MODEL_TYPE m_modelType = MODEL_TYPE.DEFAULT;
 
         /** @copydoc BaseParameter */
         public NetParameter()
             : base()
         {
+        }
+
+        /// <summary>
+        /// Defines the model type.
+        /// </summary>
+        public enum MODEL_TYPE
+        {
+            /// <summary>
+            /// Specifies the default model type.
+            /// </summary>
+            DEFAULT = 0,
+            /// <summary>
+            /// Specifies a LLAMA model type.
+            /// </summary>
+            LLAMA = 1,
         }
 
         /// <summary>
@@ -93,6 +109,16 @@ namespace MyCaffe.param
         {
             get { return m_strName; }
             set { m_strName = value; }
+        }
+
+        /// <summary>
+        /// Specifies the model type (if any).
+        /// </summary>
+        [Description("Specifies the model type (if any).")]
+        public MODEL_TYPE model_type
+        {
+            get { return m_modelType; }
+            set { m_modelType = value; }
         }
 
         /// <summary>
@@ -267,6 +293,7 @@ namespace MyCaffe.param
             rgChildren.Add("enable_memory_stats", enable_memory_stats.ToString());
             rgChildren.Add("enable_lora", enable_lora.ToString());
             rgChildren.Add("enable_lora_only_load", enable_lora_only_load.ToString());
+            rgChildren.Add("model_type", model_type.ToString());    
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -319,6 +346,14 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("enable_lora_only_load")) != null)
                 p.enable_lora_only_load = bool.Parse(strVal);
 
+            if ((strVal = rp.FindValue("model_type")) != null)
+            {
+                if (strVal == MODEL_TYPE.LLAMA.ToString())
+                    p.model_type = MODEL_TYPE.LLAMA;
+                else
+                    p.model_type = MODEL_TYPE.DEFAULT;
+            }
+
             return p;
         }
 
@@ -369,6 +404,7 @@ namespace MyCaffe.param
             p.m_bForceBackward = m_bForceBackward;
             p.m_state = (m_state != null) ? m_state.Clone() : null;
             p.m_bDebugInfo = m_bDebugInfo;
+            p.m_modelType = m_modelType;
 
             if (bCloneLayers)
                 p.m_rgLayers = Utility.Clone<LayerParameter>(m_rgLayers);
