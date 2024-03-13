@@ -667,7 +667,7 @@ namespace MyCaffe.test
 
         protected override ModelBuilder<T> create()
         {
-            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
+            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel, 1);
         }
 
         protected override void testCreateInferenceModel(bool bEnableLoRA)
@@ -807,6 +807,9 @@ namespace MyCaffe.test
     class TinyStoriesModelBuilderTest<T> : ModelBuilderTest<T>
     {
         string m_strModel = "Stories15M";
+        int m_nBatchSize = 1;
+        int m_nSeqLen = 512;
+        int m_nIterSize = 1;
 
         public TinyStoriesModelBuilderTest(string strName, int nDeviceID, string strModel, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
@@ -818,11 +821,12 @@ namespace MyCaffe.test
 
         protected override ModelBuilder<T> create()
         {
-            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel);
+            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel, m_nIterSize, (uint)m_nBatchSize, (uint)m_nSeqLen);
         }
 
         protected override void testCreateInferenceModel(bool bEnableLoRA)
         {
+            m_strModel = "Stories15M";
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
@@ -933,11 +937,15 @@ namespace MyCaffe.test
 
         protected override void testCreateTrainingModel()
         {
+            m_strModel = "Stories15M_Instruct";
+            m_nBatchSize = 1; // 64;
+            m_nSeqLen = 35; // 350;
+            m_nIterSize = 8;
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TRAIN, true);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
@@ -966,16 +974,21 @@ namespace MyCaffe.test
                 save(strNet, strSolver, false);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+                mycaffe.OnTrainingIteration += MyCaffe_OnTrainingIteration;
 
                 string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin", "https://huggingface.co/karpathy/tinyllamas/resolve/main/");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
 
+                // Train the model with fine-tuning.
+                mycaffe.Train(5000);
+
+                // Run inferencing test
                 TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
 
                 PropertySet input = new PropertySet();
-                string strPrompt = "Once upon a time, ";
+                string strPrompt = "Write a story.  In the story, try to use the verb 'eat', the noun 'cat' and the adjective 'sad'.";
                 int nMaxNewTokens = 50;
                 Blob<T> blobTokdata = net.FindBlob("tokdata");
                 Blob<T> blobLogits = net.FindBlob("logits");
@@ -1039,6 +1052,11 @@ namespace MyCaffe.test
             {
                 mycaffe.Dispose();
             }
+        }
+
+        private void MyCaffe_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
+        {
+            m_log.WriteLine("Iteration " + e.Iteration.ToString() + " Loss = " + e.SmoothedLoss.ToString("N6"));
         }
     }
 
