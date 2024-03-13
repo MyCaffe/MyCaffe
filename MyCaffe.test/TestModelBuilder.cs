@@ -17,6 +17,7 @@ using System.IO;
 using MyCaffe.param.gpt;
 using MyCaffe.layers.gpt;
 using System.Diagnostics;
+using MyCaffe.solvers;
 
 /// <summary>
 /// Testing the Model Builders.
@@ -938,8 +939,8 @@ namespace MyCaffe.test
         protected override void testCreateTrainingModel()
         {
             m_strModel = "Stories15M_Instruct";
-            m_nBatchSize = 1; // 64;
-            m_nSeqLen = 35; // 350;
+            m_nBatchSize = 64;
+            m_nSeqLen = 350;
             m_nIterSize = 8;
             ModelBuilder<T> builder = create();
 
@@ -985,68 +986,7 @@ namespace MyCaffe.test
                 mycaffe.Train(5000);
 
                 // Run inferencing test
-                TokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.TOKENIZED_DATA, "data") as TokenizedDataLayer<T>;
-
-                PropertySet input = new PropertySet();
-                string strPrompt = "Write a story.  In the story, try to use the verb 'eat', the noun 'cat' and the adjective 'sad'.";
-                int nMaxNewTokens = 50;
-                Blob<T> blobTokdata = net.FindBlob("tokdata");
-                Blob<T> blobLogits = net.FindBlob("logits");
-                int nCurIdx = 0;
-                float fTemperature = 0.1f;
-                Stopwatch sw = new Stopwatch();
-
-                int nSeqLen = 0;
-                input.SetProperty("InputData", strPrompt);
-                BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
-                blobTokdata.CopyFrom(colBtm[0], false, true);
-                List<float> rgTokenIds = new List<float>();
-                List<float> rgResponseTokens = new List<float>();
-
-                rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));
-
-                sw.Start();
-                double dfTotalTime = 0;
-                int nTokenId = (int)rgTokenIds[0];
-
-                int[] rgShape = new int[2] { 1, 1 };
-                blobTokdata.Reshape(rgShape);
-
-                for (int i = 0; i < nMaxNewTokens; i++)
-                {
-                    blobTokdata.SetData(nTokenId, 0);
-
-                    net.SetLayerOption("position", i);
-                    net.ForwardFromTo(3, 11);
-
-                    if (i < rgTokenIds.Count - 1)
-                    {
-                        nTokenId = (int)rgTokenIds[i + 1];
-                    }
-                    else
-                    {
-                        blobLogits.scale_data(1.0f / fTemperature);
-
-                        List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
-                        nTokenId = res[0].Item2;
-
-                        if (!tok.IsEOS(nTokenId))
-                            rgResponseTokens.Add(nTokenId);
-                    }
-
-                    sw.Stop();
-                    dfTotalTime += sw.Elapsed.TotalMilliseconds;
-
-                    m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i + 1)).ToString("N3") + " ms.", true);
-
-                    sw.Restart();
-
-                    if (tok.IsEOS(nTokenId))
-                        break;
-                }
-
-                string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
-                m_log.WriteLine("Output: " + strOutput);
+                generate(net); 
             }
             finally
             {
@@ -1054,9 +994,103 @@ namespace MyCaffe.test
             }
         }
 
+        private int countWords(string str, string strWord)
+        {
+            int nCount = 0;
+            int nIdx = 0;
+
+            while (nIdx >= 0)
+            {
+                nIdx = str.IndexOf(strWord, nIdx + 1);
+                if (nIdx >= 0)
+                    nCount++;
+            }
+
+            return nCount;
+        }
+
+        private void generate(Net<T> net)
+        {
+            PreTokenizedDataLayer<T> tok = net.FindLayer(LayerParameter.LayerType.PRETOKENIZED_DATA, "data") as PreTokenizedDataLayer<T>;
+
+            PropertySet input = new PropertySet();
+            string strPrompt = "Write a story.  In the story, try to use the verb 'eat', the noun 'cat' and the adjective 'sad'.";
+            int nMaxNewTokens = 50;
+            Blob<T> blobTokdata = net.FindBlob("tokdata");
+            Blob<T> blobLogits = net.FindBlob("logits");
+            int nCurIdx = 0;
+            float fTemperature = 0.1f;
+            Stopwatch sw = new Stopwatch();
+
+            int nSeqLen = 0;
+            input.SetProperty("InputData", strPrompt);
+            BlobCollection<T> colBtm = tok.PreProcessInput(input, out nSeqLen);
+            blobTokdata.CopyFrom(colBtm[0], false, true);
+            List<float> rgTokenIds = new List<float>();
+            List<float> rgResponseTokens = new List<float>();
+
+            rgTokenIds.AddRange(convertF(blobTokdata.update_cpu_data()));
+
+            sw.Start();
+            double dfTotalTime = 0;
+            int nTokenId = (int)rgTokenIds[0];
+
+            int[] rgShape = new int[2] { 1, 1 };
+            blobTokdata.Reshape(rgShape);
+
+            for (int i = 0; i < nMaxNewTokens; i++)
+            {
+                blobTokdata.SetData(nTokenId, 0);
+
+                net.SetLayerOption("position", i);
+                net.ForwardFromTo(2, 11);
+
+                if (i < rgTokenIds.Count - 1)
+                {
+                    nTokenId = (int)rgTokenIds[i + 1];
+                }
+                else
+                {
+                    blobLogits.scale_data(1.0f / fTemperature);
+
+                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                    nTokenId = res[0].Item2;
+
+                    if (!tok.IsEOS(nTokenId))
+                        rgResponseTokens.Add(nTokenId);
+                }
+
+                sw.Stop();
+                dfTotalTime += sw.Elapsed.TotalMilliseconds;
+
+                m_log.WriteLine("Processing prompt #" + i.ToString() + " average time " + (dfTotalTime / (i + 1)).ToString("N3") + " ms.", true);
+
+                sw.Restart();
+
+                if (tok.IsEOS(nTokenId))
+                    break;
+            }
+
+            string strOutput = tok.Detokenize(rgResponseTokens.ToArray(), 0, rgResponseTokens.Count);
+
+            int nCountEat = countWords(strOutput, "eat");
+            int nCountCat = countWords(strOutput, "cat");
+            int nCountSad = countWords(strOutput, "sad");
+
+            m_log.WriteLine("Output: " + strOutput);
+            m_log.WriteLine("Word Counts: eat = " + nCountEat.ToString() + ", cat = " + nCountCat.ToString() + ", sad = " + nCountSad.ToString());
+        }
+
         private void MyCaffe_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
         {
             m_log.WriteLine("Iteration " + e.Iteration.ToString() + " Loss = " + e.SmoothedLoss.ToString("N6"));
+
+            if (e.Iteration % 100 == 0)
+            {
+                Solver<T> solver = sender as Solver<T>;
+                Net<T> net = solver.net;
+                generate(net);
+            }
         }
     }
 
