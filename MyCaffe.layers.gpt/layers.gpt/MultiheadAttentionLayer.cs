@@ -444,9 +444,9 @@ namespace MyCaffe.layers.gpt
             shareLayerBlob(m_blobX2, colBottom[2].shape());
             m_blobX2.ReshapeLike(colBottom[2]);
 
-            reshape(m_blobX0, m_blobX0.num, m_blobX0.channels, 1, m_blobX0.count(2));
-            reshape(m_blobX1, m_blobX1.num, m_blobX1.channels, 1, m_blobX1.count(2));
-            reshape(m_blobX2, m_blobX2.num, m_blobX2.channels, 1, m_blobX2.count(2));
+            reshape(m_blobX0, colBottom[0].num, colBottom[0].channels, 1, colBottom[0].count(2));
+            reshape(m_blobX1, colBottom[1].num, colBottom[1].channels, 1, colBottom[1].count(2));
+            reshape(m_blobX2, colBottom[2].num, colBottom[2].channels, 1, colBottom[2].count(2));
 
             addInternal(m_blobX0, m_blobQ);
             m_c_attnQ.Setup(m_colInternalBottom, m_colInternalTop);
@@ -545,9 +545,9 @@ namespace MyCaffe.layers.gpt
             m_nC = colBottom[0].height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
 
-            reshape(m_blobX0, m_blobX0.num, m_blobX0.channels, 1, m_blobX0.count(2));
-            reshape(m_blobX1, m_blobX1.num, m_blobX1.channels, 1, m_blobX1.count(2));
-            reshape(m_blobX2, m_blobX2.num, m_blobX2.channels, 1, m_blobX2.count(2));
+            reshape(m_blobX0, colBottom[0].num, colBottom[0].channels, 1, colBottom[0].count(2));
+            reshape(m_blobX1, colBottom[1].num, colBottom[1].channels, 1, colBottom[1].count(2));
+            reshape(m_blobX2, colBottom[2].num, colBottom[2].channels, 1, colBottom[2].count(2));
 
             shareLayerBlob(m_blobK, m_rgShape);
             m_blobK.Reshape(m_rgShape);
