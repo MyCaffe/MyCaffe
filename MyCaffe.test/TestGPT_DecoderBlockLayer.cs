@@ -836,7 +836,12 @@ namespace MyCaffe.test
                 string strInput = "When is the first session";
                 PropertySet input = new PropertySet("InputData=" + strInput);
                 int nSeqLen;
-                BlobCollection<float> colBottom = net.layers[0].PreProcessInput(input, out nSeqLen);
+
+                BaseTokenizedDataLayer<float> tok = net.layers[0] as BaseTokenizedDataLayer<float>;
+                if (tok == null)
+                    throw new Exception("The first layer is not a tokenized data layer!");
+
+                BlobCollection<float> colBottom = tok.PreProcessInput(input, out nSeqLen);
 
                 blobDec.Reshape(1, nSeqLen, 1, 1);
                 blobDec.SetData(0);
@@ -862,7 +867,7 @@ namespace MyCaffe.test
                     res = net.Forward();
                 }
 
-                string strResult = net.layers[0].PostProcessFullOutput(blobDec);
+                string strResult = tok.PostProcessFullOutput(blobDec);
                 Trace.WriteLine("Input: " + strInput);
                 Trace.WriteLine("Output: " + strResult);
             }
