@@ -18,7 +18,7 @@ namespace MyCaffe.layers
     /// forward, backward and Reshape are all no-ops.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class InputLayer<T> : Layer<T>
+    public class InputLayer<T> : BaseTokenizedDataLayer<T>
     {
         /// <summary>
         /// The InputLayer constructor.

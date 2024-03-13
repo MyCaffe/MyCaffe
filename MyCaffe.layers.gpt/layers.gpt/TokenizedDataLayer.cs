@@ -18,7 +18,7 @@ namespace MyCaffe.layers.gpt
     /// The TokenizedDataLayer loads and tokenizes data for a transformer model where data is loaded in the form: data, pos, target(optional)
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class TokenizedDataLayer<T> : Layer<T>
+    public class TokenizedDataLayer<T> : BaseTokenizedDataLayer<T>
     {
         CancelEvent m_evtCancel;
         InputData m_data;
@@ -303,7 +303,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
         /// <returns>The detokenized string is returned.</returns>
-        public string Detokenize(float[] rg, int nStartIdx, int nCount, bool bIgnoreBos = true, bool bIgnoreEos = true)
+        public override string Detokenize(float[] rg, int nStartIdx, int nCount, bool bIgnoreBos = true, bool bIgnoreEos = true)
         {
             return m_data.Detokenize(rg, nStartIdx, nCount, bIgnoreBos, bIgnoreEos);
         }
@@ -502,7 +502,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="nToken">Specifies the token to test of EOS.</param>
         /// <returns>If the token is an EOS token, true is returned.</returns>
-        public bool IsEOS(int nToken)
+        public override bool IsEOS(int nToken)
         {
             return m_data.EOS == nToken;
         }

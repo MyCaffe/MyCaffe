@@ -122,6 +122,7 @@
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="layers\ConstantLayer.cs" />
+    <Compile Include="layers\BaseTokenizedDataLayer.cs" />
     <Compile Include="layers\MathLayer.cs" />
     <Compile Include="layers\ImageDataLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />

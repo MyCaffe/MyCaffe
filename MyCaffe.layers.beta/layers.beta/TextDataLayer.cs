@@ -16,7 +16,7 @@ namespace MyCaffe.layers.beta
     /// This layer is initialized with the MyCaffe.param.TextDataParameter.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class TextDataLayer<T> : Layer<T>
+    public class TextDataLayer<T> : BaseTokenizedDataLayer<T>
     {
         DataItem m_currentData = null;
         Data m_data = null;

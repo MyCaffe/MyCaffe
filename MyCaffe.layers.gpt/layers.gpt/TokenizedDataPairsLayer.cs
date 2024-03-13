@@ -24,7 +24,7 @@ namespace MyCaffe.layers.gpt
     /// The TokenizedDataPairsLayer loads and tokenizes data for a transformer model where data is loaded in the form: data, pos, target(optional)
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class TokenizedDataPairsLayer<T> : Layer<T>
+    public class TokenizedDataPairsLayer<T> : BaseTokenizedDataLayer<T>
     {
         CancelEvent m_evtCancel;
         InputData m_encoderData = null;

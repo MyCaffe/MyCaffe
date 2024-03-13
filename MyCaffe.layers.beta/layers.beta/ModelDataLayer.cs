@@ -16,7 +16,7 @@ namespace MyCaffe.layers.beta
     /// The ModelDataLayer loads data from RawImageResults table for an encoder/decoder type model.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class ModelDataLayer<T> : Layer<T>
+    public class ModelDataLayer<T> : BaseTokenizedDataLayer<T>
     {
         IXImageDatabase2 m_db;
         CancelEvent m_evtCancel;

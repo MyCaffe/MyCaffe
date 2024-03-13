@@ -18,7 +18,7 @@ namespace MyCaffe.common
     public class BeamSearch<T>
     {
         Net<T> m_net;
-        Layer<T> m_layer = null;
+        BaseTokenizedDataLayer<T> m_layer = null;
 
         /// <summary>
         /// The constructor.
@@ -30,9 +30,10 @@ namespace MyCaffe.common
 
             foreach (Layer<T> layer1 in m_net.layers)
             {
-                if (layer1.SupportsPreProcessing && layer1.SupportsPostProcessing)
+                BaseTokenizedDataLayer<T> layerT = layer1 as BaseTokenizedDataLayer<T>;
+                if (layerT != null && layerT.SupportsPreProcessing && layerT.SupportsPostProcessing)
                 {
-                    m_layer = layer1;
+                    m_layer = layerT;
                     break;
                 }
             }
