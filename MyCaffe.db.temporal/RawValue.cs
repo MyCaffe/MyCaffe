@@ -11,8 +11,10 @@ namespace MyCaffe.db.temporal
 {
     using System;
     using System.Collections.Generic;
-    
-    public partial class RawValue
+
+#pragma warning disable 1591, 1587
+
+    public partial class RawValue /** @private */
     {
         public int ID { get; set; }
         public Nullable<int> SourceID { get; set; }
@@ -25,4 +27,5 @@ namespace MyCaffe.db.temporal
         public Nullable<byte> DataCriteriaFormatID { get; set; }
         public Nullable<bool> Active { get; set; }
     }
+#pragma warning restore 1591, 1587
 }

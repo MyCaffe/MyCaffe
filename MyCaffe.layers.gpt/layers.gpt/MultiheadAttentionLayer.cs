@@ -9,7 +9,6 @@ using MyCaffe.fillers;
 using System.Diagnostics;
 using MyCaffe.param.gpt;
 
-/// WORK IN PROGRESS
 namespace MyCaffe.layers.gpt
 {
     /// <summary>

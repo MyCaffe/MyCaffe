@@ -918,7 +918,7 @@ namespace MyCaffe.layers.tft
         /// Loads a new field from an XML node.
         /// </summary>
         /// <param name="node">Specifies the XML node containing the field.</param>
-        /// <returns><The new Field is returned./returns>
+        /// <returns>The new Field is returned.</returns>
         public static Field Load(XmlNode node)
         {
             string strName = node.FirstChild.Value;

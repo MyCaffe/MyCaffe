@@ -180,6 +180,7 @@ namespace MyCaffe.layers
             return null;
         }
 
+#pragma warning disable 1591, 1587
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop) /** @private */
         {
         }
@@ -195,5 +196,6 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom) /** @private */
         {
         }
+#pragma warning restore 1591, 1587
     }
 }

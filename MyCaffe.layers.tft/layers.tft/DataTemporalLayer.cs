@@ -1655,7 +1655,7 @@ namespace MyCaffe.layers.tft
         }
     }
 
-#pragma warning disable 1591
+#pragma warning disable 1591, 1587
 
     class DataLoadParameters /** @private */
     {
@@ -2620,5 +2620,5 @@ namespace MyCaffe.layers.tft
             return true;
         }
     }
-#pragma warning restore 1591
+#pragma warning restore 1591, 1587
 }

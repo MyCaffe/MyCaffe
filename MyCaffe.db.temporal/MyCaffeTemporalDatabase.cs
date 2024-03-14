@@ -919,6 +919,8 @@ namespace MyCaffe.db.temporal
         //  Not Implemented
         //---------------------------------------------------------------------
         #region Not Implemented
+#pragma warning disable 1591, 1587
+
         public int FindItemIndex(int nSrcId, DateTime dt, string strDescription) /**@private */
         {
             throw new NotImplementedException();
@@ -984,7 +986,7 @@ namespace MyCaffe.db.temporal
         {
             return null;
         }
-
+#pragma warning restore 1591, 1587
         #endregion
     }
 }

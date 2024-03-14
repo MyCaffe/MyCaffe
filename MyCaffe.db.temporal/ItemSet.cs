@@ -864,6 +864,8 @@ namespace MyCaffe.db.temporal
         }
     }
 
+#pragma warning disable 1591
+
     [Serializable]
     public partial class RawValue /**@private */
     {
@@ -878,4 +880,6 @@ namespace MyCaffe.db.temporal
     public partial class ValueStream /**@private */
     {
     }
+
+#pragma warning restore 1591
 }

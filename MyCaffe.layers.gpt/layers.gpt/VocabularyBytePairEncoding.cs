@@ -416,7 +416,7 @@ namespace MyCaffe.layers.gpt.layers.gpt
         }
     }
 
-#pragma warning disable 1591
+#pragma warning disable 1591, 1587
 
     class Node /** @private */
     {
@@ -578,5 +578,5 @@ namespace MyCaffe.layers.gpt.layers.gpt
         }
     }
 
-    #pragma warning restore 1591
+#pragma warning restore 1591, 1587
 }

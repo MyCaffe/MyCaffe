@@ -11,8 +11,10 @@ namespace MyCaffe.db.temporal
 {
     using System;
     using System.Collections.Generic;
-    
-    public partial class ValueItem
+
+#pragma warning disable 1591, 1587
+
+    public partial class ValueItem /** @private */
     {
         public int ID { get; set; }
         public string Name { get; set; }
@@ -22,4 +24,5 @@ namespace MyCaffe.db.temporal
         public Nullable<System.DateTime> EndTime { get; set; }
         public Nullable<int> Steps { get; set; }
     }
+#pragma warning restore 1591, 1587
 }
