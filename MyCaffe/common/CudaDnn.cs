@@ -974,7 +974,6 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CudaDnn<T> : ICudaDnn, IDisposable
     {
-        const int IGNORE_LABEL_NOP = -9999;
         Params m_param = new Params();
         CudaDnnMemoryTracker<T> m_memTracker;
         int m_nDeviceId;
@@ -1991,9 +1990,17 @@ namespace MyCaffe.common
             get { return s_strCudaPath; }
         }
 
+        /// <summary>
+        /// Specifies the ignore label used to ignore the ignore label.
+        /// </summary>
+        public static int IGNORE_LABEL_NOP
+        {
+            get { return -9999; }
+        }
+
 #pragma warning disable 1591
 
-        public void CombineData(int nCount, long hOriginal, long hUpdated, double dfUpdatedPct, long hServer, double dfServerPct, long hNewData) /** @private */
+    public void CombineData(int nCount, long hOriginal, long hUpdated, double dfUpdatedPct, long hServer, double dfServerPct, long hNewData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsDouble(dfUpdatedPct, dfServerPct), m_param.AsLong(nCount, hOriginal, hUpdated, 0, hServer, 0, hNewData));
