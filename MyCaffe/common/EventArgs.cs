@@ -416,12 +416,14 @@ namespace MyCaffe.common
     {
         byte[] m_rgWeights = null;
         byte[] m_rgState = null;
+        byte[] m_rgLoRaWeights = null;
         double m_dfAccuracy = 0;
         double m_dfError = 0;
         int m_nIteration = 0;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_favor = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         bool m_bIncludeWeights = true;
         bool m_bIncludeState = false;
+        bool m_bIncludeLoRaWeightsOnly = false;
         bool m_bSingleStep = false;
         bool m_bForced = false;
         bool m_bScheduled = true;
@@ -442,20 +444,29 @@ namespace MyCaffe.common
         /// The Solver hooks into these events so that it can access the Solver state and return it to the caller of the SnapshotArgs::UpdateState method.
         /// </remarks>
         public event EventHandler<GetBytesArgs> OnGetState;
+        /// <summary>
+        /// Specifies the OnGetLoRaWeights event which fires when the SnapshotArgs::UpdateWeights method is called.
+        /// </summary>
+        /// <remarks>
+        /// The Solver hooks into these events so that it can access the Solver state and return it to the caller of the SnapshotArgs::UpdateWeights method.
+        /// </remarks>
+        public event EventHandler<GetBytesArgs> OnGetLoRaWeights;
 
         /// <summary>
         /// The SnapshotArgs constructor.
         /// </summary>
         /// <param name="rgState">Specifies the current Solver state as an array of bytes.</param>
         /// <param name="rgWeights">Specifies the current training Net weights as an array of bytes.</param>
+        /// <param name="rgLoRaWeights">Specifies the current training Net LoRa weights as an array of bytes.</param>
         /// <param name="dfAccuracy">Specifies the last accuracy observed in the training Net.</param>
         /// <param name="dfError">Specifies the last error observed in the training Net.</param>
         /// <param name="nIteration">Specifies the current iteration of training.</param>
         /// <param name="favor">Specifies whether to favor the error value or the accuracy value when deciding whether or not a snapshot should take place.</param>
-        public SnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD favor)
+        public SnapshotArgs(byte[] rgState, byte[] rgWeights, byte[] rgLoRaWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD favor)
         {
             m_rgState = rgState;
             m_rgWeights = rgWeights;
+            m_rgLoRaWeights = rgLoRaWeights;
             m_dfAccuracy = dfAccuracy;
             m_dfError = dfError;
             m_nIteration = nIteration;
@@ -485,12 +496,25 @@ namespace MyCaffe.common
         /// <returns>The training Net weights are returned as an array of bytes.</returns>
         public byte[] UpdateWeights()
         {
-            if (OnGetWeights != null)
+            if (m_bIncludeLoRaWeightsOnly)
             {
-                GetBytesArgs args = new common.GetBytesArgs();
-                OnGetWeights(this, args);
-                m_rgWeights = args.Data;
-                return m_rgWeights;
+                if (OnGetLoRaWeights != null)
+                {
+                    GetBytesArgs args = new common.GetBytesArgs();
+                    OnGetLoRaWeights(this, args);
+                    m_rgLoRaWeights = args.Data;
+                    return m_rgLoRaWeights;
+                }
+            }
+            else
+            {
+                if (OnGetWeights != null)
+                {
+                    GetBytesArgs args = new common.GetBytesArgs();
+                    OnGetWeights(this, args);
+                    m_rgWeights = args.Data;
+                    return m_rgWeights;
+                }
             }
 
             return null;
@@ -512,6 +536,15 @@ namespace MyCaffe.common
         {
             get { return m_rgWeights; }
             set { m_rgWeights = value; }
+        }
+
+        /// <summary>
+        /// Get/set the LoRa Weights.
+        /// </summary>
+        public byte[] LoRaWeights
+        {
+            get { return m_rgLoRaWeights; }
+            set { m_rgLoRaWeights = value; }
         }
 
         /// <summary>
@@ -553,6 +586,15 @@ namespace MyCaffe.common
         {
             get { return m_bIncludeWeights; }
             set { m_bIncludeWeights = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not to include the LoRa weights in the snapshot.
+        /// </summary>
+        public bool IncludeLoRaWeightsOnly
+        {
+            get { return m_bIncludeLoRaWeightsOnly; }
+            set { m_bIncludeLoRaWeightsOnly = value; }
         }
 
         /// <summary>

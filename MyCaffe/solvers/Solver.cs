@@ -1136,7 +1136,7 @@ namespace MyCaffe.solvers
 
             bool bEnabled = m_log.IsEnabled;
             m_log.Enable = false;
-            SnapshotArgs args = GetSnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
+            SnapshotArgs args = GetSnapshotArgs(null, null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.Forced = bForced;
             args.Scheduled = bScheduled;
             args.UpdateDatabase = bUpdateDatabase;
@@ -1165,20 +1165,22 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="rgState">Specifies the state bytes or null.</param>
         /// <param name="rgWeights">Specifies the weight bytes or null.</param>
+        /// <param name="rgLoRaWeights">Specifies the LoRa weight bytes or null.</param>
         /// <param name="dfAccuracy">Specifies the accuracy.</param>
         /// <param name="dfError">Specifies the error.</param>
         /// <param name="nIteration">Specifies the interation.</param>
         /// <param name="wtUpdt">Specifies the weight update method.</param>
         /// <returns>The args are returned.</returns>
-        public SnapshotArgs GetSnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD wtUpdt)
+        public SnapshotArgs GetSnapshotArgs(byte[] rgState, byte[] rgWeights, byte[] rgLoRaWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD wtUpdt)
         {
             if (dfAccuracy == 0)
                 dfAccuracy = 0.0001;
 
-            SnapshotArgs args = new SnapshotArgs(rgState, rgWeights, dfAccuracy, dfError, nIteration, wtUpdt);
+            SnapshotArgs args = new SnapshotArgs(rgState, rgWeights, rgLoRaWeights, dfAccuracy, dfError, nIteration, wtUpdt);
 
             args.IncludeState = m_param.snapshot_include_state;
             args.IncludeWeights = m_param.snapshot_include_weights;
+            args.IncludeLoRaWeightsOnly = m_param.snapshot_only_include_lora_weights;
             args.SingleStep = m_bEnableSingleStep;
             args.OnGetState += args_OnGetState;
             args.OnGetWeights += args_OnGetWeights;

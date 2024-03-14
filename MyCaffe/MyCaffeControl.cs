@@ -3424,6 +3424,9 @@ namespace MyCaffe
         /// <returns>The weights are returned.</returns>
         public byte[] GetWeights()
         {
+            if (m_solver.parameter.snapshot_only_include_lora_weights)
+                return null;
+
             if (m_net != null)
             {
                 m_net.ShareTrainedLayersWith(m_solver.net);
@@ -3432,6 +3435,26 @@ namespace MyCaffe
             else
             {
                 return m_solver.net.SaveWeights(m_persist);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the LoRa weights of the training network.
+        /// </summary>
+        /// <returns>Returns the byte array of the LoRa weights.</returns>
+        public byte[] GetLoRaWeights()
+        {
+            if (!m_net.net_param.enable_lora)
+                return null;
+
+            if (m_net != null)
+            {
+                m_net.ShareTrainedLayersWith(m_solver.net);
+                return m_net.SaveAdaptedWeights(m_persist);
+            }
+            else
+            {
+                return m_solver.net.SaveAdaptedWeights(m_persist);
             }
         }
 
