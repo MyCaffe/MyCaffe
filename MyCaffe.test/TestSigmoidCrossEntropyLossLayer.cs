@@ -233,7 +233,7 @@ namespace MyCaffe.test
             filler.Fill(Bottom);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SIGMOIDCROSSENTROPY_LOSS);
-            p.loss_param.ignore_label = -1;
+            p.loss_param.ignore_label = CudaDnn<T>.IGNORE_LABEL_NOP;
 
             long hTarget = BottomTargets.mutable_gpu_data;
             int nCount = BottomTargets.count();
