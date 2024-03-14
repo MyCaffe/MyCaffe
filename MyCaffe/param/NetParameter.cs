@@ -17,6 +17,7 @@ namespace MyCaffe.param
     public class NetParameter : BaseParameter 
     {
         string m_strName = "";
+        string m_strBaseWeightFile = "";
         List<string> m_rgstrInput = new List<string>();
         List<BlobShape> m_rgInputShape = new List<BlobShape>();
         List<int> m_rgInputDim = new List<int>();
@@ -109,6 +110,22 @@ namespace MyCaffe.param
         {
             get { return m_strName; }
             set { m_strName = value; }
+        }
+
+        /// <summary>
+        /// Specifies the base weight file to use when loading the network (if any).
+        /// </summary>
+        /// <remarks>
+        /// Base weight files are used when loading a network that has been pre-trained and the weights are to be loaded into the network.  
+        /// The base weight file is the file that contains the weights to be loaded into the network.  The 'enable_lora' setting can be used to
+        /// to fine-tune the base weights using the LoRA model.  The 'enable_lora_only_load' setting can be used to load only the LoRA model,
+        /// and not use any GPU memory for the base model learnable parameters.
+        /// </remarks>
+        [Description]
+        public string base_weight_file
+        {
+            get { return m_strBaseWeightFile; }
+            set { m_strBaseWeightFile = value; }
         }
 
         /// <summary>
@@ -294,6 +311,7 @@ namespace MyCaffe.param
             rgChildren.Add("enable_lora", enable_lora.ToString());
             rgChildren.Add("enable_lora_only_load", enable_lora_only_load.ToString());
             rgChildren.Add("model_type", model_type.ToString());    
+            rgChildren.Add("base_weight_file", base_weight_file);
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -353,6 +371,9 @@ namespace MyCaffe.param
                 else
                     p.model_type = MODEL_TYPE.DEFAULT;
             }
+
+            if ((strVal = rp.FindValue("base_weight_file")) != null)
+                p.base_weight_file = strVal;
 
             return p;
         }
@@ -420,6 +441,7 @@ namespace MyCaffe.param
             p.m_bEnableMemoryStats = m_bEnableMemoryStats;
             p.m_bEnableLora = m_bEnableLora;
             p.m_bEnableLoraOnlyLoad = m_bEnableLoraOnlyLoad;
+            p.m_strBaseWeightFile = m_strBaseWeightFile;
 
             return p;
         }
