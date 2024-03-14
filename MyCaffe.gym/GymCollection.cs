@@ -130,6 +130,9 @@ namespace MyCaffe.gym
         /// <returns>If found the Gym IXMyCaffeGym interface is returned, otherwise <i>null</i> is returned.</returns>
         public IXMyCaffeGym Find(string strName)
         {
+            if (string.IsNullOrEmpty(strName))
+                return null;
+
             int nPos = strName.IndexOf(':');
             if (nPos > 0)
                 strName = strName.Substring(0, nPos);
