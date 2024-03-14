@@ -424,21 +424,33 @@ namespace MyCaffe.layers
             long hTopDiff = colTop[0].gpu_diff;
             long hWeightData = m_colBlobs[0].gpu_data;
 
-            if (m_weightAdatper != null)
-            {
-                Blob<T> wt = m_weightAdatper.Weight;
-                m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tZero, wt.mutable_gpu_diff);
-                m_weightAdatper.Backward(colTop, colBottom, wt);
-                hWeightData = wt.gpu_data;
-            }
-
             // Gradient with respect to weight.
-            if (m_rgbParamPropagateDown[0] && !layer_param.freeze_learning)
+            if (m_rgbParamPropagateDown[0])
             {
-                if (m_bTranspose)
-                    m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tOne, m_colBlobs[0].mutable_gpu_diff);
+                if (!m_param.freeze_learning)
+                {
+                    if (m_bTranspose)
+                        m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tOne, m_colBlobs[0].mutable_gpu_diff);
+                    else
+                        m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tOne, m_colBlobs[0].mutable_gpu_diff);
+
+                    if (m_weightAdatper != null)
+                    {
+                        m_weightAdatper.Weight.CopyFrom(m_colBlobs[0], true);
+                        hWeightData = m_weightAdatper.Weight.gpu_data;
+                    }
+                }
                 else
-                    m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tOne, m_colBlobs[0].mutable_gpu_diff);
+                {
+                    if (m_weightAdatper != null)
+                    {
+                        if (m_bTranspose)
+                            m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tZero, m_weightAdatper.Weight.mutable_gpu_diff);
+                        else
+                            m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tZero, m_weightAdatper.Weight.mutable_gpu_diff);
+                        hWeightData = m_weightAdatper.Weight.gpu_data;
+                    }
+                }
             }
 
             // Gradient with respect to bias.
@@ -479,6 +491,9 @@ namespace MyCaffe.layers
                     m_cuda.mul(m_colBlobs[3].count(), m_colBlobs[1].gpu_diff, m_blobEpsilonBias.gpu_data, m_colBlobs[3].mutable_gpu_diff);
                 }
             }
+
+            if (m_weightAdatper != null)
+                m_weightAdatper.Backward(colTop, colBottom, m_weightAdatper.Weight);
         }
     }
 }
