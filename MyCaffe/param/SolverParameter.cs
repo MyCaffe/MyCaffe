@@ -72,7 +72,6 @@ namespace MyCaffe.param
         bool m_bOutputAverageResults = false;
         bool m_bSnapshotIncludeWeights = true;
         bool m_bSnapshotIncludeState = true;
-        bool m_bSnapshotOnlyIncludeLoRaWeights = false;
         int m_nAverageAccuracyWindow = 0;
         bool m_bEnableClipGradientOutput = false;
         bool m_bVerboseOptimizationOutput = true;
@@ -824,17 +823,6 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies to only save the LoRA weights in the snapshot.
-        /// </summary>
-        [Category("Snapshot")]
-        [Description("Specifies to only save the LoRA weights in the snapshot.")]
-        public bool snapshot_only_include_lora_weights
-        {
-            get { return m_bSnapshotOnlyIncludeLoRaWeights; }
-            set { m_bSnapshotOnlyIncludeLoRaWeights = value; }
-        }
-
-        /// <summary>
         /// The device id that will be used when run on the GPU.
         /// </summary>
         [Description("Specifies the device ID that will be used when run on the GPU.")]
@@ -1112,7 +1100,6 @@ namespace MyCaffe.param
 
             rgChildren.Add("snapshot_include_weights", snapshot_include_weights.ToString());
             rgChildren.Add("snapshot_include_state", snapshot_include_state.ToString());
-            rgChildren.Add("snapshot_only_include_lora_weights", snapshot_only_include_lora_weights.ToString());
 
             // SSD Parameters
             rgChildren.Add("eval_type", eval_type.ToString().ToLower());
@@ -1329,9 +1316,6 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("snapshot_include_state")) != null)
                 p.snapshot_include_state = bool.Parse(strVal);
-
-            if ((strVal = rp.FindValue("snapshot_only_include_lora_weights")) != null)
-                p.snapshot_only_include_lora_weights = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("eval_type")) != null)
             {

@@ -3424,7 +3424,7 @@ namespace MyCaffe
         /// <returns>The weights are returned.</returns>
         public byte[] GetWeights()
         {
-            if (m_solver.parameter.snapshot_only_include_lora_weights)
+            if (m_net.net_param.enable_lora_only)
                 return null;
 
             if (m_net != null)

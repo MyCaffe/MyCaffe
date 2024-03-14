@@ -402,14 +402,14 @@ namespace MyCaffe.common
                         if (!m_rgSharedIntraLayerBlobs.ContainsKey(layer_param.type))
                             m_rgSharedIntraLayerBlobs.Add(layer_param.type, new BlobCollection<T>());
 
-                        layer_paramEx = new LayerParameterExFull<T>(layer_param, m_sharedNet.parameters, m_sharedNet.learnable_adapted_parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer, m_param.enable_lora, m_param.enable_lora_only_load, m_rgSharedIntraLayerBlobs[layer_param.type]);
+                        layer_paramEx = new LayerParameterExFull<T>(layer_param, m_sharedNet.parameters, m_sharedNet.learnable_adapted_parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer, m_param.enable_lora, m_param.enable_lora_only, m_rgSharedIntraLayerBlobs[layer_param.type]);
                     }
                     else
                     {
                         if (!m_rgSharedIntraLayerBlobs.ContainsKey(layer_param.type))
                             m_rgSharedIntraLayerBlobs.Add(layer_param.type, new BlobCollection<T>());
 
-                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_param.enable_lora, m_param.enable_lora_only_load, m_rgSharedIntraLayerBlobs[layer_param.type]);
+                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_param.enable_lora, m_param.enable_lora_only, m_rgSharedIntraLayerBlobs[layer_param.type]);
                     }
 
                     layer_paramEx.solver_count = m_param.solver_count;
@@ -1432,7 +1432,7 @@ namespace MyCaffe.common
                 m_rgdfAllParamsLr.Add(param_spec.lr_mult);
                 m_rgdfAllParamsWeightDecay.Add(param_spec.decay_mult);
 
-                if (!m_param.enable_lora_only_load)
+                if (!m_param.enable_lora_only)
                     m_colAllLearnableParams.Add(m_colParams[net_param_id]);
             }
             else
