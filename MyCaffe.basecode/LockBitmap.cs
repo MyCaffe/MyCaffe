@@ -188,5 +188,21 @@ namespace MyCaffe.basecode
                 Pixels[i] = color.B;
             }
         }
+
+        /// <summary>
+        /// Fill the specified rectangle with the specified color.
+        /// </summary>
+        /// <param name="rect">Specifies the rectangle.</param>
+        /// <param name="color">Specifies the color.</param>
+        public void FillRectangle(Rectangle rect, Color color)
+        {
+            for (int y = rect.Top; y < rect.Bottom; y++)
+            {
+                for (int x = rect.Left; x < rect.Right; x++)
+                {
+                    SetPixel(x, y, color);
+                }
+            }
+        }
     }
 }
