@@ -621,7 +621,7 @@ namespace MyCaffe.model
         private string buildModel(TokenizedDataParameter.VOCABULARY_TYPE vocabType, NetParameter net, uint nBatch, uint nBlockSize, uint nEncVocabSize, uint nEmbed, uint nHiddenDim, uint nHeads, uint nLayers, double dfDropout, Phase phase, bool bEnableLoRA, bool bPreTokenizer, bool bEnableKeyValueCache)
         {
             net.enable_lora = true;
-            net.enable_lora_only_load = true;
+            net.enable_lora_only = true;
             net.model_type = NetParameter.MODEL_TYPE.LLAMA;
 
             if (bPreTokenizer)
