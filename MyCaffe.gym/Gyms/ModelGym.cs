@@ -33,6 +33,7 @@ namespace MyCaffe.gym
         string m_strDataset;
         int m_nGpuID = 0;
         byte[] m_rgWeights;
+        byte[] m_rgLoRaWeights;
         Log m_log;
         Dictionary<string, int> m_rgActions = new Dictionary<string, int>();
         DATA_TYPE m_dt = DATA_TYPE.VALUES;
@@ -63,6 +64,7 @@ namespace MyCaffe.gym
                 m_strDataset = gym.m_strDataset;
                 m_nGpuID = gym.m_nGpuID;
                 m_rgWeights = gym.m_rgWeights;
+                m_rgLoRaWeights = gym.m_rgLoRaWeights;
                 m_log = gym.m_log;
 
                 m_mycaffe = gym.m_mycaffe;
@@ -106,6 +108,7 @@ namespace MyCaffe.gym
             m_strModelDesc = properties.GetProperty("ModelDescription");
             m_strDataset = properties.GetProperty("Dataset");
             m_rgWeights = properties.GetPropertyBlob("Weights");
+            m_rgLoRaWeights = properties.GetPropertyBlob("LoRaWeights");
             m_nBatchSize = properties.GetPropertyAsInt("BatchSize", 16);
             m_bRecreateData = properties.GetPropertyAsBool("RecreateData", false);
             m_strProject = properties.GetProperty("ProjectName");
@@ -129,7 +132,7 @@ namespace MyCaffe.gym
                 m_evtCancel = new CancelEvent();
 
             m_mycaffe = new MyCaffeControl<float>(s, log, m_evtCancel, null, null, null, null, strCudaPath);
-            m_mycaffe.LoadToRun(m_strModelDesc, m_rgWeights, shape);
+            m_mycaffe.LoadToRun(m_strModelDesc, m_rgWeights, m_rgLoRaWeights, shape);
 
             m_log = log;
         }

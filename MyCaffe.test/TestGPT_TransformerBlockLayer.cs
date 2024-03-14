@@ -352,7 +352,7 @@ namespace MyCaffe.test
                 m_ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
                 m_log.WriteLine("Loading GPT2 model...");
                 BlobShape shape = new BlobShape(new List<int>() { 1, nBlockSize });
-                m_ctrl.LoadToRun(strModel, null, shape, null, null, false, false);
+                m_ctrl.LoadToRun(strModel, null, null, shape, null, null, false, false);
 
                 m_blobY = m_ctrl.CreateBlob("results");
                 m_blobX = m_ctrl.CreateBlob("data");
@@ -1043,7 +1043,7 @@ namespace MyCaffe.test
                 string strSolver = buildSolver();
                 string strModel = buildModelEx(net_param, 1, 64, 128, 65, 0.0, Phase.TRAIN);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Blob<float> blobVal = mycaffe.CreateBlob("val");
                 Blob<float> blobWork = mycaffe.CreateBlob("work");
 
@@ -1295,7 +1295,7 @@ namespace MyCaffe.test
                 string strSolver = buildSolver();
                 string strModel = buildModelEx(net_param, 1, 512, 2048, 32000, 0.0, Phase.TRAIN, 32, true, 11008);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Blob<float> blobVal = mycaffe.CreateBlob("val");
                 Blob<float> blobWork = mycaffe.CreateBlob("work");
 
@@ -1354,7 +1354,7 @@ namespace MyCaffe.test
 
                 BlobShape shape = new BlobShape(1, 64, 1, 1);
 
-                mycaffe.LoadToRun(strModel, null, shape);
+                mycaffe.LoadToRun(strModel, null, null, shape);
                 Blob<float> blobVal = mycaffe.CreateBlob("val");
                 Blob<float> blobWork = mycaffe.CreateBlob("work");
 
@@ -1682,7 +1682,7 @@ namespace MyCaffe.test
                 string strSolver = buildSolverLlama();
                 string strModel = buildModelLlama(net_param, nBatch, nSeqLen, nDim, nHeads, nVocab_size, fDropout, Phase.TRAIN, nLayers, false);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Blob<float> blobVal = mycaffe.CreateBlob("val");
                 Blob<float> blobWork = mycaffe.CreateBlob("work");
 

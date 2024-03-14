@@ -1178,7 +1178,7 @@ namespace MyCaffe
 
                     m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
                     m_solver.SnapshotWeightUpdateMethod = m_settings.SnapshotWeightUpdateMethod;
-                    if (p.WeightsState != null || p.SolverState != null)
+                    if (p.LoRaWeightsState != null || p.WeightsState != null || p.SolverState != null)
                     {
                         string strSkipBlobType = null;
 
@@ -1187,9 +1187,16 @@ namespace MyCaffe
                             strSkipBlobType = BLOB_TYPE.IP_WEIGHT.ToString();
 
                         if (p.SolverState != null)
-                            m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                        {
+                            m_solver.Restore(p.LoRaWeightsState, p.WeightsState, p.SolverState, strSkipBlobType);
+                        }
                         else
-                            m_solver.TrainingNet.LoadWeights(p.WeightsState, m_persist);
+                        {
+                            if (p.WeightsState != null)
+                                m_solver.TrainingNet.LoadWeights(p.WeightsState, m_persist);
+                            if (p.LoRaWeightsState != null)
+                                m_solver.TrainingNet.LoadAdaptedWeights(p.LoRaWeightsState, m_persist);
+                        }
                     }
 
                     m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
@@ -1259,10 +1266,10 @@ namespace MyCaffe
                 {
                     m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db);
 
-                    if (p.WeightsState != null)
+                    if (p.WeightsState != null || p.LoRaWeightsState != null)
                     {
                         m_log.WriteLine("Loading run weights...", true);
-                        loadWeights(m_net, p.WeightsState);
+                        loadWeights(m_net, p.WeightsState, p.LoRaWeightsState);
                     }
                 }
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
@@ -1301,6 +1308,7 @@ namespace MyCaffe
         /// <param name="strSolver">Specifies the solver descriptor.</param>
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="rgLoRaWeights">Optionally, specifies the LoRa weights to load, or <i>null</i> to ignore.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the item are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
@@ -1310,7 +1318,7 @@ namespace MyCaffe
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, byte[] rgLoRaWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             try
             {
@@ -1417,10 +1425,13 @@ namespace MyCaffe
 
                     m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
 
-                    if (rgWeights != null)
+                    if (rgLoRaWeights != null || rgWeights != null)
                     {
-                        m_log.WriteLine("Restoring weights...", true);
-                        m_solver.Restore(rgWeights, null);
+                        if (rgLoRaWeights != null)
+                            m_log.WriteLine("Restoring LoRa weights...", true);
+                        if (rgWeights != null)
+                            m_log.WriteLine("Restoring weights...", true);
+                        m_solver.Restore(rgLoRaWeights, rgWeights, null);
                     }
 
                     m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
@@ -1489,10 +1500,10 @@ namespace MyCaffe
                 {
                     m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db);
 
-                    if (rgWeights != null)
+                    if (rgWeights != null || rgLoRaWeights != null)
                     {
                         m_log.WriteLine("Loading run weights...", true);
-                        loadWeights(m_net, rgWeights);
+                        loadWeights(m_net, rgWeights, rgLoRaWeights);
                     }
                 }
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
@@ -1533,6 +1544,7 @@ namespace MyCaffe
         /// <param name="strSolver">Specifies the solver descriptor.</param>
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore (default = null).</param>
+        /// <param name="rgLoRaWeights">Optionally, specifies the LoRa weights to load, or <i>null</i> to ignore (default = null).</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
         /// <param name="sdMean">Optionally, specifies the image mean to use (default = null).</param>
@@ -1540,7 +1552,7 @@ namespace MyCaffe
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase or MyCaffeTemporalDatabase is created internally depending on the DB_VERSION used.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false, IXDatabaseBase db = null)
+        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, byte[] rgLoRaWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false, IXDatabaseBase db = null)
         {
             try
             {
@@ -1577,8 +1589,14 @@ namespace MyCaffe
 
                     m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
 
-                    if (rgWeights != null)
-                        m_solver.Restore(rgWeights, null);
+                    if (rgLoRaWeights != null || rgWeights != null)
+                    {
+                        if (rgLoRaWeights != null)
+                            m_log.WriteLine("Restoring LoRa weights...", true);
+                        if (rgWeights != null)
+                            m_log.WriteLine("Restoring weights...", true);
+                        m_solver.Restore(rgLoRaWeights, rgWeights, null);
+                    }
 
                     m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
                     m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
@@ -1631,10 +1649,10 @@ namespace MyCaffe
                 {
                     m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
 
-                    if (rgWeights != null)
+                    if (rgWeights != null || rgLoRaWeights != null)
                     {
                         m_log.WriteLine("Loading run weights...", true);
-                        loadWeights(m_net, rgWeights);
+                        loadWeights(m_net, rgWeights, rgLoRaWeights);
                     }
                 }
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
@@ -1673,6 +1691,7 @@ namespace MyCaffe
         /// </remarks>
         /// <param name="strModel">Specifies the model description to load.</param>
         /// <param name="rgWeights">Specifies the trained weights to load.</param>
+        /// <param name="rgLoRaWeights">Specifies the trained LoRa weights to load.</param>
         /// <param name="shape">Specifies the expected shape to run on.</param>
         /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
         /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
@@ -1680,7 +1699,7 @@ namespace MyCaffe
         /// <param name="bForceBackward">Optionally, specifies to force backward propagation in the event that a backward pass is to be run on the Run net - The DeepDraw functionality
         /// uses this setting so that it can view what the trained weights actually see.</param>
         /// <param name="bConvertToRunNet">When <i>true</i>, the 'strModel' is converted from a training model to a run model, otherwise the model is used unaltered (default = <i>true</i>)</param>
-        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true)
+        public void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true)
         {
             try
             {
@@ -1737,7 +1756,7 @@ namespace MyCaffe
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN);
 
                 m_log.WriteLine("Loading weights...", true);
-                loadWeights(m_net, rgWeights);
+                loadWeights(m_net, rgWeights, rgLoRaWeights);
             }
             catch (Exception excpt)
             {
@@ -1832,9 +1851,10 @@ namespace MyCaffe
             return ds;
         }
 
-        private void loadWeights(Net<T> net, byte[] rgWeights)
+        private void loadWeights(Net<T> net, byte[] rgWeights, byte[] rgLoRaWeights)
         {
             net.LoadWeights(rgWeights, m_persist);
+            net.LoadAdaptedWeights(rgLoRaWeights, m_persist);
         }
 
         /// <summary>
@@ -1953,7 +1973,7 @@ namespace MyCaffe
                 }
                 else
                 {
-                    m_solver.Solve(-1, null, null, step);
+                    m_solver.Solve(-1, null, null, null, step);
                 }
             }
             catch (Exception excpt)
@@ -3508,12 +3528,12 @@ namespace MyCaffe
                         }
 
                         if (nCopyCount == 0)
-                            loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+                            loadWeights(m_net, m_solver.net.SaveWeights(m_persist), m_solver.net.SaveAdaptedWeights(m_persist));
                     }
                     catch (Exception excpt)
                     {
                         m_log.WriteLine("WARNING: " + excpt.Message + ", attempting to load with legacy (slower method)...");
-                        loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+                        loadWeights(m_net, m_solver.net.SaveWeights(m_persist), m_solver.net.SaveAdaptedWeights(m_persist));
                     }
                 }
 
@@ -3534,10 +3554,11 @@ namespace MyCaffe
         /// Loads the training Net with new weights.
         /// </summary>
         /// <param name="rgWeights">Specifies the weights to load.</param>
-        public void UpdateWeights(byte[] rgWeights)
+        /// <param name="rgLoRaWeights">Specifies the LoRa weights to load.</param>
+        public void UpdateWeights(byte[] rgWeights, byte[] rgLoRaWeights)
         {
             if (m_net != null)
-                loadWeights(m_net, rgWeights);
+                loadWeights(m_net, rgWeights, rgLoRaWeights);
 
             m_log.WriteLine("Updating weights in solver.");
 
@@ -3549,7 +3570,10 @@ namespace MyCaffe
             }
 
             bool bLoadDiffs;
-            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.all_learnable_parameters, false, out bLoadDiffs);
+            if (rgWeights != null)
+                m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, false, out bLoadDiffs);
+            if (rgLoRaWeights != null)
+                m_persist.LoadWeights(rgLoRaWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_adapted_parameters, false, out bLoadDiffs);
 
             m_solver.WeightsUpdated = true;
             m_log.WriteLine("Solver weights updated.");
@@ -3559,16 +3583,17 @@ namespace MyCaffe
         /// Creates a new Net, loads the weights specified into it and returns it.
         /// </summary>
         /// <param name="rgWeights">Specifies the weights to load.</param>
+        /// <param name="rgLoRaWeights">Specifies the LoRa weights to load.</param>
         /// <param name="cudaOverride">Optionally, specifies a different cuda instance for the Net to use.</param>
         /// <returns>The new Net is returned.</returns>
-        public Net<T> CreateNet(byte[] rgWeights, CudaDnn<T> cudaOverride = null)
+        public Net<T> CreateNet(byte[] rgWeights, byte[] rgLoRaWeights, CudaDnn<T> cudaOverride = null)
         {
             if (cudaOverride == null)
                 cudaOverride = m_cuda;
 
             NetParameter p = (m_net != null) ? m_net.ToProto(false) : m_solver.net.ToProto(false);
             Net<T> net = new Net<T>(cudaOverride, m_log, p, m_evtCancel, m_db);
-            loadWeights(net, rgWeights);
+            loadWeights(net, rgWeights, rgLoRaWeights);
             return net;
         }
 

@@ -14,6 +14,7 @@ namespace MyCaffe.basecode.descriptors
     public class StateDescriptor : BaseDescriptor
     {
         byte[] m_rgWeights;
+        byte[] m_rgLoRaWeights;
         byte[] m_rgState;
         double m_dfAccuracy;
         double m_dfError;
@@ -30,6 +31,7 @@ namespace MyCaffe.basecode.descriptors
             : base(nId, strName, strOwner)
         {
             m_rgWeights = null;
+            m_rgLoRaWeights = null;
             m_rgState = null;
             m_dfAccuracy = -1;
             m_dfError = -1;
@@ -41,16 +43,18 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="nId">Specifies the database ID of the item.</param>
         /// <param name="strName">Specifies the name of the item.</param>
+        /// <param name="rgLoRaWeights">Specifies the LoRa weights of a trained Net.</param>
         /// <param name="rgWeights">Specifies the weights of a trained Net.</param>
         /// <param name="rgState">Specifies the state of a Solver in training.</param>
         /// <param name="dfAccuracy">Specifies the accuracy observed while testing.</param>
         /// <param name="dfError">Specifies the error observed whiel training.</param>
         /// <param name="nIterations">Specifies the number of iterations run.</param>
         /// <param name="strOwner">Specifies the identifier of the item's owner.</param>
-        public StateDescriptor(int nId, string strName, byte[] rgWeights, byte[] rgState, double dfAccuracy, double dfError, int nIterations, string strOwner)
+        public StateDescriptor(int nId, string strName, byte[] rgLoRaWeights, byte[] rgWeights, byte[] rgState, double dfAccuracy, double dfError, int nIterations, string strOwner)
             : base(nId, strName, strOwner)
         {
             m_rgWeights = rgWeights;
+            m_rgLoRaWeights = rgLoRaWeights;
             m_rgState = rgState;
             m_dfAccuracy = dfAccuracy;
             m_dfError = dfError;
@@ -73,6 +77,16 @@ namespace MyCaffe.basecode.descriptors
         {
             get { return m_rgWeights; }
             set { m_rgWeights = value; }
+        }
+
+        /// <summary>
+        /// Get/set the LoRa weights of a trained Net.
+        /// </summary>
+        [Browsable(false)]
+        public byte[] LoRaWeights
+        {
+            get { return m_rgLoRaWeights; }
+            set { m_rgLoRaWeights = value; }
         }
 
         /// <summary>

@@ -739,10 +739,11 @@ namespace MyCaffe.solvers
         /// in a non-zero iter number to resume training for a pre-trained net.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies an iteration override value to use for the number of iterations run.  The default is -1, which ignores the parameter.</param>
+        /// <param name="rgLoRaWeights">Optionally, specifies LoRa weights to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="rgWeights">Optionally, specifies weights to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="rgState">Optionally, specifies the state to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> which runs the solver in the normal manner.</param>
-        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE)
+        public virtual void Solve(int nIterationOverride = -1, byte[] rgLoRaWeights = null, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             m_log.CHECK(is_root_solver, "Solve is only supported by the root solver.");
 
@@ -752,8 +753,8 @@ namespace MyCaffe.solvers
                 m_log.WriteLine("Learing Rate Policy: " + m_param.lr_policy);
             }
 
-            if (rgWeights != null || rgState != null)
-                Restore(rgWeights, rgState);
+            if (rgLoRaWeights != null || rgWeights != null || rgState != null)
+                Restore(rgLoRaWeights, rgWeights, rgState);
 
             // For a network that is trained by the solver, no bottom or top vecs
             // should be given, and we will just provide dummy vecs.
@@ -1097,11 +1098,13 @@ namespace MyCaffe.solvers
         /// <summary>
         /// The restore method simply calls the RestoreSolverState method of the inherited class.
         /// </summary>
+        /// <param name="rgLoRaWeights">Specifies the loRa weights to load, or <i>null</i> to ignore.</param>
         /// <param name="rgWeights">Specifies the weights to load, or <i>null</i> to ignore.</param>
         /// <param name="rgState">Specifies the state to load, or <i>null</i> to ignore.</param>
         /// <param name="strSkipBlobTypes">Specifies the blob types to ignore and not load, or <i>null</i> to ignore.</param>
-        public void Restore(byte[] rgWeights, byte[] rgState, string strSkipBlobTypes = null)
+        public void Restore(byte[] rgLoRaWeights, byte[] rgWeights, byte[] rgState, string strSkipBlobTypes = null)
         {
+            m_net.LoadAdaptedWeights(rgLoRaWeights, m_persist, null, null, strSkipBlobTypes);
             m_net.LoadWeights(rgWeights, m_persist, null, null, strSkipBlobTypes);
 
             if (rgState != null)
@@ -1155,6 +1158,12 @@ namespace MyCaffe.solvers
                 e.Data = m_net.SaveWeights(m_persist, m_param.snapshot_diff);
         }
 
+        private void args_OnGetLoRaWeights(object sender, GetBytesArgs e)
+        {
+            if (m_net != null)
+                e.Data = m_net.SaveAdaptedWeights(m_persist, m_param.snapshot_diff);
+        }
+
         private void args_OnGetState(object sender, GetBytesArgs e)
         {
             e.Data = SnapshotSolverState();
@@ -1178,12 +1187,13 @@ namespace MyCaffe.solvers
 
             SnapshotArgs args = new SnapshotArgs(rgState, rgWeights, rgLoRaWeights, dfAccuracy, dfError, nIteration, wtUpdt);
 
-            args.IncludeState = m_param.snapshot_include_state;
-            args.IncludeWeights = m_param.snapshot_include_weights;
+            args.IncludeState = (m_net.net_param.enable_lora_only) ? false : m_param.snapshot_include_state;
+            args.IncludeWeights = (m_net.net_param.enable_lora_only) ? false : m_param.snapshot_include_weights;
             args.IncludeLoRaWeightsOnly = m_net.net_param.enable_lora_only;
             args.SingleStep = m_bEnableSingleStep;
             args.OnGetState += args_OnGetState;
             args.OnGetWeights += args_OnGetWeights;
+            args.OnGetLoRaWeights += args_OnGetLoRaWeights;
 
             return args;
         }

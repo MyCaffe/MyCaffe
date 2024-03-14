@@ -241,7 +241,7 @@ namespace MyCaffe.converter.onnx
             PersistCaffe<T> persist = new PersistCaffe<T>(log, false);
             byte[] rgWeights = persist.SaveWeights(data.Item2, false);
 
-            return new MyCaffeModelData(protoMyCaffe.ToString(), rgWeights);
+            return new MyCaffeModelData(protoMyCaffe.ToString(), rgWeights, null);
         }
 
         private ModelProto convertToOnnx(Log log, Net<T> net, int nOpSetVersion = 9, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)

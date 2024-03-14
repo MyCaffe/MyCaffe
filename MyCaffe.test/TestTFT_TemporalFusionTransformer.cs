@@ -1890,7 +1890,7 @@ namespace MyCaffe.test
                 solverParam.lr_policy = "fixed";
                 string strSolver = solverParam.ToProto("root").ToString();
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
                 blobVal = mycaffe.CreateBlob("val");
                 blobWork = mycaffe.CreateBlob("work");
@@ -2135,7 +2135,7 @@ namespace MyCaffe.test
                 solverParam.adamw_decay = 0;
                 string strSolver = solverParam.ToProto("root").ToString();
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
                 mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -2192,7 +2192,7 @@ namespace MyCaffe.test
                 solverParam.adamw_decay = 0;
                 string strSolver = solverParam.ToProto("root").ToString();
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
                 mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);

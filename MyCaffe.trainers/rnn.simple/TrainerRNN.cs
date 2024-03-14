@@ -696,7 +696,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             getRawData(s);
             m_sw.Start();
-            m_solver.Solve(nIterations, null, null, step);
+            m_solver.Solve(nIterations, null, null, null, step);
         }
 
         private void m_solver_OnStart(object sender, EventArgs e)

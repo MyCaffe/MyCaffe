@@ -749,7 +749,7 @@ namespace MyCaffe.test
             {
                 mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
                 SimpleDatum sdMean = new SimpleDatum(1, 1, 1);  // Dummy mean.
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, true, sdMean);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, true, sdMean);
                 mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
                 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -815,6 +815,7 @@ namespace MyCaffe.test
 
             string strModel = File.ReadAllText("C:\\temp\\_models\\models\\enc_dec\\train_test.prototxt");
             byte[] rgWeights = File.ReadAllBytes("C:\\temp\\_models\\models\\enc_dec\\model.caffemodel");
+            byte[] rgLoRaWeights = null;
 
             SettingsCaffe s = new SettingsCaffe
             {
@@ -827,7 +828,7 @@ namespace MyCaffe.test
             try
             {
                 mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
-                mycaffe.LoadToRun(strModel, rgWeights, new BlobShape(new List<int>() { 1, 1, 1 }));
+                mycaffe.LoadToRun(strModel, rgWeights, rgLoRaWeights, new BlobShape(new List<int>() { 1, 1, 1 }));
                 mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
                 blobDec = mycaffe.CreateBlob("dec.decin");
 

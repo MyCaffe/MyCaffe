@@ -1070,7 +1070,7 @@ namespace MyCaffe.test
 
             try
             {
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<T> solver = mycaffe.GetInternalSolver();
 
@@ -1258,7 +1258,7 @@ namespace MyCaffe.test
 
             try
             {
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<T> solver = mycaffe.GetInternalSolver();
 
@@ -1726,7 +1726,7 @@ namespace MyCaffe.test
 
             try
             {
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<T> solver = mycaffe.GetInternalSolver();
 
@@ -1967,7 +1967,7 @@ namespace MyCaffe.test
                 MyCaffeTemporalDatabase db = db1.Item2;
                 PlotCollection plots = db1.Item3;
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false, null, null, false, db);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false, null, null, false, db);
                 mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<T> solver = mycaffe.GetInternalSolver();
@@ -2403,7 +2403,7 @@ namespace MyCaffe.test
                 s.GpuIds = m_nGpuID.ToString();
 
                 mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
-                mycaffe.LoadLite(Phase.TRAIN, m_strSolver, m_strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, m_strSolver, m_strModel, null, null, false, false);
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<T> solver = mycaffe.GetInternalSolver();
 

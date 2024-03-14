@@ -876,6 +876,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Get/set the LoRa weight state.
+        /// </summary>
+        public byte[] LoRaWeightsState
+        {
+            get { return m_state.LoRaWeights; }
+            set { m_state.LoRaWeights = value; }
+        }
+
+        /// <summary>
         /// Return the name of the dataset used.
         /// </summary>
         public string DatasetName

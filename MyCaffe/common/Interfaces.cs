@@ -448,6 +448,7 @@ namespace MyCaffe.common
         /// <param name="strSolver">Specifies the solver descriptor.</param>
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="rgLoRaWeights">Optionally, specifies the LoRa weights to load, or <i>null</i> to ignore.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the items are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
@@ -457,7 +458,7 @@ namespace MyCaffe.common
         /// <param name="strStage">Optionally, specifies the stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
+        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, byte[] rgLoRaWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
         /// <summary>
         /// Unload the currently loaded project.
         /// </summary>
@@ -559,7 +560,8 @@ namespace MyCaffe.common
         /// Loads the training Net with new weights.
         /// </summary>
         /// <param name="rgWeights">Specifies the weights to load.</param>
-        void UpdateWeights(byte[] rgWeights);
+        /// <param name="rgLoRaWeights">Specifies the LoRa weights to load.</param>
+        void UpdateWeights(byte[] rgWeights, byte[] rgLoRaWeights);
         /// <summary>
         /// Returns the license text for MyCaffe.
         /// </summary>
@@ -582,13 +584,14 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="strModel">Specifies the model description to load.</param>
         /// <param name="rgWeights">Specifies the trained weights to load.</param>
+        /// <param name="rgLoRaWeights">Specifies the trained LoRa weights to load.</param>
         /// <param name="shape">Specifies the expected shape to run on.</param>
         /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
         /// <param name="bForceBackward">Optionally, enables the force backward.</param>
         /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
         /// that matches the transformation used during training.</param>
         /// <param name="bConvertToRunNet">When <i>true</i>, the 'strModel' is converted from a training model to a run model, otherwise the model is used unaltered (default = <i>true</i>)</param>
-        void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true);
+        void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true);
         /// <summary>
         /// Create a data blob from a SimpleDatum by transforming the data and placing the results in the blob returned.
         /// </summary>

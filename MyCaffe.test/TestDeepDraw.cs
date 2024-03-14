@@ -123,6 +123,7 @@ namespace MyCaffe.test
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw", true, true, true);
             byte[] rgWeights = null;
+            byte[] rgLoRaWeights = null;
             string strModelDesc = "";
 
             using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
@@ -138,7 +139,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, 224, 224), null, null, true);
+            m_caffe.LoadToRun(strModelDesc, rgWeights, rgLoRaWeights, new BlobShape(1, 3, 224, 224), null, null, true);
             Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
             DataTransformer<T> transformer = m_caffe.DataTransformer;
             // No cropping used.
@@ -191,6 +192,7 @@ namespace MyCaffe.test
             string strImg = getTestPath("\\MyCaffe\\test_data\\mthood_224.png");
             string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw", true, true, true);
             byte[] rgWeights = null;
+            byte[] rgLoRaWeights = null;
             string strModelDesc = "";
 
             using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
@@ -219,7 +221,7 @@ namespace MyCaffe.test
                 inputImg = ImageTools.ResizeImage(inputImg, 600, 600);
             inputImg.Save(strVisualizeDir + "\\input.png");
 
-            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
+            m_caffe.LoadToRun(strModelDesc, rgWeights, rgLoRaWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
             Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
             DataTransformer<T> transformer = m_caffe.DataTransformer;
             // No cropping used.

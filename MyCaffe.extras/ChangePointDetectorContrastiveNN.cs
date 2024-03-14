@@ -598,7 +598,7 @@ namespace MyCaffe.extras
 
             lock (m_objSync)
             {
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
             }
 
             Solver<T> solver = mycaffe.GetInternalSolver();

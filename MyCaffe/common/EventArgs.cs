@@ -496,25 +496,29 @@ namespace MyCaffe.common
         /// <returns>The training Net weights are returned as an array of bytes.</returns>
         public byte[] UpdateWeights()
         {
-            if (m_bIncludeLoRaWeightsOnly)
+            if (OnGetWeights != null)
             {
-                if (OnGetLoRaWeights != null)
-                {
-                    GetBytesArgs args = new common.GetBytesArgs();
-                    OnGetLoRaWeights(this, args);
-                    m_rgLoRaWeights = args.Data;
-                    return m_rgLoRaWeights;
-                }
+                GetBytesArgs args = new common.GetBytesArgs();
+                OnGetWeights(this, args);
+                m_rgWeights = args.Data;
+                return m_rgWeights;
             }
-            else
+
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves the updated training Net LoRa weights as an array of bytes.
+        /// </summary>
+        /// <returns>The training Net LoRa weights are returned as an array of bytes.</returns>
+        public byte[] UpdateLoRaWeights()
+        {
+            if (OnGetLoRaWeights != null)
             {
-                if (OnGetWeights != null)
-                {
-                    GetBytesArgs args = new common.GetBytesArgs();
-                    OnGetWeights(this, args);
-                    m_rgWeights = args.Data;
-                    return m_rgWeights;
-                }
+                GetBytesArgs args = new common.GetBytesArgs();
+                OnGetLoRaWeights(this, args);
+                m_rgLoRaWeights = args.Data;
+                return m_rgLoRaWeights;
             }
 
             return null;

@@ -2744,6 +2744,9 @@ namespace MyCaffe.common
         /// <returns>The byte array containing the weights is returned.</returns>
         public byte[] SaveAdaptedWeights(IXPersist<T> persist, bool bSaveDiff = false)
         {
+            if (m_colLearnableAdaptedParams.Count == 0)
+                return null;
+
             foreach (Blob<T> blob in m_colLearnableAdaptedParams)
             {
                 foreach (Layer<T> layer in m_rgLayers)

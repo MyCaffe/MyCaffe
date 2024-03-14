@@ -14,12 +14,14 @@ namespace MyCaffe.basecode
     {
         string m_strModelDescription;
         string m_strSolverDescription = null;
+        byte[] m_rgLoRaWeights;
         byte[] m_rgWeights;
         byte[] m_rgImageMean;
         string m_strLastModelFileName = "";
         string m_strLastSolverFileName = "";
         string m_strLastImageMeanFileName = "";
         string m_strLastWeightsFileName = "";
+        string m_strLastLoRaWeightsFileName = "";
         string m_strOriginalDownloadFile = null;
         List<int> m_rgInputShape = new List<int>();
 
@@ -28,13 +30,15 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="strModelDesc">Specifies the model descriptor.</param>
         /// <param name="rgWeights">Specifies the model weights.</param>
+        /// <param name="rgLoRaWeights">Specifies the LoRa model weights.</param>
         /// <param name="rgImageMean">Optionally, specifies the image mean (default = null).</param>
         /// <param name="strSolverDescription">Optionally, specifies the solver description.</param>
         /// <param name="rgInputShape">Specifies the input data shape.</param>
-        public MyCaffeModelData(string strModelDesc, byte[] rgWeights, byte[] rgImageMean = null, string strSolverDescription = null, List<int> rgInputShape = null)
+        public MyCaffeModelData(string strModelDesc, byte[] rgWeights, byte[] rgLoRaWeights, byte[] rgImageMean = null, string strSolverDescription = null, List<int> rgInputShape = null)
         {
             m_strModelDescription = strModelDesc;
             m_rgWeights = rgWeights;
+            m_rgLoRaWeights = rgLoRaWeights;
             m_rgImageMean = rgImageMean;
             m_strSolverDescription = strSolverDescription;
 
@@ -75,6 +79,14 @@ namespace MyCaffe.basecode
         public byte[] Weights
         {
             get { return m_rgWeights; }
+        }
+
+        /// <summary>
+        /// Returns the model LoRa weights.
+        /// </summary>
+        public byte[] LoRaWeights
+        {
+            get { return m_rgLoRaWeights; }
         }
 
         /// <summary>
@@ -145,6 +157,25 @@ namespace MyCaffe.basecode
                 m_strLastWeightsFileName = "";
             }
 
+            if (m_rgLoRaWeights != null)
+            {
+                string strWts = strFolder.TrimEnd('\\') + "\\" + strName + "_lora_weights.mycaffemodel";
+
+                if (File.Exists(strWts))
+                    File.Delete(strWts);
+
+                m_strLastLoRaWeightsFileName = strWts;
+                using (FileStream fs = new FileStream(strWts, FileMode.CreateNew, FileAccess.Write))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    bw.Write(m_rgLoRaWeights);
+                }
+            }
+            else
+            {
+                m_strLastLoRaWeightsFileName = "";
+            }
+
             if (m_rgImageMean != null)
             {
                 string strWts = strFolder.TrimEnd('\\') + "\\" + strName + "_image_mean.bin";
@@ -187,6 +218,14 @@ namespace MyCaffe.basecode
         public string LastSavedWeightsFileName
         {
             get { return m_strLastWeightsFileName; }
+        }
+
+        /// <summary>
+        /// Returns the file name of the last saved LoRa weights file.
+        /// </summary>
+        public string LastSavedLoRaWeightsFileName
+        {
+            get { return m_strLastLoRaWeightsFileName; }
         }
 
         /// <summary>

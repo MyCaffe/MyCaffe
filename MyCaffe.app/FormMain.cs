@@ -853,7 +853,7 @@ namespace MyCaffe.app
 
                         if (m_caffeRun != null)
                         {
-                            m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
+                            m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, null, new BlobShape(1, 1, 28, 28), m_sdImageMean);
                             runTestImageToolStripMenuItem.Enabled = true;
                         }
                     }
@@ -1179,7 +1179,7 @@ namespace MyCaffe.app
                                     strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_train_val);
                                 }
 
-                                mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
+                                mycaffe.Load(Phase.TRAIN, strSolver, strModel, null, null, null);
                                 bw.ReportProgress(1, new ProgressInfo(1, 1, "MyCaffe Created.", null, true));
                                 break;
 
@@ -1527,7 +1527,7 @@ namespace MyCaffe.app
             string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_solver);
             string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_train_val);
 
-            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
+            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null, null, null);
             mycaffe.Train();
 
             return mycaffe;
@@ -1557,7 +1557,7 @@ namespace MyCaffe.app
             mycaffe.OnTrainingIteration += Caffe_OnTrainingIteration;
 
             // Load the model.
-            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
+            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null, null, null);
 
             // Get current mode used TCC or WDM
             string strInfo = mycaffe.Cuda.GetDeviceP2PInfo(nGpuId);

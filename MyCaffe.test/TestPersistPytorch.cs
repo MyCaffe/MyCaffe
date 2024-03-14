@@ -169,7 +169,7 @@ namespace MyCaffe.test
                 if (File.Exists(strPytorchSolverFile))
                     File.Delete(strPytorchSolverFile);
 
-                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() {  100, 3, 28, 28 });
+                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, null, prj.SolverDescription, new List<int>() {  100, 3, 28, 28 });
                 convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile, true);
             }
             catch (Exception excpt)
@@ -215,7 +215,7 @@ namespace MyCaffe.test
                 if (File.Exists(strPytorchSolverFile))
                     File.Delete(strPytorchSolverFile);
 
-                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() { 100, 3, 28, 28 });
+                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, null, prj.SolverDescription, new List<int>() { 100, 3, 28, 28 });
                 convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile, true);
             }
             catch (Exception excpt)

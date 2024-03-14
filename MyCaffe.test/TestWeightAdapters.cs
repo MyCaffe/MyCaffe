@@ -349,7 +349,7 @@ namespace MyCaffe.test
                 string strSolver = buildSolver(type);
                 string strModel = buildModel(bEnableLoRA, strType, 64, 350, 288, 1, false, 2, 288);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Blob<T> blobX = net.FindBlob("x");

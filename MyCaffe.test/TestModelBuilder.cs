@@ -725,7 +725,7 @@ namespace MyCaffe.test
             {
                 save(strNet, strSolver, false);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, null, false, false);
 
                 string strModelPath = getTestDataLlamaPath("llama7b", "llama2_7b_chat.bin");
 
@@ -880,7 +880,7 @@ namespace MyCaffe.test
             {
                 save(strNet, strSolver, false);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, null, false, false);
 
                 string strModelPath = getTestDataLlamaPath("stories", "stories15M.bin", "https://huggingface.co/karpathy/tinyllamas/resolve/main/");
 
@@ -994,7 +994,7 @@ namespace MyCaffe.test
             {
                 save(strNet, strSolver, false);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, false, false);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null, null, false, false);
                 mycaffe.OnTrainingIteration += MyCaffe_OnTrainingIteration;
                 mycaffe.OnSnapshot += MyCaffe_OnSnapshot;
 
@@ -1004,7 +1004,7 @@ namespace MyCaffe.test
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
 
                 // Train the model with fine-tuning.
-                mycaffe.Train(100); // 5000 for full training.
+                mycaffe.Train(5000); // 5000 for full training.
 
                 // Run inferencing test
                 generate(net); 
@@ -1285,7 +1285,7 @@ namespace MyCaffe.test
 
             save(strNet, null, true);
 
-            mycaffe.LoadToRun(strNet, null, new BlobShape(1, 3, 300, 300));
+            mycaffe.LoadToRun(strNet, null, null, new BlobShape(1, 3, 300, 300));
             mycaffe.Dispose();
         }
     }

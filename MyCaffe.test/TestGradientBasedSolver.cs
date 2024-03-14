@@ -2191,7 +2191,7 @@ namespace MyCaffe.test
             return strProto;
         }
 
-        public SnapshotArgs RunLeastSquaresSolver(string strSourceTrain, string strSourceTest, double dfLearningRate, double dfWeightDecay, double dfMomentum, int nNumIters, int nIterSize = 1, int nDevices = 1, bool bSnapshot = false, byte[] rgSnapshotState = null, byte[] rgSnapshotWeights = null)
+        public SnapshotArgs RunLeastSquaresSolver(string strSourceTrain, string strSourceTest, double dfLearningRate, double dfWeightDecay, double dfMomentum, int nNumIters, int nIterSize = 1, int nDevices = 1, bool bSnapshot = false, byte[] rgSnapshotState = null, byte[] rgSnapshotWeights = null, byte[] rgSnapshotLoRaWeights = null)
         {
             m_evtCancel.Reset();
             int nDeviceId = m_cuda.GetDeviceID();
@@ -2209,9 +2209,9 @@ namespace MyCaffe.test
 
             dataLayer.Reset(m_blobData, m_blobTargets, m_blobData.num);
 
-            if (rgSnapshotState != null || rgSnapshotWeights != null)
+            if (rgSnapshotState != null || rgSnapshotWeights != null || rgSnapshotLoRaWeights != null)
             {
-                m_solver.Restore(rgSnapshotWeights, rgSnapshotState);
+                m_solver.Restore(rgSnapshotLoRaWeights, rgSnapshotWeights, rgSnapshotState);
 
                 BlobCollection<T> colEmptyBottom = new BlobCollection<T>();
 

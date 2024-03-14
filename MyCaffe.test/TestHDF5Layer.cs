@@ -552,7 +552,7 @@ namespace MyCaffe.test
 
                 string strProto = File.ReadAllText(strFileProto);
                 BlobShape shape = new BlobShape(new List<int>() { 1, 3, 224, 224 });
-                mycaffe.LoadToRun(strProto, null, shape);
+                mycaffe.LoadToRun(strProto, null, null, shape);
 
                 hdf5 = new HDF5<T>();
 
