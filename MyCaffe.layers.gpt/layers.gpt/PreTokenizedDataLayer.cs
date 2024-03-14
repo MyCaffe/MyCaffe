@@ -216,8 +216,13 @@ namespace MyCaffe.layers.gpt
                         if (m_rgShardIdx.Count == 0)
                             m_rgShardIdx = m_rgFileShards.Keys.ToList();
                     }
+                    else
+                    {
+                        nIdx = m_rgShardIdx[0];
+                        m_rgShardIdx.RemoveAt(0);
+                    }
 
-                    Tuple<string, string> shard = m_rgFileShards[nIdx+1];
+                    Tuple<string, string> shard = m_rgFileShards[nIdx];
                     FileInfo fi = new FileInfo(shard.Item1);
 
                     m_rgDataRaw = readFile(shard.Item1);
