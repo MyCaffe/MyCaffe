@@ -1180,7 +1180,7 @@ namespace MyCaffe.solvers
 
             args.IncludeState = m_param.snapshot_include_state;
             args.IncludeWeights = m_param.snapshot_include_weights;
-            args.IncludeLoRaWeightsOnly = m_param.snapshot_only_include_lora_weights;
+            args.IncludeLoRaWeightsOnly = m_net.net_param.enable_lora_only;
             args.SingleStep = m_bEnableSingleStep;
             args.OnGetState += args_OnGetState;
             args.OnGetWeights += args_OnGetWeights;
