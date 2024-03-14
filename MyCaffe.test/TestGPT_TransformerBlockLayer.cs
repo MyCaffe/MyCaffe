@@ -1289,7 +1289,7 @@ namespace MyCaffe.test
             try
             {
                 NetParameter net_param = new NetParameter();
-                net_param.enable_lora_only_load = true;
+                net_param.enable_lora_only = true;
                 net_param.enable_memory_stats = true;
 
                 string strSolver = buildSolver();
