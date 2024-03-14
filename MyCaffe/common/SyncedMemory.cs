@@ -446,8 +446,11 @@ namespace MyCaffe.common
         public void async_gpu_push(long hStream, T[] rg)
         {
             check_device();
-            if (m_hGpuData == 0)
+            if (m_hGpuData == 0 || rg.Length > m_lCapacity)
             {
+                if (m_hGpuData != 0)
+                    m_cuda.FreeMemory(m_hGpuData);  
+
                 m_hGpuData = m_cuda.AllocMemory(rg, hStream);
                 m_lCapacity = rg.Length;
             }
