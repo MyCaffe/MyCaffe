@@ -2751,7 +2751,7 @@ namespace MyCaffe.common
             {
                 foreach (Layer<T> layer in m_rgLayers)
                 {
-                    if (layer.blobs.Contains(blob))
+                    if (layer.blobs_adapted.Contains(blob))
                         blob.Tag = layer.layer_param.name;
                 }
             }
