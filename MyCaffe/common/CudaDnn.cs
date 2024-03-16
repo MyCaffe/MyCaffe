@@ -734,6 +734,93 @@ namespace MyCaffe.common
         CHANNEL
     }
 
+    /// <summary>
+    /// Specifies the data type to use with the fused computation.
+    /// </summary>
+    public enum FUSEDCOMPUTE_DATA_TYPE
+    {
+        /// <summary>
+        /// Specifies to use the float 32 data type.
+        /// </summary>
+        FLOAT = 0,
+        /// <summary>
+        /// Specifies to use the double data type.
+        /// </summary>
+        DOUBLE = 1,
+        /// <summary>
+        /// Specifies to use the half data type.
+        /// </summary>
+        HALF = 2,
+    }
+
+    /// <summary>
+    /// Specifies the prebuilt operation to use with the fused computation.
+    /// </summary>
+    public enum FUSEDCOMPUTE_PREBUILT_OP
+    {
+        /// <summary>
+        /// Specifies the NOP operation.
+        /// </summary>
+        NONE = 0,
+        /// <summary>
+        /// Specifies a MATMUL operation.
+        /// </summary>
+        MATMUL = 1
+    }
+
+    /// <summary>
+    /// Specifies the operation to use with the fused computation.
+    /// </summary>
+    public enum FUSEDCOMPUTE_OP
+    {
+        /// <summary>
+        /// Specifies the MATMUL operation.
+        /// </summary>
+        MATMUL = 1
+    }
+
+    /// <summary>
+    /// Specifies the heuristic mode to use with the fused computation.
+    /// </summary>
+    public enum FUSEDCOMP_HEUR_MODE
+    {
+        /// <summary>
+        /// Specifies no heuristic mode.
+        /// </summary>
+        NONE = -1,
+        /// <summary>
+        /// Specifies the instant mode.  Provides optimal performance, operates the same as A.  
+        /// </summary>
+        INSTANT = 0,
+        /// <summary>
+        /// Specifies the heuristic mode B.  This mode can help improve generalization but is slower.
+        /// </summary>
+        B = 1,
+        /// <summary>
+        /// Specifies the fallback mode.  Provides functionality but given GPU resources, but may not be optimal in performance.
+        /// </summary>
+        FALLBACK = 2,
+        /// <summary>
+        /// Specifies the heuristic mode A, which provides the same functionality as INSTANT.
+        /// </summary>
+        A = 3
+    }
+
+    /// <summary>
+    /// Specifies the support for the fused computation.
+    /// </summary>
+    public enum FUSEDCOMP_SUPPORT
+    {
+        /// <summary>
+        /// Specifies that the operation is not supported on the current GPU resources.
+        /// </summary>
+        NOT_SUPPORTED = 0,
+        /// <summary>
+        /// Specifies that the operation is supported on the current GPU resources.
+        /// </summary>
+        SUPPORTED = 1
+    }
+
 #pragma warning disable 1591
 
     /// <summary>
@@ -1506,6 +1593,14 @@ namespace MyCaffe.common
             CUDA_BLOBLOADER_LOAD = 992,
             CUDA_BLOBLOADER_RESETOFFSET = 993,
             CUDA_BLOBLOADER_ADDTOOFFSET = 994,
+
+            CUDA_CREATE_FUSEDCOMP = 1001,
+            CUDA_FREE_FUSEDCOMP = 1002,
+            CUDA_FUSED_COMP_ADD_TENSOR = 1003,
+            CUDA_FUSED_COMP_GET_TENSOR = 1004,
+            CUDA_FUSED_COMP_ADD_OP = 1005,
+            CUDA_FUSED_COMP_BUILD = 1006,
+            CUDA_FUSED_COMP_EXECUTE = 1007,
 
             CUDA_DEBUG = 10000
         }
@@ -6293,6 +6388,185 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_ADDTOOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInItems));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_BLOBLOADER_ADDTOOFFSET, null, m_param.AsLong(hBlobLoader, lOffsetInItems));
+        }
+
+
+        /// <summary>
+        /// Create the Cudnn Fused Compute used to perform complex 'fused' computations.
+        /// </summary>
+        /// <param name="nSharedIndex">Specifies a shared global index used to share computes, or -1 to ignore.</param>
+        /// <param name="hCuda">Specifies a handle to cudnn.</param>
+        /// <param name="dtIo">Specifies the data type used for input and output.</param>
+        /// <param name="dtIntermediate">Specifies the data type used for the intermediate tensors.</param>
+        /// <param name="dtCompute">Specifies the data type used for compute.</param>
+        /// <param name="prebuilt">Optionally, specifies a pre-built fused compute to use.</param>
+        /// <returns>The handle to the FusedCompute is returned.  This handle is used with all other fused compute functions.</returns>
+        public long CreateFusedCompute(int nSharedIndex, long hCuda, FUSEDCOMPUTE_DATA_TYPE dtIo, FUSEDCOMPUTE_DATA_TYPE dtIntermediate, FUSEDCOMPUTE_DATA_TYPE dtCompute, FUSEDCOMPUTE_PREBUILT_OP prebuilt = FUSEDCOMPUTE_PREBUILT_OP.NONE)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free the instance of the FusedCompute.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        public void FreeFusedCompute(long hFusedCompute)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_FUSEDCOMP, m_param.AsDouble(hFusedCompute));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_FUSEDCOMP, m_param.AsFloat(hFusedCompute));
+        }
+
+        /// <summary>
+        /// Create a new fused computation tensor.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        /// <param name="hSrcData">Specifies a handle to the source GPU data.</param>
+        /// <param name="nN">Specifies the number of items in the N dimension.</param>
+        /// <param name="nC">Specifies the number of items in the C dimension.</param>
+        /// <param name="nH">Specifies the number of items in the H dimension.</param>
+        /// <param name="nW">Specifies the number of items in the W dimension.</param>
+        /// <returns>A handle to the new tensor is returned.</returns>
+        public long FusedCompAddTensor(long hFusedCompute, long hSrcData, int nN, int nC, int nH, int nW)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, hSrcData, nN, nC, nH, nW));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, hSrcData, nN, nC, nH, nW));
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Get the data from a fused computation tensor and copy it to the destination.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        /// <param name="hTensor">Specifies a handle to a fused comp tensor.</param>
+        /// <param name="dt">Returns the tensor data type.</param>
+        /// <returns>Returns the shape of the tensor.</returns>
+        public List<int> FusedCompGetTensor(long hFusedCompute, long hTensor, out FUSEDCOMPUTE_DATA_TYPE dt)
+        {
+            List<int> rgShape = new List<int>();
+
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_GET_TENSOR, null, m_param.AsLong(hFusedCompute, hTensor));
+                dt = (FUSEDCOMPUTE_DATA_TYPE)(int)rg[0];
+
+                rgShape.Add((int)rg[1]);
+                if ((int)rg[2] > 0)
+                    rgShape.Add((int)rg[2]);
+                if ((int)rg[3] > 0)
+                    rgShape.Add((int)rg[3]);
+                if ((int)rg[4] > 0)
+                    rgShape.Add((int)rg[4]);
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_GET_TENSOR, null, m_param.AsLong(hFusedCompute, hTensor));
+                dt = (FUSEDCOMPUTE_DATA_TYPE)(int)rg[0];
+
+                rgShape.Add((int)rg[1]);
+                if ((int)rg[2] > 0)
+                    rgShape.Add((int)rg[2]);
+                if ((int)rg[3] > 0)
+                    rgShape.Add((int)rg[3]);
+                if ((int)rg[4] > 0)
+                    rgShape.Add((int)rg[4]);
+            }
+
+            return rgShape;
+        }
+
+        /// <summary>
+        /// Add a new fused operation to be performed on the tensors.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        /// <param name="op">Specifies the fused computation operation.</param>
+        /// <param name="hTensor1">Specifies the first tensor to operate on.</param>
+        /// <param name="hTensor2">Specifies the second tensor to operate on or 0 if not used.</param>
+        /// <param name="hTensor3">Specifies the third tensor to operate on or 0 if not used.</param>
+        /// <param name="hTensor4">Specifies the fourth tensor to operate on or 0 if not used.</param>
+        /// <returns>The intermediate tensor from the operation is returned.</returns>
+        public long FusedCompAddOp(long hFusedCompute, FUSEDCOMPUTE_OP op, long hTensor1, long hTensor2 = 0, long hTensor3 = 0, long hTensor4 = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, null, m_param.AsLong(hFusedCompute, (int)op, hTensor1, hTensor2, hTensor3, hTensor4));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, null, m_param.AsLong(hFusedCompute, (int)op, hTensor1, hTensor2, hTensor3, hTensor4));
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Build a new fused computation graph.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        /// <param name="heur1">Specifies the first heuristics to use.</param>
+        /// <param name="heur2">Specifies the second heuristics to use.</param>
+        /// <returns>Returns a handle to the workspace memory to use during execution.</returns>
+        public long FusedCompBuild(long hFusedCompute, FUSEDCOMP_HEUR_MODE heur1, FUSEDCOMP_HEUR_MODE heur2)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, (int)heur1, (int)heur2));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, (int)heur1, (int)heur2));
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Execute a fused computation graph.
+        /// </summary>
+        /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
+        /// <param name="hWorkspace">Specifies the GPU workspace memory returned from the FusedCompBuild or Create method (when using a pre-built computation).</param>
+        public long FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData)
+        {
+            if (rghTensorData.Count != rghTensors.Count)
+                throw new Exception("The number of tensors and tensor data must match.");
+
+            if (rghTensorData.Count == 0)
+                throw new Exception("At least one tensor must be provided.");
+
+            List<long> rgArgs = new List<long>();
+            rgArgs.Add(hFusedCompute);
+            rgArgs.Add(hWorkspace);
+            rgArgs.Add(rghTensors.Count + rghTensorData.Count);
+            rgArgs.AddRange(rghTensors);
+            rgArgs.AddRange(rghTensorData);
+
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
+                return (long)rg[0];
+            }
         }
 
         #endregion

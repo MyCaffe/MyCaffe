@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="Cuda Files\attn.cu" />
+    <CudaCompile Include="Cuda Files\blobloader.cu" />
+    <CudaCompile Include="Cuda Files\cpd.cu" />
+    <CudaCompile Include="Cuda Files\device.cu" />
+    <CudaCompile Include="Cuda Files\extension.cu" />
+    <CudaCompile Include="Cuda Files\imgop.cu" />
+    <CudaCompile Include="Cuda Files\layernorm.cu" />
+    <CudaCompile Include="Cuda Files\main.cu" />
+    <CudaCompile Include="Cuda Files\math.cu" />
+    <CudaCompile Include="Cuda Files\memory.cu" />
+    <CudaCompile Include="Cuda Files\memorycol.cu" />
+    <CudaCompile Include="Cuda Files\memtest.cu" />
+    <CudaCompile Include="Cuda Files\nccl.cu" />
+    <CudaCompile Include="Cuda Files\pca.cu" />
+    <CudaCompile Include="Cuda Files\rnn8.cu" />
+    <CudaCompile Include="Cuda Files\rnnData.cu" />
+    <CudaCompile Include="Cuda Files\rope.cu" />
+    <CudaCompile Include="Cuda Files\ssd_core.cu" />
+    <CudaCompile Include="Cuda Files\tsne_g.cu" />
+    <CudaCompile Include="Cuda Files\tsne_gp.cu" />
+    <CudaCompile Include="Cuda Files\util.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Cuda Files\ssd.cpp" />
+    <ClCompile Include="Cuda Files\ssd_core.cpp" />
+    <ClCompile Include="Cuda Files\win.c" />
+    <ClCompile Include="CudaDnnDLL.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Cuda Files\fused_comp.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Cuda Files\attn.h" />
+    <ClInclude Include="Cuda Files\blobloader.h" />
+    <ClInclude Include="Cuda Files\cpd.h" />
+    <ClInclude Include="Cuda Files\device.h" />
+    <ClInclude Include="Cuda Files\extension.h" />
+    <ClInclude Include="Cuda Files\fused_comp.h" />
+    <ClInclude Include="Cuda Files\handlecol.h" />
+    <ClInclude Include="Cuda Files\imgop.h" />
+    <ClInclude Include="Cuda Files\layernorm.h" />
+    <ClInclude Include="Cuda Files\math.h" />
+    <ClInclude Include="Cuda Files\memory.h" />
+    <ClInclude Include="Cuda Files\memorycol.h" />
+    <ClInclude Include="Cuda Files\memtest.h" />
+    <ClInclude Include="Cuda Files\nccl.h" />
+    <ClInclude Include="Cuda Files\pca.h" />
+    <ClInclude Include="Cuda Files\rnn8.h" />
+    <ClInclude Include="Cuda Files\rnnData.h" />
+    <ClInclude Include="Cuda Files\rope.h" />
+    <ClInclude Include="Cuda Files\ssd.h" />
+    <ClInclude Include="Cuda Files\ssd_core.h" />
+    <ClInclude Include="Cuda Files\tsne_g.h" />
+    <ClInclude Include="Cuda Files\tsne_gp.h" />
+    <ClInclude Include="Cuda Files\util.h" />
+    <ClInclude Include="Cuda Files\win.h" />
+    <ClInclude Include="inc\FunctionIDs.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Cuda Files\main.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.11.8.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CudaDnnDLL.11.8.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+</Project>
