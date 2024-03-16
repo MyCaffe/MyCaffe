@@ -121,6 +121,7 @@ namespace MyCaffe.layers
         {
             return null;
         }
+
         /// <summary>
         /// The PostProcessLogitsOutput allows derivative data layers to post-process the results,
         /// converting them back into text results (e.g., detokenizing).
@@ -136,6 +137,7 @@ namespace MyCaffe.layers
         {
             return null;
         }
+
         /// <summary>
         /// The PostProcessFullOutput allows derivative data layers to post-process the results, usually be detokenizing the data in the blobSoftmax.
         /// </summary>
