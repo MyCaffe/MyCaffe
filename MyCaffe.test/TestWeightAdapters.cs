@@ -273,6 +273,12 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        private string getDataPath()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\instr_llama\\";
+            return strPath;
+        }
+
         private string buildSolver(SolverParameter.SolverType type)
         {
             SolverParameter solverParam = new SolverParameter();
@@ -335,14 +341,25 @@ namespace MyCaffe.test
             return pNet.ToProto("root").ToString();
         }
 
+        /// <summary>
+        /// Test layer forward.
+        /// </summary>
+        /// <remarks>
+        /// Test data generated using the following python code:
+        ///     instruct_finetune.py with debug=True (data generated in model.py)
+        /// </remarks>
+        /// <param name="bEnableLoRA">Specifies to enable LoRA</param>
+        /// <param name="strType">Specifies the weight type, should be "KPTH0".</param>
+        /// <param name="type">Specifies the solver type.</param>
         public void TestLayerForward(bool bEnableLoRA, string strType, SolverParameter.SolverType type)
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
-            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = null;
+            Blob<T> blobWork = null;
+            string strPath = getDataPath();
 
             try
             {
@@ -351,16 +368,20 @@ namespace MyCaffe.test
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
+
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Blob<T> blobX = net.FindBlob("x");
-                string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\test\\";
 
                 blobX.LoadFromNumpy(strPath + "x.npy");
 
+                blobX.Unsqueeze(2);
+
                 m_log.CHECK_EQ(blobX.num, 64, "The batch size should be 64.");
                 m_log.CHECK_EQ(blobX.channels, 350, "The channels should be 350.");
-                m_log.CHECK_EQ(blobX.height, 288, "The height should be 288.");
-                m_log.CHECK_EQ(blobX.width, 1, "The width should be 1.");
+                m_log.CHECK_EQ(blobX.height, 1, "The height should be 288.");
+                m_log.CHECK_EQ(blobX.width, 288, "The width should be 1.");
 
                 Layer<T> layer = net.FindLayer(LayerParameter.LayerType.INNERPRODUCT, "ip");
 
