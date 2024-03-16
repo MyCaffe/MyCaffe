@@ -2037,6 +2037,9 @@ namespace MyCaffe
             double dfThreshold = customInput.GetPropertyAsDouble("Threshold", 0.2);
             int nMax = customInput.GetPropertyAsInt("Max", 80);
             int nK = customInput.GetPropertyAsInt("K", 1);
+            if (nK <= 0)
+                nK = 1;
+
             PropertySet res;
 
             if (customInput.GetPropertyAsBool("Temporal", false))
@@ -3067,15 +3070,15 @@ namespace MyCaffe
         /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
         /// <param name="bBeamSearch">Optionally, specifies to run a Beam Search.</param>
         /// <returns>The results are returned as in a property set.</returns>
-        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
+        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.2, int nMax = 80, bool bBeamSearch = false)
         {
             if (m_net.net_param.model_type == NetParameter.MODEL_TYPE.LLAMA)
-                return generate_llama(customInput, nK, dfThreshold, nMax, bBeamSearch);
+                return generate_llama(customInput, nK, 1.0, nMax);
             else
                 return generate_legacy(customInput, nK, dfThreshold, nMax, bBeamSearch);
         }
 
-        private PropertySet generate_llama(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
+        private PropertySet generate_llama(PropertySet customInput, int nK = 1, double dfTemperature = 1.0, int nMax = 80)
         {
             Layer<T> tok1 = m_net.FindLayer(LayerParameter.LayerType.PRETOKENIZED_DATA, "data");
             if (tok1 == null)
@@ -3100,7 +3103,6 @@ namespace MyCaffe
                 throw new Exception("Could not find the 'logits' blob!");
 
             int nCurIdx = 0;
-            float fTemperature = 0.1f;
             Stopwatch sw = new Stopwatch();
 
             int nSeqLen = 0;
@@ -3131,9 +3133,10 @@ namespace MyCaffe
                 }
                 else
                 {
-                    blobLogits.scale_data(1.0f / fTemperature);
+                    if (dfTemperature != 1.0)
+                        blobLogits.scale_data(1.0 / dfTemperature);
 
-                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, 10);
+                    List<Tuple<string, int, double>> res = tok.PostProcessLogitsOutput(nCurIdx, blobLogits, null, 2, nK);
                     nTokenId = res[0].Item2;
 
                     if (!tok.IsEOS(nTokenId))
