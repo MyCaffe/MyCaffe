@@ -380,35 +380,45 @@ namespace MyCaffe.layers.gpt
             int nIdxStart = blobLogits.count() - nVocabCount;
             Dictionary<int, float> rgTopK = new Dictionary<int, float>();
 
-            for (int i = nIdxStart; i < blobLogits.count(); i++)
+            if (nK > 1)
             {
-                float fVal = rgData[i];
-                rgTopK.Add(i - nIdxStart, fVal);
-
-                if (rgTopK.Count > nK)
+                for (int i = nIdxStart; i < blobLogits.count(); i++)
                 {
-                    float fMin = float.MaxValue;
-                    int nMinIdx = -1;
+                    float fVal = rgData[i];
+                    rgTopK.Add(i - nIdxStart, fVal);
 
-                    foreach (KeyValuePair<int, float> kv in rgTopK)
+                    if (rgTopK.Count > nK)
                     {
-                        if (kv.Value < fMin)
-                        {
-                            fMin = kv.Value;
-                            nMinIdx = kv.Key;
-                        }
-                    }
+                        float fMin = float.MaxValue;
+                        int nMinIdx = -1;
 
-                    rgTopK.Remove(nMinIdx);
+                        foreach (KeyValuePair<int, float> kv in rgTopK)
+                        {
+                            if (kv.Value < fMin)
+                            {
+                                fMin = kv.Value;
+                                nMinIdx = kv.Key;
+                            }
+                        }
+
+                        rgTopK.Remove(nMinIdx);
+                    }
                 }
             }
 
             for (int i = 0; i < rgLogits.Count(); i++)
             {
-                if (rgTopK.ContainsKey(i))
-                    rgLogits[i] = rgTopK[i];
+                if (nK == 1)
+                {
+                    rgLogits[i] = rgData[i + nIdxStart];
+                }
                 else
-                    rgLogits[i] = -float.MaxValue;
+                {
+                    if (rgTopK.ContainsKey(i))
+                        rgLogits[i] = rgTopK[i];
+                    else
+                        rgLogits[i] = -float.MaxValue;
+                }
             }
 
             if (m_blobX == null)

@@ -282,8 +282,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="nIdxToken">Specifies the token to detokenize.</param>
         /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <param name="nPadToken">Optionally, specifies a pad token that is ignored.</param>
         /// <returns>The detokenized string is returned (which may just be a character).</returns>
-        public string Detokenize(int nIdxToken, bool bIgnoreBos, bool bIgnoreEos)
+        public string Detokenize(int nIdxToken, bool bIgnoreBos, bool bIgnoreEos, int? nPadToken = null)
         {
             string str = null;
             
@@ -291,6 +292,9 @@ namespace MyCaffe.layers.gpt
                 return str;
 
             str = "";
+
+            if (nPadToken.HasValue && nIdxToken == nPadToken.Value)
+                return str;
 
             if (m_bAddBos && nIdxToken == BOS)
             {
