@@ -423,7 +423,6 @@ class Device
 		long FusedCompAddOp(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FusedCompBuild(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FusedCompExecute(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
-		long FusedCompCheckSupport(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
 
 		//---------------------------------------------------------------------------
@@ -4284,21 +4283,23 @@ inline long Device<T>::CreateFusedComp(long lInput, T* pfInput, long llInput, LO
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 4))
+	if (lErr = verifyInput(llInput, plInput, 5, 6))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
 	int nSharedIndex = (int)plInput[0];
-	DataType dtIntermediate = (DataType)(int)plInput[1];
-	DataType dtCompute = (DataType)(int)plInput[2];
+	long hCuda = (long)plInput[1];
+	DataType dtIo = (DataType)(int)plInput[2];
+	DataType dtIntermediate = (DataType)(int)plInput[3];
+	DataType dtCompute = (DataType)(int)plInput[4];
 	PreBuiltFusedComp preBuilt = PREBUILT_FUSED_COMP_NONE;
 	
-	if (llInput > 3)
-		preBuilt = (PreBuiltFusedComp)(int)plInput[3];
+	if (llInput > 5)
+		preBuilt = (PreBuiltFusedComp)(int)plInput[5];
 
-	if (lErr = m_memory.CreateFusedComp(nSharedIndex, dtIntermediate, dtCompute, preBuilt, &m_math, &hHandle, &hWorkspace))
+	if (lErr = m_memory.CreateFusedComp(nSharedIndex, hCuda, dtIo, dtIntermediate, dtCompute, preBuilt, &m_math, &hHandle, &hWorkspace))
 		return lErr;
 
 	// ppfOutput has MAX_OUTPUT(16) pre-allocated items.
@@ -4338,7 +4339,7 @@ inline long Device<T>::FusedCompAddTensor(long lInput, T* pfInput, long llInput,
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
-	int hSrcData = (int)plInput[1];
+	DataType dt = (DataType)(int)plInput[1];
 	long nS1 = (long)plInput[2];
 	long nS2 = 0;
 	long nS3 = 0;
@@ -4351,7 +4352,7 @@ inline long Device<T>::FusedCompAddTensor(long lInput, T* pfInput, long llInput,
 	if (llInput > 5)
 		nS4 = (long)plInput[5];
 
-	if (lErr = m_memory.FusedCompAddTensor(hFusedComp, hSrcData, nS1, nS2, nS3, nS4, &hHandle))
+	if (lErr = m_memory.FusedCompAddTensor(hFusedComp, dt, nS1, nS2, nS3, nS4, &hHandle))
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);
@@ -4362,26 +4363,30 @@ inline long Device<T>::FusedCompGetTensor(long lInput, T* pfInput, long llInput,
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 4, 7))
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
 	long hTensorHandle = (long)plInput[1];
-	long hDstData = (int)plInput[2];
-	long nS1 = (long)plInput[3];
-	long nS2 = 0;
-	long nS3 = 0;
-	long nS4 = 0;
+	DataType dt;
+	long nS1, nS2, nS3, nS4;
 
-	if (llInput > 4)
-		nS2 = (long)plInput[4];
-	if (llInput > 5)
-		nS3 = (long)plInput[5];
-	if (llInput > 6)
-		nS4 = (long)plInput[6];
-
-	if (lErr = m_memory.FusedCompGetTensor(hFusedComp, hDstData, nS1, nS2, nS3, nS4, hTensorHandle))
+	if (lErr = m_memory.FusedCompGetTensor(hFusedComp, hTensorHandle, &dt, &nS1, &nS2, &nS3, &nS4))
 		return lErr;
+
+	// ppfOutput has MAX_OUTPUT(16) pre-allocated items.
+	T* pfOutput = *ppfOutput;
+
+	pfOutput[0] = (long)dt;
+	pfOutput[1] = (long)nS1;
+	pfOutput[2] = (long)nS2;
+	pfOutput[3] = (long)nS3;
+	pfOutput[4] = (long)nS4;
+
+	*ppfOutput = pfOutput;
+	*plOutput = 5;
 
 	return 0;
 }
@@ -4391,27 +4396,34 @@ inline long Device<T>::FusedCompAddOp(long lInput, T* pfInput, long llInput, LON
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 6))
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 7))
+		return lErr;
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
 	FusedCompOp nOp = (FusedCompOp)(int)plInput[1];
-	long hTensorHandle1 = (long)plInput[2];
+	DataType dtCompute = (DataType)(int)plInput[2];
+	T fPadding = pfInput[0];
+	long hTensorHandle1 = (long)plInput[3];
 	long hTensorHandle2 = 0;
 	long hTensorHandle3 = 0;
 	long hTensorHandle4 = 0;
+	long hIntermediateTensor = 0;
 
-	if (llInput > 3)
-		hTensorHandle2 = (long)plInput[3];
 	if (llInput > 4)
-		hTensorHandle3 = (long)plInput[4];
+		hTensorHandle2 = (long)plInput[4];
 	if (llInput > 5)
-		hTensorHandle4 = (long)plInput[5];
+		hTensorHandle3 = (long)plInput[5];
+	if (llInput > 6)
+		hTensorHandle4 = (long)plInput[6];
 
-	if (lErr = m_memory.FusedCompAddOp(hFusedComp, nOp, hTensorHandle1, hTensorHandle2, hTensorHandle3, hTensorHandle4))
+	if (lErr = m_memory.FusedCompAddOp(hFusedComp, nOp, dtCompute, fPadding, hTensorHandle1, hTensorHandle2, hTensorHandle3, hTensorHandle4, &hIntermediateTensor))
 		return lErr;
 
-	return 0;
+	return setOutput(hIntermediateTensor, plOutput, ppfOutput);
 }
 
 template <class T>
@@ -4441,35 +4453,29 @@ inline long Device<T>::FusedCompExecute(long lInput, T* pfInput, long llInput, L
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 2, 2))
+	if (lErr = verifyInput(llInput, plInput, 3, 203))
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
 	long hWorkspace = (long)plInput[1];
+	long lCount = (long)plInput[2];
+	long lRemaining = llInput - 3;
 
-	if (lErr = m_memory.FusedCompExecute(hFusedComp, hWorkspace))
+	if (lRemaining %2 != 0)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	long lActualCount = lRemaining / 2;
+
+	if (lCount != lActualCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	long* rghTensor = (long*)&plInput[3];
+	long* rghTensorData = (long*)&pfInput[lCount + 3];
+
+	if (lErr = m_memory.FusedCompExecute(hFusedComp, hWorkspace, rghTensor, rghTensorData, lCount))
 		return lErr;
 
 	return 0;
-}
-
-template <class T>
-inline long Device<T>::FusedCompCheckSupport(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
-{
-	LONG lErr;
-
-	if (lErr = verifyOutput(plOutput, ppfOutput))
-		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 1, 1))
-		return lErr;
-
-	long hFusedComp = (long)plInput[0];
-	FusedCompSupport support = FUSED_COMP_NOT_SUPPORTED;
-
-	if (lErr = m_memory.FusedCompCheckSupport(hFusedComp, &support))
-		return lErr;
-
-	return setOutput((T)support, plOutput, ppfOutput);
 }
 
 

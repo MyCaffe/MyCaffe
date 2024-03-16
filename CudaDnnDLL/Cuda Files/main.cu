@@ -1190,9 +1190,6 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDNN_FN_FUSED_COMP_EXECUTE:
 			return m_device.FusedCompExecute(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
-		case CUDNN_FN_FUSED_COMP_CHECK_SUPPORT:
-			return m_device.FusedCompCheckSupport(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
-
 		case CUDA_FN_DEBUG:
 			return 0;
 
@@ -2415,9 +2412,6 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_FUSED_COMP_EXECUTE:
 		return "CUDNN_FN_FUSED_COMP_EXECUTE";
-
-	case CUDNN_FN_FUSED_COMP_CHECK_SUPPORT:
-		return "CUDNN_FN_FUSED_COMP_CHECK_SUPPORT";
 
 	case CUDA_FN_DEBUG:
 		return "******** CUDA_FN_DEBUG ********";

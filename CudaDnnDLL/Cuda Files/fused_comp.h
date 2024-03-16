@@ -49,8 +49,8 @@ enum HeurMode
 
 enum FusedCompSupport
 {
-	FUSED_COMP_SUPPORTED = 0,
-	FUSED_COMP_NOT_SUPPORTED = 1
+	FUSED_COMP_NOT_SUPPORTED = 0,
+	FUSED_COMP_SUPPORTED = 1
 };
 
 //=============================================================================
@@ -107,15 +107,14 @@ public:
 		m_bOwner = bOwner;
 	}
 
-	long Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+	long Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 	long CleanUp();
 
-	long AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-	long GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
-	long AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
+	long AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+	long GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+	long AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 	long Build(HeurMode heur1, HeurMode heur2, long* phWorkspace);
-	long Execute(long hWorkspace);
-	long CheckSupport(FusedCompSupport* pSupport);
+	long Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
 };
 
 

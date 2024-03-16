@@ -13,7 +13,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-
+#include <map>
 
 //=============================================================================
 //	Function Definitions
@@ -29,11 +29,18 @@ class FusedCompData
 protected:
 	Memory<T>* m_pMem;
 	Math<T>* m_pMath;
+	cudnn_frontend::graph::Graph m_graph;
+	map<long, std::shared_ptr<cudnn_frontend::graph::Tensor_attributes>> m_tensor_map;
+	int m_nOpCount;
+	cudnnHandle_t m_cuda;
+
+	LONG add_op_matmul(DataType dtCompute, T dfPadding, long hA, long hB, long* phC);
 
 public:
-
-	FusedCompData(Memory<T>* pMem, Math<T>* pMath)
+	FusedCompData(Memory<T>* pMem, Math<T>* pMath) : m_tensor_map()
 	{
+		m_nOpCount = 0;
+		m_cuda = NULL;
 		m_pMem = pMem;
 		m_pMath = pMath;
 	}
@@ -52,15 +59,14 @@ public:
 		return m_pMath;
 	}
 
-	LONG Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+	LONG Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 	void CleanUp();
 
-	LONG AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-	LONG GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
-	LONG AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
+	LONG AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+	LONG GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+	LONG AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 	LONG Build(HeurMode heur1, HeurMode heur2, long* phWorkspace);
-	LONG Execute(long hWorkspace);
-	LONG CheckSupport(FusedCompSupport* pSupport);
+	LONG Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
 };
 
 //=============================================================================
@@ -68,13 +74,18 @@ public:
 //=============================================================================
 
 template <class T>
-long FusedCompData<T>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace)
+long FusedCompData<T>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace)
 {
+	m_cuda = m_pMem->GetCuDNN(hCuda);
+	m_graph.set_io_data_type((cudnn_frontend::DataType_t)dtIo);
+	m_graph.set_intermediate_data_type((cudnn_frontend::DataType_t)dtIntermediate);
+	m_graph.set_compute_data_type((cudnn_frontend::DataType_t)dtCompute);
+
 	return 0;
 }
 
-template long FusedCompData<double>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
-template long FusedCompData<float>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+template long FusedCompData<double>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+template long FusedCompData<float>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 
 
 template <class T>
@@ -87,38 +98,145 @@ template void FusedCompData<float>::CleanUp();
 
 
 template <class T>
-long FusedCompData<T>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle)
+long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle)
 {
+	std::vector<int64_t> dim = { nS1 };
+
+	if (nS2 > 0)
+		dim.push_back(nS2);
+
+	if (nS3 > 0)
+		dim.push_back(nS3);
+
+	if (nS4 > 0)
+		dim.push_back(nS4);
+
+	int ndim = dim.size();
+
+	auto props = cudnn_frontend::graph::Tensor_attributes();
+	props.set_data_type((cudnn_frontend::DataType_t)dt);
+	props.set_is_virtual(false);
+	props.set_is_pass_by_value(false);
+	props.set_dim(dim);
+
+	std::vector<int64_t> stride_order = cudnn_frontend::detail::generate_column_major_stride_order(ndim);
+	std::vector<int64_t> stride = cudnn_frontend::detail::generate_stride(dim, stride_order);
+	props.set_stride(stride);
+
+	long hTensor = m_tensor_map.size() + 1;
+	m_tensor_map[hTensor] = m_graph.tensor(props);
+
+	*phTensorHandle = hTensor;
+
 	return 0;
 }
 
-template long FusedCompData<double>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-template long FusedCompData<float>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+template long FusedCompData<double>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+template long FusedCompData<float>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
 
 
 template <class T>
-long FusedCompData<T>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle)
+long FusedCompData<T>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4)
 {
+	if (m_tensor_map.find(hTensorHandle) == m_tensor_map.end())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	auto tensor = m_tensor_map[hTensorHandle];
+
+	*pnS1 = tensor->get_dim()[0];
+	*pnS2 = tensor->get_dim().size() > 1 ? tensor->get_dim()[1] : 0;
+	*pnS3 = tensor->get_dim().size() > 2 ? tensor->get_dim()[2] : 0;
+	*pnS4 = tensor->get_dim().size() > 3 ? tensor->get_dim()[3] : 0;
+	*pdt = (DataType)tensor->get_data_type();
+	
 	return 0;
 }
 
-template long FusedCompData<double>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
-template long FusedCompData<float>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
+template long FusedCompData<double>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+template long FusedCompData<float>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
 
 
 template <class T>
-long FusedCompData<T>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4)
+long FusedCompData<T>::AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor)
 {
+	LONG lErr;
+
+	switch (nOp)
+	{
+		case FusedCompOp::FUSED_COMP_OP_MATMUL:
+			if (hTensor1 == 0 || hTensor2 == 0)
+				return ERROR_PARAM_NULL;
+
+			if (lErr = add_op_matmul(dtCompute, fPadding, hTensor1, hTensor2, plIntermediateTensor))
+				return lErr;
+			break;
+
+		defualt:
+			return ERROR_PARAM_OUT_OF_RANGE;
+	}
+
 	return 0;
 }
 
-template long FusedCompData<double>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
-template long FusedCompData<float>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
+template long FusedCompData<double>::AddOp(FusedCompOp nOp, DataType dtCompute, double dfPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
+template long FusedCompData<float>::AddOp(FusedCompOp nOp, DataType dtCompute, float fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
+
+
+template <class T>
+LONG FusedCompData<T>::add_op_matmul(DataType dtCompute, T fPadding, long hA, long hB, long* phC)
+{
+	if (m_tensor_map.find(hA) == m_tensor_map.end() || m_tensor_map.find(hB) == m_tensor_map.end())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	m_nOpCount++;
+	auto attributes = cudnn_frontend::graph::Matmul_attributes();
+	attributes.set_compute_data_type((cudnn_frontend::DataType_t)dtCompute);
+	attributes.set_name("Matmul" + std::to_string(m_nOpCount));
+	attributes.set_padding((double)fPadding);
+
+	auto tensorA = m_tensor_map[hA];
+	auto tensorB = m_tensor_map[hB];
+	std::shared_ptr <cudnn_frontend::graph::Tensor_attributes> tensorC = m_graph.matmul(tensorA, tensorB, attributes);
+
+	long nIdx = (long)(m_tensor_map.size() + 1);
+	m_tensor_map[nIdx] = tensorC;
+	*phC = nIdx;
+
+	return 0;
+}
+
+template long FusedCompData<double>::add_op_matmul(DataType dtCompute, double dfPadding, long hA, long hB, long* phC);
+template long FusedCompData<float>::add_op_matmul(DataType dtCompute, float fPadding, long hA, long hB, long* phC);
 
 
 template <class T>
 long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* phWorkspace)
 {
+	cudnn_frontend::error_t status = m_graph.validate();
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
+	status = m_graph.build_operation_graph(m_cuda);
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
+	std::vector<cudnn_frontend::HeurMode_t> heur_modes;
+	heur_modes.push_back((cudnn_frontend::HeurMode_t)heur1);
+	if (heur2 != HeurMode::HEUR_MODE_NONE)
+		heur_modes.push_back((cudnn_frontend::HeurMode_t)heur2);
+
+	status = m_graph.create_execution_plans(heur_modes);
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
+	status = m_graph.check_support(m_cuda);
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
+	status = m_graph.build_plans(m_cuda);
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
 	return 0;
 }
 
@@ -127,23 +245,48 @@ template long FusedCompData<float>::Build(HeurMode heur1, HeurMode heur2, long* 
 
 
 template <class T>
-long FusedCompData<T>::Execute(long hWorkspace)
+long FusedCompData<T>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount)
 {
+	LONG lErr;
+	MemoryCollection* pMemCol = m_pMem->GetMemoryCollection();
+	std::unordered_map<int64_t, void*> var_pack;
+
+	MemoryItem* pWorkspace;
+	if (lErr = pMemCol->GetData(hWorkspace, &pWorkspace))
+		return lErr;
+
+	T* workspace = (T*)pWorkspace->Data();
+
+	for (int i = 0; i < lCount; i++)
+	{
+		long hTensor = rghTensor[i];
+		long hTensorData = rghTensorData[i];
+
+		if (m_tensor_map.find(hTensor) == m_tensor_map.end())
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		auto tensor = m_tensor_map[hTensor];
+		int64_t uid = (int64_t)tensor->get_uid();
+
+		MemoryItem* pData;
+		if (lErr = pMemCol->GetData(hTensorData, &pData))
+			return lErr;
+
+		T* data = (T*)pData->Data();
+		var_pack[uid] = (void*)data;
+	}
+
+	cudnn_frontend::error_t status = m_graph.execute(m_cuda, var_pack, workspace);
+	if (status.is_bad())
+		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+
 	return 0;
 }
 
-template long FusedCompData<double>::Execute(long hWorkspace);
-template long FusedCompData<float>::Execute(long hWorkspace);
+template long FusedCompData<double>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+template long FusedCompData<float>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
 
 
-template <class T>
-long FusedCompData<T>::CheckSupport(FusedCompSupport* pSupport)
-{
-	return 0;
-}
-
-template long FusedCompData<double>::CheckSupport(FusedCompSupport* pSupport);
-template long FusedCompData<float>::CheckSupport(FusedCompSupport* pSupport);
 
 
 //=============================================================================
@@ -151,11 +294,11 @@ template long FusedCompData<float>::CheckSupport(FusedCompSupport* pSupport);
 //=============================================================================
 
 template <class T>
-long fusedcompHandle<T>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWorkspace)
+long fusedcompHandle<T>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWorkspace)
 {
 	long lErr;
 
-	if (lErr = m_pData->Initialize(dtIntermediate, dtCompute, preBuilt, phWorkspace))
+	if (lErr = m_pData->Initialize(hCuda, dtIo, dtIntermediate, dtCompute, preBuilt, phWorkspace))
 	{
 		m_pData->CleanUp();
 		return lErr;
@@ -164,8 +307,8 @@ long fusedcompHandle<T>::Initialize(DataType dtIntermediate, DataType dtCompute,
 	return 0;
 }
 
-template long fusedcompHandle<double>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
-template long fusedcompHandle<float>::Initialize(DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+template long fusedcompHandle<double>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+template long fusedcompHandle<float>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 
 
 template <class T>
@@ -191,33 +334,33 @@ template long fusedcompHandle<float>::CleanUp();
 
 
 template <class T>
-long fusedcompHandle<T>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle)
+long fusedcompHandle<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle)
 {
-	return m_pData->AddTensor(hSrcData, nS1, nS2, nS3, nS4, phTensorHandle);
+	return m_pData->AddTensor(dt, nS1, nS2, nS3, nS4, phTensorHandle);
 }
 
-template long fusedcompHandle<double>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-template long fusedcompHandle<float>::AddTensor(long hSrcData, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+template long fusedcompHandle<double>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
+template long fusedcompHandle<float>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
 
 
 template <class T>
-long fusedcompHandle<T>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle)
+long fusedcompHandle<T>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4)
 {
-	return m_pData->GetTensor(hDstData, nS1, nS2, nS3, nS4, hTensorHandle);
+	return m_pData->GetTensor(hTensorHandle, pdt, pnS1, pnS2, pnS3, pnS4);
 }
 
-template long fusedcompHandle<double>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
-template long fusedcompHandle<float>::GetTensor(long hDstData, long nS1, long nS2, long nS3, long nS4, long hTensorHandle);
+template long fusedcompHandle<double>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+template long fusedcompHandle<float>::GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
 
 
 template <class T>
-long fusedcompHandle<T>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4)
+long fusedcompHandle<T>::AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor)
 {
-	return m_pData->AddOp(nOp, hTensor1, hTensor2, hTensor3, hTensor4);
+	return m_pData->AddOp(nOp, dtCompute, fPadding, hTensor1, hTensor2, hTensor3, hTensor4, plIntermediateTensor);
 }
 
-template long fusedcompHandle<double>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
-template long fusedcompHandle<float>::AddOp(FusedCompOp nOp, long hTensor1, long hTensor2, long hTensor3, long hTensor4);
+template long fusedcompHandle<double>::AddOp(FusedCompOp nOp, DataType dtCompute, double dfPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
+template long fusedcompHandle<float>::AddOp(FusedCompOp nOp, DataType dtCompute, float fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 
 template <class T>
 long fusedcompHandle<T>::Build(HeurMode heur1, HeurMode heur2, long* phWorkspace)
@@ -229,21 +372,12 @@ template long fusedcompHandle<double>::Build(HeurMode heur1, HeurMode heur2, lon
 template long fusedcompHandle<float>::Build(HeurMode heur1, HeurMode heur2, long* phWokspace);
 
 template <class T>
-long fusedcompHandle<T>::Execute(long hWorkspace)
+long fusedcompHandle<T>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount)
 {
-	return m_pData->Execute(hWorkspace);
+	return m_pData->Execute(hWorkspace, rghTensor, rghTensorData, lCount);
 }
 
-template long fusedcompHandle<double>::Execute(long hWorkspace);
-template long fusedcompHandle<float>::Execute(long hWorkspace);
-
-template <class T>
-long fusedcompHandle<T>::CheckSupport(FusedCompSupport* pSupport)
-{
-	return m_pData->CheckSupport(pSupport);
-}
-
-template long fusedcompHandle<double>::CheckSupport(FusedCompSupport* pSupport);
-template long fusedcompHandle<float>::CheckSupport(FusedCompSupport* pSupport);
+template long fusedcompHandle<double>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+template long fusedcompHandle<float>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
 
 // end

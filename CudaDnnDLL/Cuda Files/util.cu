@@ -456,6 +456,65 @@ bool GetCudaErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 
 		return false;
 	}
+	else if ((lErr & ERROR_CUDNNFE_OFFSET) == ERROR_CUDNNFE_OFFSET)
+	{
+		lErr &= (~ERROR_CUDNNFE_OFFSET);
+
+		switch (lErr)
+		{
+			case CUDNNFE_ATTRIBUTE_NOT_SET:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: An attribute was not set (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_SHAPE_DEDUCTION_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: Shape deduction failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_INVALID_TENSOR_NAME:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: Invalid tensor name (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_INVALID_VARIANT_PACK:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: Invalid variant pack (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_GRAPH_NOT_SUPPORTED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The graph is not supported (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_GRAPH_EXECUTION_PLAN_CREATION_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The graph execution plan creation failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_GRAPH_EXECUTION_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The graph execution failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_HEURISTIC_QUERY_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The heuristic query failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_UNSUPPORTED_GRAPH_FORMAT:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The graph format is not supported (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_CUDA_API_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The CUDA API failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_CUDNN_BACKEND_API_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The cuDNN backend API failed (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_INVALID_CUDA_DEVICE:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The CUDA device is invalid (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+
+			case CUDNNFE_HANDLE_ERROR:
+				_snprintf(szErr, lMaxErr, "cuDNN-FE: The handle error occurred (%ld), Kernel = %ld", lErr, lKernel);
+				return true;
+		}
+	}
 
 	switch (lErr)
 	{

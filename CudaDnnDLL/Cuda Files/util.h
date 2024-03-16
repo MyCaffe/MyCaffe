@@ -221,10 +221,26 @@ const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;
 
 const int ERROR_CUDNN_OFFSET					= 0x4000;
 const int ERROR_CUBLAS_OFFSET					= 0x8000;
+const int ERROR_CUDNNFE_OFFSET					= 0xC000;
 
 //-----------------------------------------------------------------------------
-//	Helper Types
+// Cudnn Front End Errors
 //-----------------------------------------------------------------------------
+
+const int CUDNNFE_ATTRIBUTE_NOT_SET             = 1;
+const int CUDNNFE_SHAPE_DEDUCTION_FAILED        = 2;
+const int CUDNNFE_INVALID_TENSOR_NAME           = 3;
+const int CUDNNFE_INVALID_VARIANT_PACK          = 4;
+const int CUDNNFE_GRAPH_NOT_SUPPORTED           = 5;
+const int CUDNNFE_GRAPH_EXECUTION_PLAN_CREATION_FAILED = 6;
+const int CUDNNFE_GRAPH_EXECUTION_FAILED        = 7;
+const int CUDNNFE_HEURISTIC_QUERY_FAILED        = 8;
+const int CUDNNFE_UNSUPPORTED_GRAPH_FORMAT      = 9;
+const int CUDNNFE_CUDA_API_FAILED               = 10;
+const int CUDNNFE_CUDNN_BACKEND_API_FAILED      = 11;
+const int CUDNNFE_INVALID_CUDA_DEVICE           = 12;
+const int CUDNNFE_HANDLE_ERROR                  = 13;
+
 
 //-----------------------------------------------------------------------------
 //	Helper Functions
