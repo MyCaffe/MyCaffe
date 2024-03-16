@@ -1507,7 +1507,7 @@ namespace MyCaffe.common
             CUDA_BLOBLOADER_RESETOFFSET = 993,
             CUDA_BLOBLOADER_ADDTOOFFSET = 994,
 
-            CUDA_DEBUG = 1000
+            CUDA_DEBUG = 10000
         }
 
 #pragma warning restore 1591
