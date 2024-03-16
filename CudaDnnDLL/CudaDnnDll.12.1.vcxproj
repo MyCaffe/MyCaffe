@@ -107,7 +107,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26;$(CUDA_PATH_V12_1)\nvapi_515;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V12_1)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26;$(CUDA_PATH_V12_1)\nvapi_515;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__SM__=530;CUDNN_8;CUDA11_5;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -116,6 +116,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26\cudnn.lib;$(CUDA_PATH_V12_1)\nvapi_515\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -168,7 +169,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26;$(CUDA_PATH_V12_1)\nvapi_515;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V12_1)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26;$(CUDA_PATH_V12_1)\nvapi_515;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__SM__=530;CUDNN_8;CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -176,6 +177,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V12_1)\cudann_12.1-win-v8.9.2.26\cudnn.lib;$(CUDA_PATH_V12_1)\nvapi_515\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -210,6 +212,10 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Cuda Files\fused_comp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Cuda Files\ssd.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -250,6 +256,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\cpd.h" />
     <ClInclude Include="Cuda Files\device.h" />
     <ClInclude Include="Cuda Files\extension.h" />
+    <ClInclude Include="Cuda Files\fused_comp.h" />
     <ClInclude Include="Cuda Files\handlecol.h" />
     <ClInclude Include="Cuda Files\imgop.h" />
     <ClInclude Include="Cuda Files\layernorm.h" />

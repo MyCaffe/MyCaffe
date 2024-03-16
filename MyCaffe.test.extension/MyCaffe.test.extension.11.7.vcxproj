@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\fused_comp.cpp" />
     <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cpp" />
     <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cpp" />
     <ClCompile Include="..\CudaDnnDLL\Cuda Files\win.c" />
@@ -34,6 +35,7 @@
   <ItemGroup>
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\blobloader.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\cpd.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\fused_comp.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\imgop.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\layernorm.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\math.h" />
@@ -166,7 +168,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96;$(CUDA_PATH_V11_7)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_7)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96;$(CUDA_PATH_V11_7)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CUDA11_5;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -174,6 +176,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96\cudnn.lib;$(CUDA_PATH_V11_7)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -225,7 +228,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96;$(CUDA_PATH_V11_7)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_7)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96;$(CUDA_PATH_V11_7)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -233,6 +236,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_7)\cudann_11.7-win-v8.5.0.96\cudnn.lib;$(CUDA_PATH_V11_7)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>

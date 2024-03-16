@@ -49,6 +49,7 @@
     <UseOfAtl>Static</UseOfAtl>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -107,7 +108,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__SM__=530;CUDNN_8;CUDA11_5;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -116,6 +117,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard_C>Default</LanguageStandard_C>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121\cudnn.lib;$(CUDA_PATH_V11_8)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -168,7 +171,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__SM__=530;CUDNN_8;CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -177,6 +180,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <FloatingPointModel>Precise</FloatingPointModel>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121\cudnn.lib;$(CUDA_PATH_V11_8)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -251,6 +255,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\cpd.h" />
     <ClInclude Include="Cuda Files\device.h" />
     <ClInclude Include="Cuda Files\extension.h" />
+    <ClInclude Include="Cuda Files\fused_comp.h" />
     <ClInclude Include="Cuda Files\handlecol.h" />
     <ClInclude Include="Cuda Files\imgop.h" />
     <ClInclude Include="Cuda Files\layernorm.h" />
@@ -281,6 +286,10 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <CudaCompile Include="Cuda Files\cpd.cu" />
     <CudaCompile Include="Cuda Files\device.cu" />
     <CudaCompile Include="Cuda Files\extension.cu" />
+    <ClCompile Include="Cuda Files\fused_comp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <CudaCompile Include="Cuda Files\imgop.cu" />
     <CudaCompile Include="Cuda Files\layernorm.cu" />
     <CudaCompile Include="Cuda Files\main.cu" />

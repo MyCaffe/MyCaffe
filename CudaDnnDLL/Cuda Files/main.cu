@@ -1169,6 +1169,30 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_ROPE_BWD:
 			return m_device.RopeBackward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDNN_FN_CREATE_FUSED_COMP:
+			return m_device.CreateFusedComp(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FREE_FUSED_COMP:
+			return m_device.FreeFusedComp(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_ADD_TENSOR:
+			return m_device.FusedCompAddTensor(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_GET_TENSOR:
+			return m_device.FusedCompGetTensor(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_ADD_OP:
+			return m_device.FusedCompAddOp(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_BUILD:
+			return m_device.FusedCompBuild(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_EXECUTE:
+			return m_device.FusedCompExecute(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FUSED_COMP_CHECK_SUPPORT:
+			return m_device.FusedCompCheckSupport(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_DEBUG:
 			return 0;
 
@@ -2370,6 +2394,30 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_ROPE_BWD:
 		return "CUDA_FN_ROPE_BWD";
+
+	case CUDNN_FN_CREATE_FUSED_COMP:
+		return "CUDNN_FN_CREATE_FUSED_COMP";
+
+	case CUDNN_FN_FREE_FUSED_COMP:
+		return "CUDNN_FN_FREE_FUSED_COMP";
+
+	case CUDNN_FN_FUSED_COMP_ADD_TENSOR:
+		return "CUDNN_FN_FUSED_COMP_ADD_TENSOR";
+
+	case CUDNN_FN_FUSED_COMP_GET_TENSOR:
+		return "CUDNN_FN_FUSED_COMP_GET_TENSOR";
+
+	case CUDNN_FN_FUSED_COMP_ADD_OP:
+		return "CUDNN_FN_FUSED_COMP_ADD_OP";
+
+	case CUDNN_FN_FUSED_COMP_BUILD:
+		return "CUDNN_FN_FUSED_COMP_BUILD";
+
+	case CUDNN_FN_FUSED_COMP_EXECUTE:
+		return "CUDNN_FN_FUSED_COMP_EXECUTE";
+
+	case CUDNN_FN_FUSED_COMP_CHECK_SUPPORT:
+		return "CUDNN_FN_FUSED_COMP_CHECK_SUPPORT";
 
 	case CUDA_FN_DEBUG:
 		return "******** CUDA_FN_DEBUG ********";

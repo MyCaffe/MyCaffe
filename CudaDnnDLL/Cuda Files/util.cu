@@ -325,6 +325,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "BLOBLOADER: The BlobLoader is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_FUSEDCOMP:
+			_snprintf(szErr, lMaxErr, "FUSED_COMP: A general FusedComputation error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_FUSEDCOMP_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "FUSED_COMP: The FusedComputation is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_CPD:
 			_snprintf(szErr, lMaxErr, "CPD: A general CPD error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;

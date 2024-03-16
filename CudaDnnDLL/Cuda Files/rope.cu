@@ -1,7 +1,7 @@
 //=============================================================================
-//	FILE:	layernorm.cu
+//	FILE:	rope.cu
 //
-//	DESC:	This file implements the layer normalization (layernorm) algorithm
+//	DESC:	This file implements the positional encoding (rope) algorithm
 //=============================================================================
 
 #include "util.h"
