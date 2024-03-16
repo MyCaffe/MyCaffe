@@ -21,7 +21,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerForward(false, "lora", SolverParameter.SolverType.ADAM);
                 }
@@ -39,7 +39,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(false, "lora", SolverParameter.SolverType.ADAM);
                 }
@@ -57,7 +57,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerForward(true, "lora", SolverParameter.SolverType.ADAM);
                 }
@@ -75,7 +75,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAM);
                 }
@@ -93,7 +93,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerForward("lora", SolverParameter.SolverType.ADAM, 64, 128, 192, 1);
                 }
@@ -111,7 +111,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient("lora", SolverParameter.SolverType.ADAM, 64, 128, 192, 1);
                 }
@@ -130,7 +130,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAMW);
                 }
@@ -148,7 +148,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.SGD);
                 }
@@ -166,7 +166,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.RMSPROP);
                 }
@@ -184,7 +184,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADAGRAD);
                 }
@@ -202,7 +202,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.NESTEROV);
                 }
@@ -221,7 +221,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IOutputAdapterTest t in test.Tests)
+                foreach (IWeightAdapterTest t in test.Tests)
                 {
                     t.TestLayerGradient(true, "lora", SolverParameter.SolverType.ADADELTA);
                 }
@@ -233,7 +233,7 @@ namespace MyCaffe.test
         }
     }
 
-    interface IOutputAdapterTest : ITest
+    interface IWeightAdapterTest : ITest
     {
         void TestLayerForward(bool bEnabled, string strType, SolverParameter.SolverType type);
         void TestLayerGradient(bool bEnabled, string strType, SolverParameter.SolverType type);
@@ -251,17 +251,17 @@ namespace MyCaffe.test
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new OutputAdapterTest<double>(strName, nDeviceID, engine);
+                return new WeightAdapterTest<double>(strName, nDeviceID, engine);
             else
-                return new OutputAdapterTest<float>(strName, nDeviceID, engine);
+                return new WeightAdapterTest<float>(strName, nDeviceID, engine);
         }
     }
 
-    class OutputAdapterTest<T> : TestEx<T>, IOutputAdapterTest
+    class WeightAdapterTest<T> : TestEx<T>, IWeightAdapterTest
     {
         Blob<T> m_blobTarget;
 
-        public OutputAdapterTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public WeightAdapterTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 1, 1 }, nDeviceID)
         {
             m_engine = engine;
@@ -302,7 +302,7 @@ namespace MyCaffe.test
 
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
             data.input_param.shape.Add(new BlobShape(new List<int>() { nN, nC, nH, nW }));
-            data.top.Add("x");
+            data.top.Add("data");
 
             if (bFwdAndBwd)
             {
@@ -320,7 +320,7 @@ namespace MyCaffe.test
             p.weight_adapter.alpha = 1.0;
             p.weight_adapter.rank = 2;
             p.weight_adapter.enabled = bEnableLoRA;
-            p.bottom.Add("x");
+            p.bottom.Add("data");
             p.top.Add("ip");
             pNet.layer.Add(p);
 
@@ -372,7 +372,7 @@ namespace MyCaffe.test
                 blobWork = mycaffe.CreateBlob("work");
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobX = net.FindBlob("data");
 
                 blobX.LoadFromNumpy(strPath + "x.npy");
 
@@ -406,6 +406,8 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
                 mycaffe.Dispose();
             }
         }
@@ -427,7 +429,7 @@ namespace MyCaffe.test
                 Solver<T> solver = mycaffe.GetInternalSolver();
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
-                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobX = net.FindBlob("data");
                 Blob<T> blobTrg = net.FindBlob("target");
 
                 float[] rgTarget = new float[] { 2, 4, 6, 8, 10, 12 };
@@ -553,7 +555,7 @@ namespace MyCaffe.test
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobX = net.FindBlob("data");
                 m_filler.Fill(blobX);
 
                 BlobCollection<T> colTop = net.Forward();
@@ -586,7 +588,7 @@ namespace MyCaffe.test
 
                 Solver<T> solver = mycaffe.GetInternalSolver();
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobX = net.FindBlob("data");
                 m_filler.Fill(blobX);
 
                 BlobCollection<T> colTop = net.Forward();
