@@ -505,6 +505,9 @@ namespace MyCaffe.basecode
         /// <returns>The Image of the data is returned.</returns>
         public static Bitmap GetImage(SimpleDatum d, ColorMapper clrMap = null, List<int> rgClrOrder = null)
         {
+            if (d == null)
+                return null;
+
             if (d.Channels != 1 && d.Channels != 3)
                 throw new Exception("Standard images only support either 1 or 3 channels.");
 
