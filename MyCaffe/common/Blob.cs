@@ -195,10 +195,51 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Unsqueeze the shape by adding shape=1 on the axis specified by nAxis.
+        /// </summary>
+        /// <param name="nAxis">Specifies the axis to unsqeeze.</param>
+        public void Unsqueeze(int nAxis)
+        {
+            List<int> rgShape = Utility.Clone<int>(shape());
+
+            if (nAxis > rgShape.Count)
+            {
+                for (int i = rgShape.Count; i < nAxis; i++)
+                {
+                    rgShape.Add(1);
+                }
+            }
+            else
+            {
+                rgShape.Insert(nAxis, 1);
+            }
+
+            Reshape(rgShape);
+        }
+
+        /// <summary>
+        /// Squeeze the shape by removing shape=1 on the axis specified, if 1.
+        /// </summary>
+        /// <param name="nAxis">Specifies the axis to squeeze.</param>
+        public void Squeeze(int nAxis)
+        {
+            if (nAxis > num_axes)
+                return;
+
+            if (shape(nAxis) == 1)
+            {
+                List<int> rgShape = Utility.Clone<int>(shape());
+                rgShape.RemoveAt(nAxis);
+                Reshape(rgShape);
+            }
+        }
+
+
+        /// <summary>
         /// Unsqueeze the shape by adding shape=1 on each axis until the 'nNumAxes' is reached.
         /// </summary>
         /// <param name="nNumAxes">Specifies the number of axes to unsqueeze to.</param>
-        public void Unsqueeze(int nNumAxes)
+        public void UnsqueezeTo(int nNumAxes)
         {
             if (num_axes < 4)
             {
@@ -216,7 +257,7 @@ namespace MyCaffe.common
         /// Squeeze the shape by removing shape=1 on the end each axis until the 'nNumAxes' is reached.
         /// </summary>
         /// <param name="nNumAxes">Specifies the number of axes to squeeze to.</param>
-        public void Squeeze(int nNumAxes)
+        public void SqueezeTo(int nNumAxes)
         {
             if (nNumAxes < num_axes)
             {
