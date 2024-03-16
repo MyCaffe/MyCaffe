@@ -294,7 +294,7 @@ namespace MyCaffe.layers.lnn
             m_rnn_cell.Setup(m_colBtm, m_colTop);
             blobs.Add(m_rnn_cell.blobs);
 
-            m_blobHState.Unsqueeze(4);
+            m_blobHState.UnsqueezeTo(4);
 
             addBtmTop(m_blobHState, m_blobCurrentOutput);
             m_fc.Setup(m_colBtm, m_colTop);
@@ -383,7 +383,7 @@ namespace MyCaffe.layers.lnn
                 m_rnn_cell.Reshape(m_colBtm, m_colTop);
             }
 
-            m_blobHState.Unsqueeze(4);
+            m_blobHState.UnsqueezeTo(4);
 
             addBtmTop(m_blobHState, m_blobCurrentOutput);
             m_fc.Reshape(m_colBtm, m_colTop);
@@ -477,7 +477,7 @@ namespace MyCaffe.layers.lnn
 
                 m_rnn_cell.Forward(m_colBtm, m_colTop);
 
-                m_blobHState1.Unsqueeze(4);
+                m_blobHState1.UnsqueezeTo(4);
                 m_rgBlobHState[t].CopyFrom(m_blobHState1);
 
                 // Apply masking
