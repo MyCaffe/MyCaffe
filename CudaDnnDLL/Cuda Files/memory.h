@@ -545,7 +545,7 @@ class Memory
 		long FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
 		long FusedCompAddOp(long hFusedComp, FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 		long FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* phWorkspace);
-		long FusedCompExecute(long hFusedComp, long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+		long FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -2333,6 +2333,12 @@ inline long Memory<T>::CreateFusedComp(int nSharedIndex, long hCuda, DataType dt
 		if ((fc = new fusedcompHandle<T>()) == NULL)
 			return ERROR_MEMORY_OUT;
 
+		if (lErr = fc->Update(this, pMath))
+		{
+			delete fc;
+			return lErr;
+		}
+
 		if (lErr = fc->Initialize(hCuda, dtIo, dtIntermediate, dtCompute, preBuilt, phWorkspace))
 		{
 			delete fc;
@@ -2409,17 +2415,17 @@ inline long Memory<T>::FusedCompAddOp(long hFusedComp, FusedCompOp nOp, DataType
 }
 
 template <class T>
-inline long Memory<T>::FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* phWorkspace)
+inline long Memory<T>::FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* plWorkspaceSize)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->Build(heur1, heur2, phWorkspace);
+	return pFc->Build(heur1, heur2, plWorkspaceSize);
 }
 
 template <class T>
-inline long Memory<T>::FusedCompExecute(long hFusedComp, long hWorkspace, long* rghTensor, long* rghTensorData, long lCount)
+inline long Memory<T>::FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)

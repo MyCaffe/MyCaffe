@@ -4286,9 +4286,6 @@ inline long Device<T>::CreateFusedComp(long lInput, T* pfInput, long llInput, LO
 	if (lErr = verifyInput(llInput, plInput, 5, 6))
 		return lErr;
 
-	if (lErr = verifyOutput(plOutput, ppfOutput))
-		return lErr;
-
 	int nSharedIndex = (int)plInput[0];
 	long hCuda = (long)plInput[1];
 	DataType dtIo = (DataType)(int)plInput[2];
@@ -4398,7 +4395,7 @@ inline long Device<T>::FusedCompAddOp(long lInput, T* pfInput, long llInput, LON
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 4, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 	if (lErr = verifyInput(lInput, pfInput, 1, 1))
 		return lErr;
@@ -4430,7 +4427,7 @@ template <class T>
 inline long Device<T>::FusedCompBuild(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
-	long hWorkspace = 0;
+	long lWorkspaceSize = 0;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
@@ -4442,10 +4439,10 @@ inline long Device<T>::FusedCompBuild(long lInput, T* pfInput, long llInput, LON
 	HeurMode nHeurMode1 = (HeurMode)(int)plInput[1];
 	HeurMode nHeurMode2 = (HeurMode)(int)plInput[2];
 
-	if (lErr = m_memory.FusedCompBuild(hFusedComp, nHeurMode1, nHeurMode2, &hWorkspace))
+	if (lErr = m_memory.FusedCompBuild(hFusedComp, nHeurMode1, nHeurMode2, &lWorkspaceSize))
 		return lErr;
 
-	return setOutput(hWorkspace, plOutput, ppfOutput);
+	return setOutput(lWorkspaceSize, plOutput, ppfOutput);
 }
 
 template <class T>
@@ -4469,8 +4466,8 @@ inline long Device<T>::FusedCompExecute(long lInput, T* pfInput, long llInput, L
 	if (lCount != lActualCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	long* rghTensor = (long*)&plInput[3];
-	long* rghTensorData = (long*)&pfInput[lCount + 3];
+	LONGLONG* rghTensor = (LONGLONG*)&(plInput[3]);
+	LONGLONG* rghTensorData = (LONGLONG*)&(plInput[lCount + 3]);
 
 	if (lErr = m_memory.FusedCompExecute(hFusedComp, hWorkspace, rghTensor, rghTensorData, lCount))
 		return lErr;

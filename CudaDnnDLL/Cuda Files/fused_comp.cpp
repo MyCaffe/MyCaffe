@@ -65,8 +65,8 @@ public:
 	LONG AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
 	LONG GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
 	LONG AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
-	LONG Build(HeurMode heur1, HeurMode heur2, long* phWorkspace);
-	LONG Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+	LONG Build(HeurMode heur1, HeurMode heur2, long* pWorkspaceSize);
+	LONG Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
 };
 
 //=============================================================================
@@ -102,8 +102,8 @@ long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long
 {
 	std::vector<int64_t> dim = { nS1 };
 
-	if (nS2 > 0)
-		dim.push_back(nS2);
+	if (nS2 > 1)
+		dim[0] *= nS2;
 
 	if (nS3 > 0)
 		dim.push_back(nS3);
@@ -118,9 +118,9 @@ long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long
 	props.set_is_virtual(false);
 	props.set_is_pass_by_value(false);
 	props.set_dim(dim);
+	props.set_name("Tensor" + std::to_string(m_tensor_map.size() + 1));
 
-	std::vector<int64_t> stride_order = cudnn_frontend::detail::generate_column_major_stride_order(ndim);
-	std::vector<int64_t> stride = cudnn_frontend::detail::generate_stride(dim, stride_order);
+	std::vector<int64_t> stride = { nS3 * nS4, nS4, 1 };
 	props.set_stride(stride);
 
 	long hTensor = m_tensor_map.size() + 1;
@@ -192,11 +192,12 @@ LONG FusedCompData<T>::add_op_matmul(DataType dtCompute, T fPadding, long hA, lo
 	auto attributes = cudnn_frontend::graph::Matmul_attributes();
 	attributes.set_compute_data_type((cudnn_frontend::DataType_t)dtCompute);
 	attributes.set_name("Matmul" + std::to_string(m_nOpCount));
-	attributes.set_padding((double)fPadding);
 
 	auto tensorA = m_tensor_map[hA];
 	auto tensorB = m_tensor_map[hB];
 	std::shared_ptr <cudnn_frontend::graph::Tensor_attributes> tensorC = m_graph.matmul(tensorA, tensorB, attributes);
+	tensorC->set_output(true);
+	tensorC->set_data_type((cudnn_frontend::DataType_t)dtCompute);
 
 	long nIdx = (long)(m_tensor_map.size() + 1);
 	m_tensor_map[nIdx] = tensorC;
@@ -210,7 +211,7 @@ template long FusedCompData<float>::add_op_matmul(DataType dtCompute, float fPad
 
 
 template <class T>
-long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* phWorkspace)
+long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* plWorkspaceSize)
 {
 	cudnn_frontend::error_t status = m_graph.validate();
 	if (status.is_bad())
@@ -222,8 +223,7 @@ long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* phWorkspace)
 
 	std::vector<cudnn_frontend::HeurMode_t> heur_modes;
 	heur_modes.push_back((cudnn_frontend::HeurMode_t)heur1);
-	if (heur2 != HeurMode::HEUR_MODE_NONE)
-		heur_modes.push_back((cudnn_frontend::HeurMode_t)heur2);
+	heur_modes.push_back((cudnn_frontend::HeurMode_t)heur2);
 
 	status = m_graph.create_execution_plans(heur_modes);
 	if (status.is_bad())
@@ -237,6 +237,8 @@ long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* phWorkspace)
 	if (status.is_bad())
 		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
+	*plWorkspaceSize = (long)m_graph.get_workspace_size();
+
 	return 0;
 }
 
@@ -245,22 +247,26 @@ template long FusedCompData<float>::Build(HeurMode heur1, HeurMode heur2, long* 
 
 
 template <class T>
-long FusedCompData<T>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount)
+long FusedCompData<T>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount)
 {
 	LONG lErr;
 	MemoryCollection* pMemCol = m_pMem->GetMemoryCollection();
 	std::unordered_map<int64_t, void*> var_pack;
 
-	MemoryItem* pWorkspace;
-	if (lErr = pMemCol->GetData(hWorkspace, &pWorkspace))
-		return lErr;
+	T* workspace = NULL;
+	if (hWorkspace != 0)
+	{
+		MemoryItem* pWorkspace;
+		if (lErr = pMemCol->GetData(hWorkspace, &pWorkspace))
+			return lErr;
 
-	T* workspace = (T*)pWorkspace->Data();
+		workspace = (T*)pWorkspace->Data();
+	}
 
 	for (int i = 0; i < lCount; i++)
 	{
-		long hTensor = rghTensor[i];
-		long hTensorData = rghTensorData[i];
+		long hTensor = (long)rghTensor[i];
+		long hTensorData = (long)rghTensorData[i];
 
 		if (m_tensor_map.find(hTensor) == m_tensor_map.end())
 			return ERROR_PARAM_OUT_OF_RANGE;
@@ -283,8 +289,8 @@ long FusedCompData<T>::Execute(long hWorkspace, long* rghTensor, long* rghTensor
 	return 0;
 }
 
-template long FusedCompData<double>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
-template long FusedCompData<float>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+template long FusedCompData<double>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
+template long FusedCompData<float>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
 
 
 
@@ -292,6 +298,25 @@ template long FusedCompData<float>::Execute(long hWorkspace, long* rghTensor, lo
 //=============================================================================
 //	Class Methods - LayerNorm
 //=============================================================================
+
+template <class T>
+long fusedcompHandle<T>::Update(Memory<T>* pMem, Math<T>* pMath)
+{
+	m_pMem = pMem;
+	m_pMath = pMath;
+	m_nRefCount++;
+
+	m_pData = new FusedCompData<T>(pMem, pMath);
+
+	if (m_pData == NULL)
+		return ERROR_MEMORY_OUT;
+
+	return 0;
+}
+
+template long fusedcompHandle<double>::Update(Memory<double>* pMem, Math<double>* pMath);
+template long fusedcompHandle<float>::Update(Memory<float>* pMem, Math<float>* pMath);
+
 
 template <class T>
 long fusedcompHandle<T>::Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWorkspace)
@@ -372,12 +397,12 @@ template long fusedcompHandle<double>::Build(HeurMode heur1, HeurMode heur2, lon
 template long fusedcompHandle<float>::Build(HeurMode heur1, HeurMode heur2, long* phWokspace);
 
 template <class T>
-long fusedcompHandle<T>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount)
+long fusedcompHandle<T>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount)
 {
 	return m_pData->Execute(hWorkspace, rghTensor, rghTensorData, lCount);
 }
 
-template long fusedcompHandle<double>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
-template long fusedcompHandle<float>::Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+template long fusedcompHandle<double>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
+template long fusedcompHandle<float>::Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
 
 // end

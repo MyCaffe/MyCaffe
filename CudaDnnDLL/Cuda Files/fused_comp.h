@@ -22,9 +22,9 @@
 
 enum DataType
 {
-	DT_FLOAT = CUDNN_DATA_FLOAT,
-	DT_DOUBLE = CUDNN_DATA_DOUBLE,
-	DT_HALF = CUDNN_DATA_HALF
+	DT_FLOAT = 1,
+	DT_DOUBLE = 2,
+	DT_HALF = 3
 };
 
 enum PreBuiltFusedComp
@@ -40,11 +40,9 @@ enum FusedCompOp
 
 enum HeurMode
 {
-	HEUR_MODE_NONE = -1,
-	HEUR_MODE_INSTANT = CUDNN_HEUR_MODE_INSTANT,
-	HEUR_MODE_A = CUDNN_HEUR_MODE_A,
-	HEUR_MODE_FALLBACK = CUDNN_HEUR_MODE_FALLBACK,
-	HEUR_MODE_B = CUDNN_HEUR_MODE_B
+	HEUR_MODE_A = 0,
+	HEUR_MODE_B = 1,
+	HEUR_MODE_FALLBACK = 2
 };
 
 enum FusedCompSupport
@@ -74,7 +72,6 @@ class fusedcompHandle
 {
 	int m_nRefCount = 0;
 	Memory<T>* m_pMem;
-	MemoryCollection* m_pMemCol;
 	Math<T>* m_pMath;
 	FusedCompData<T>* m_pData;
 	bool m_bOwner;
@@ -83,6 +80,8 @@ public:
 	
 	fusedcompHandle()
 	{
+		m_pMem = NULL;
+		m_pMath = NULL;
 		m_pData = NULL;
 		m_bOwner = true;
 	}
@@ -107,6 +106,7 @@ public:
 		m_bOwner = bOwner;
 	}
 
+	long Update(Memory<T>* pMem, Math<T>* pMath);
 	long Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 	long CleanUp();
 
@@ -114,7 +114,7 @@ public:
 	long GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
 	long AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 	long Build(HeurMode heur1, HeurMode heur2, long* phWorkspace);
-	long Execute(long hWorkspace, long* rghTensor, long* rghTensorData, long lCount);
+	long Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
 };
 
 
