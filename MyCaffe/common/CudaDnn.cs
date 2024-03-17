@@ -742,15 +742,15 @@ namespace MyCaffe.common
         /// <summary>
         /// Specifies to use the float 32 data type.
         /// </summary>
-        FLOAT = 0,
+        FLOAT = 1,
         /// <summary>
         /// Specifies to use the double data type.
         /// </summary>
-        DOUBLE = 1,
+        DOUBLE = 2,
         /// <summary>
         /// Specifies to use the half data type.
         /// </summary>
-        HALF = 2,
+        HALF = 3,
     }
 
     /// <summary>
@@ -785,13 +785,9 @@ namespace MyCaffe.common
     public enum FUSEDCOMP_HEUR_MODE
     {
         /// <summary>
-        /// Specifies no heuristic mode.
+        /// Specifies the heuristic mode A.  This mode is the fastest method.
         /// </summary>
-        NONE = -1,
-        /// <summary>
-        /// Specifies the instant mode.  Provides optimal performance, operates the same as A.  
-        /// </summary>
-        INSTANT = 0,
+        A = 0,
         /// <summary>
         /// Specifies the heuristic mode B.  This mode can help improve generalization but is slower.
         /// </summary>
@@ -800,10 +796,6 @@ namespace MyCaffe.common
         /// Specifies the fallback mode.  Provides functionality but given GPU resources, but may not be optimal in performance.
         /// </summary>
         FALLBACK = 2,
-        /// <summary>
-        /// Specifies the heuristic mode A, which provides the same functionality as INSTANT.
-        /// </summary>
-        A = 3
     }
 
     /// <summary>
@@ -6431,22 +6423,22 @@ namespace MyCaffe.common
         /// Create a new fused computation tensor.
         /// </summary>
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
-        /// <param name="hSrcData">Specifies a handle to the source GPU data.</param>
+        /// <param name="dt">Specifies the data type of the tensor.</param>
         /// <param name="nN">Specifies the number of items in the N dimension.</param>
         /// <param name="nC">Specifies the number of items in the C dimension.</param>
         /// <param name="nH">Specifies the number of items in the H dimension.</param>
         /// <param name="nW">Specifies the number of items in the W dimension.</param>
         /// <returns>A handle to the new tensor is returned.</returns>
-        public long FusedCompAddTensor(long hFusedCompute, long hSrcData, int nN, int nC, int nH, int nW)
+        public long FusedCompAddTensor(long hFusedCompute, FUSEDCOMPUTE_DATA_TYPE dt, int nN, int nC, int nH, int nW)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, hSrcData, nN, nC, nH, nW));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, hSrcData, nN, nC, nH, nW));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW));
                 return (long)rg[0];
             }
         }
@@ -6502,16 +6494,16 @@ namespace MyCaffe.common
         /// <param name="hTensor3">Specifies the third tensor to operate on or 0 if not used.</param>
         /// <param name="hTensor4">Specifies the fourth tensor to operate on or 0 if not used.</param>
         /// <returns>The intermediate tensor from the operation is returned.</returns>
-        public long FusedCompAddOp(long hFusedCompute, FUSEDCOMPUTE_OP op, long hTensor1, long hTensor2 = 0, long hTensor3 = 0, long hTensor4 = 0)
+        public long FusedCompAddOp(long hFusedCompute, FUSEDCOMPUTE_OP op, FUSEDCOMPUTE_DATA_TYPE dtCompute, double dfPad, long hTensor1, long hTensor2 = 0, long hTensor3 = 0, long hTensor4 = 0)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, null, m_param.AsLong(hFusedCompute, (int)op, hTensor1, hTensor2, hTensor3, hTensor4));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, m_param.AsDouble(dfPad), m_param.AsLong(hFusedCompute, (int)op, (int)dtCompute, hTensor1, hTensor2, hTensor3, hTensor4));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, null, m_param.AsLong(hFusedCompute, (int)op, hTensor1, hTensor2, hTensor3, hTensor4));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_OP, m_param.AsFloat((float)dfPad), m_param.AsLong(hFusedCompute, (int)op, (int)dtCompute, hTensor1, hTensor2, hTensor3, hTensor4));
                 return (long)rg[0];
             }
         }
@@ -6522,7 +6514,7 @@ namespace MyCaffe.common
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
         /// <param name="heur1">Specifies the first heuristics to use.</param>
         /// <param name="heur2">Specifies the second heuristics to use.</param>
-        /// <returns>Returns a handle to the workspace memory to use during execution.</returns>
+        /// <returns>Returns the workspace size needed (in bytes) to execute the computation.</returns>
         public long FusedCompBuild(long hFusedCompute, FUSEDCOMP_HEUR_MODE heur1, FUSEDCOMP_HEUR_MODE heur2)
         {
             if (m_dt == DataType.DOUBLE)
@@ -6542,7 +6534,10 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
         /// <param name="hWorkspace">Specifies the GPU workspace memory returned from the FusedCompBuild or Create method (when using a pre-built computation).</param>
-        public long FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData)
+        /// <param name="rghTensors">Specifies a list of handles to tensors created with the FusedCompAddTensor method.</param>
+        /// <param name="rghTensorData">Specifies a list of handles to the tensor GPU data created with AllocMem.</param>
+        /// <remarks>Note the list of tensors and list of tensor data must be of the same count.</remarks>
+        public void FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData)
         {
             if (rghTensorData.Count != rghTensors.Count)
                 throw new Exception("The number of tensors and tensor data must match.");
@@ -6553,20 +6548,14 @@ namespace MyCaffe.common
             List<long> rgArgs = new List<long>();
             rgArgs.Add(hFusedCompute);
             rgArgs.Add(hWorkspace);
-            rgArgs.Add(rghTensors.Count + rghTensorData.Count);
+            rgArgs.Add(rghTensors.Count);
             rgArgs.AddRange(rghTensors);
             rgArgs.AddRange(rghTensorData);
 
             if (m_dt == DataType.DOUBLE)
-            {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
-                return (long)rg[0];
-            }
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
             else
-            {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
-                return (long)rg[0];
-            }
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
         }
 
         #endregion
