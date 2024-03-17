@@ -219,9 +219,9 @@ const int ERROR_FUSEDCOMP_NOT_INITIALIZED        = ERROR_FUSEDCOMP + 1;
 const int ERROR_CPD                              = ERROR_BLOBLOADER + 40;
 const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;
 
-const int ERROR_CUDNN_OFFSET					= 0x4000;
-const int ERROR_CUBLAS_OFFSET					= 0x8000;
-const int ERROR_CUDNNFE_OFFSET					= 0xC000;
+const int ERROR_CUDNN_OFFSET					= 0x10000;
+const int ERROR_CUBLAS_OFFSET					= 0x20000;
+const int ERROR_CUDNNFE_OFFSET					= 0x40000;
 
 //-----------------------------------------------------------------------------
 // Cudnn Front End Errors
