@@ -3,7 +3,7 @@
 //
 //	DESC:	This file implements fused computation functions.
 //=============================================================================
-
+#define NV_CUDNN_DISABLE_EXCEPTION 1
 #include <limits>
 #include <cudnn_frontend.h>
 
@@ -213,31 +213,49 @@ template long FusedCompData<float>::add_op_matmul(DataType dtCompute, float fPad
 template <class T>
 long FusedCompData<T>::Build(HeurMode heur1, HeurMode heur2, long* plWorkspaceSize)
 {
-	cudnn_frontend::error_t status = m_graph.validate();
-	if (status.is_bad())
-		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+	cudnn_frontend::error_t status;
+		
+	try
+	{
+		status = m_graph.validate();
+		if (status.is_bad())
+			return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
-	status = m_graph.build_operation_graph(m_cuda);
-	if (status.is_bad())
-		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+		status = m_graph.build_operation_graph(m_cuda);
+		if (status.is_bad())
+			return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
-	std::vector<cudnn_frontend::HeurMode_t> heur_modes;
-	heur_modes.push_back((cudnn_frontend::HeurMode_t)heur1);
-	heur_modes.push_back((cudnn_frontend::HeurMode_t)heur2);
+		std::vector<cudnn_frontend::HeurMode_t> heur_modes;
+		heur_modes.push_back((cudnn_frontend::HeurMode_t)heur1);
+		heur_modes.push_back((cudnn_frontend::HeurMode_t)heur2);
 
-	status = m_graph.create_execution_plans(heur_modes);
-	if (status.is_bad())
-		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+		status = m_graph.create_execution_plans(heur_modes);
+		if (status.is_bad())
+			return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
-	status = m_graph.check_support(m_cuda);
-	if (status.is_bad())
-		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+		status = m_graph.check_support(m_cuda);
+		if (status.is_bad())
+			return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
-	status = m_graph.build_plans(m_cuda);
-	if (status.is_bad())
-		return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
+		status = m_graph.build_plans(m_cuda);
+		if (status.is_bad())
+			return (long)status.get_code() | ERROR_CUDNNFE_OFFSET;
 
-	*plWorkspaceSize = (long)m_graph.get_workspace_size();
+		*plWorkspaceSize = (long)m_graph.get_workspace_size();
+	}
+	catch(cudnn_frontend::cudnnException & e)
+	{
+		LONG lErr = (long)e.getCudnnStatus();
+		return lErr | ERROR_CUDNN_OFFSET;
+	}
+	catch (...)
+	{
+		LONG lErr = (long)status.get_code();
+		if (lErr == 0)
+			return ERROR_FUSEDCOMP;
+
+		return lErr | ERROR_CUDNNFE_OFFSET;
+	}
 
 	return 0;
 }
