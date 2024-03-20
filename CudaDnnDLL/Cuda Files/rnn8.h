@@ -40,7 +40,6 @@ class rnn8Handle
 	cudnnRNNBiasMode_t m_biasMode;
 	cudnnDirectionMode_t m_directionMode;
 	cudnnRNNInputMode_t m_inputMode;
-	int m_nGpuID;
 	int m_nSequenceLength;
 	int m_nMaxSeqLen;
 	int m_nBatchSize;
