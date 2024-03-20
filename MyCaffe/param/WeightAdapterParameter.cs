@@ -29,6 +29,7 @@ namespace MyCaffe.param
         // Specifies training parameters (multipliers on global learning constants,
         // and the name and other settings used for weight sharing).
         List<ParamSpec> m_rgParams = new List<ParamSpec>();
+        long m_hSharedIndex = -1;
 
         /// <summary>
         /// Defines the output adapter type.
@@ -57,7 +58,8 @@ namespace MyCaffe.param
         /// <param name="dfAlpha">Specifies the alpha value.</param>
         /// <param name="nRank">Specifies the rank value.</param>
         /// <param name="dfDropoutRatio">Specifies the dropout_ratio.</param>
-        public WeightAdapterParameter(string strName, string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0)
+        /// <param name="hSharedIndex">Specifies the shared index or -1 to ignore.</param>
+        public WeightAdapterParameter(string strName, string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0, long hSharedIndex = -1)
         {
             m_strName = strName;
             m_strType = strType;
@@ -65,6 +67,7 @@ namespace MyCaffe.param
             m_dfAlpha = dfAlpha;
             m_nRank = nRank;
             m_dfDropoutRatio = dfDropoutRatio;
+            m_hSharedIndex = hSharedIndex;
         }
 
         /// <summary>
@@ -77,6 +80,16 @@ namespace MyCaffe.param
             {
                 m_rgParams.Add(ps);
             }
+        }
+       
+        /// <summary>
+        /// Specifies the shared index or -1 to ignore.
+        /// </summary>
+        [Description("Specifies the shared index or -1 to ignore.")]
+        public long shared_index
+        {
+            get { return m_hSharedIndex; }
+            set { m_hSharedIndex = value;}
         }
 
         /// <summary>
@@ -200,7 +213,7 @@ namespace MyCaffe.param
         /// <returns>A new instance of this parameter is returned.</returns>
         public WeightAdapterParameter Clone()
         {
-            WeightAdapterParameter type = new WeightAdapterParameter(m_strName, m_strType, m_bEnable);
+            WeightAdapterParameter type = new WeightAdapterParameter(m_strName, m_strType, m_bEnable, m_dfAlpha, m_nRank, m_dfDropoutRatio, m_hSharedIndex);
             type.m_rgParams = Utility.Clone<ParamSpec>(m_rgParams);
             return type;
         }
@@ -219,6 +232,7 @@ namespace MyCaffe.param
             rgChildren.Add(new RawProto("alpha", alpha.ToString()));
             rgChildren.Add(new RawProto("rank", rank.ToString()));
             rgChildren.Add(new RawProto("dropout_ratio", dropout_ratio.ToString()));
+            rgChildren.Add(new RawProto("shared_index", shared_index.ToString()));
 
             foreach (ParamSpec ps in parameters)
             {
@@ -263,6 +277,9 @@ namespace MyCaffe.param
             {
                 p.parameters.Add(ParamSpec.FromProto(rpChild));
             }
+
+            if ((strVal = rp.FindValue("shared_index")) != null)
+                p.shared_index = long.Parse(strVal);
 
             return p;
         }
