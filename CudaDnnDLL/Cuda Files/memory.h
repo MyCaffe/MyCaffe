@@ -538,14 +538,14 @@ class Memory
 		long BlobLoaderResetOffset(long hBlobLoader, unsigned long lOffsetInBytes);
 		long BlobLoaderAddToOffset(long hBlobLoader, unsigned long lOffsetInBytes);
 
-		long CreateFusedComp(int nSharedIndex, long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, Math<T>* pMath, long* phHandle, long* phWorkspace);
+		long CreateFusedComp(int nSharedIndex, long hCuda, int nGpuID, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, Math<T>* pMath, long* phHandle, long* phWorkspace);
 		long FreeFusedComp(long hHandle);
 		fusedcompHandle<T>* GetFusedComp(long hHandle);
-		long FusedCompAddTensor(long hFusedComp, DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-		long FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+		long FusedCompAddTensor(long hFusedComp, DataType dt, long nS1, long nS2, long nS3, long nS4, bool bTranspose, long* phTensorHandle, long* plTensorWorkspaceItems);
+		long FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4, bool* pbTranspose);
 		long FusedCompAddOp(long hFusedComp, FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 		long FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* phWorkspace);
-		long FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
+		long FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -2316,7 +2316,7 @@ inline long Memory<T>::RopeBackward(long hRope, int n, long hXdata, long hYdiff,
 
 
 template <class T>
-inline long Memory<T>::CreateFusedComp(int nSharedIndex, long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, Math<T>* pMath, long* phHandle, long* phWorkspace)
+inline long Memory<T>::CreateFusedComp(int nSharedIndex, long hCuda, int nGpuID, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, Math<T>* pMath, long* phHandle, long* phWorkspace)
 {
 	LONG lErr;
 	fusedcompHandle<T>* fc = NULL;
@@ -2339,7 +2339,7 @@ inline long Memory<T>::CreateFusedComp(int nSharedIndex, long hCuda, DataType dt
 			return lErr;
 		}
 
-		if (lErr = fc->Initialize(hCuda, dtIo, dtIntermediate, dtCompute, preBuilt, phWorkspace))
+		if (lErr = fc->Initialize(hCuda, nGpuID, dtIo, dtIntermediate, dtCompute, preBuilt, phWorkspace))
 		{
 			delete fc;
 			return lErr;
@@ -2385,23 +2385,23 @@ inline fusedcompHandle<T>* Memory<T>::GetFusedComp(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::FusedCompAddTensor(long hFusedComp, DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle)
+inline long Memory<T>::FusedCompAddTensor(long hFusedComp, DataType dt, long nS1, long nS2, long nS3, long nS4, bool bTranspose, long* phTensorHandle, long* phTensorWorkspace)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->AddTensor(dt, nS1, nS2, nS3, nS4, phTensorHandle);
+	return pFc->AddTensor(dt, nS1, nS2, nS3, nS4, bTranspose, phTensorHandle, phTensorWorkspace);
 }
 
 template <class T>
-inline long Memory<T>::FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4)
+inline long Memory<T>::FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4, bool* pbTranspose)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->GetTensor(hTensorHandle, pdt, pnS1, pnS2, pnS3, pnS4);
+	return pFc->GetTensor(hTensorHandle, pdt, pnS1, pnS2, pnS3, pnS4, pbTranspose);
 }
 
 template <class T>
@@ -2425,13 +2425,13 @@ inline long Memory<T>::FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode 
 }
 
 template <class T>
-inline long Memory<T>::FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount)
+inline long Memory<T>::FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->Execute(hWorkspace, rghTensor, rghTensorData, lCount);
+	return pFc->Execute(hWorkspace, rghTensor, rghTensorData, rghTensorWorkspaceData, lCount);
 }
 
 

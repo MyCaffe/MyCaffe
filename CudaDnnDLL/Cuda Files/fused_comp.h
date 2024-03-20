@@ -107,14 +107,14 @@ public:
 	}
 
 	long Update(Memory<T>* pMem, Math<T>* pMath);
-	long Initialize(long hCuda, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
+	long Initialize(long hCuda, int nGpuID, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace);
 	long CleanUp();
 
-	long AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, long* phTensorHandle);
-	long GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4);
+	long AddTensor(DataType dt, long nS1, long nS2, long nS3, long nS4, bool bTranspose, long* phTensorHandle, long* phTensorWorkspace);
+	long GetTensor(long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4, bool* pbTranspose);
 	long AddOp(FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
 	long Build(HeurMode heur1, HeurMode heur2, long* phWorkspace);
-	long Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, long lCount);
+	long Execute(long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount);
 };
 
 

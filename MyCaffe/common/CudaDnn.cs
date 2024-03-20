@@ -6388,21 +6388,22 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="nSharedIndex">Specifies a shared global index used to share computes, or -1 to ignore.</param>
         /// <param name="hCuda">Specifies a handle to cudnn.</param>
+        /// <param name="nGpuID">Specifies the GPUID on which memory is allocated.</param>
         /// <param name="dtIo">Specifies the data type used for input and output.</param>
         /// <param name="dtIntermediate">Specifies the data type used for the intermediate tensors.</param>
         /// <param name="dtCompute">Specifies the data type used for compute.</param>
         /// <param name="prebuilt">Optionally, specifies a pre-built fused compute to use.</param>
         /// <returns>The handle to the FusedCompute is returned.  This handle is used with all other fused compute functions.</returns>
-        public long CreateFusedCompute(int nSharedIndex, long hCuda, FUSEDCOMPUTE_DATA_TYPE dtIo, FUSEDCOMPUTE_DATA_TYPE dtIntermediate, FUSEDCOMPUTE_DATA_TYPE dtCompute, FUSEDCOMPUTE_PREBUILT_OP prebuilt = FUSEDCOMPUTE_PREBUILT_OP.NONE)
+        public long CreateFusedCompute(long nSharedIndex, long hCuda, int nGpuID, FUSEDCOMPUTE_DATA_TYPE dtIo, FUSEDCOMPUTE_DATA_TYPE dtIntermediate, FUSEDCOMPUTE_DATA_TYPE dtCompute, FUSEDCOMPUTE_PREBUILT_OP prebuilt = FUSEDCOMPUTE_PREBUILT_OP.NONE)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, nGpuID, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_FUSEDCOMP, null, m_param.AsLong(nSharedIndex, hCuda, nGpuID, (int)dtIo, (int)dtIntermediate, (int)dtCompute, (int)prebuilt));
                 return (long)rg[0];
             }
         }
@@ -6428,17 +6429,21 @@ namespace MyCaffe.common
         /// <param name="nC">Specifies the number of items in the C dimension.</param>
         /// <param name="nH">Specifies the number of items in the H dimension.</param>
         /// <param name="nW">Specifies the number of items in the W dimension.</param>
+        /// <param name="bTranspose">Specifies to transpose the tensor before using.  Note when true, a tensor workspace with the same size as the tensor must be allocated and sent to Execute.</param>
+        /// <param name="hTensorWorkspace">Returns a handle to the tensor workspace GPU memory, or 0 if not used.  Free this memory with the FreeMemory method.</param>
         /// <returns>A handle to the new tensor is returned.</returns>
-        public long FusedCompAddTensor(long hFusedCompute, FUSEDCOMPUTE_DATA_TYPE dt, int nN, int nC, int nH, int nW)
+        public long FusedCompAddTensor(long hFusedCompute, FUSEDCOMPUTE_DATA_TYPE dt, int nN, int nC, int nH, int nW, bool bTranspose, out long hTensorWorkspace)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW, (bTranspose) ? 1 : 0));
+                hTensorWorkspace = (long)rg[1];
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_ADD_TENSOR, null, m_param.AsLong(hFusedCompute, (long)dt, nN, nC, nH, nW, (bTranspose) ? 1 : 0));
+                hTensorWorkspace = (long)rg[1];
                 return (long)rg[0];
             }
         }
@@ -6449,8 +6454,9 @@ namespace MyCaffe.common
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
         /// <param name="hTensor">Specifies a handle to a fused comp tensor.</param>
         /// <param name="dt">Returns the tensor data type.</param>
+        /// <param name="bTranspose">Returns whether or not the tensor is to be transposed first.</param>
         /// <returns>Returns the shape of the tensor.</returns>
-        public List<int> FusedCompGetTensor(long hFusedCompute, long hTensor, out FUSEDCOMPUTE_DATA_TYPE dt)
+        public List<int> FusedCompGetTensor(long hFusedCompute, long hTensor, out FUSEDCOMPUTE_DATA_TYPE dt, out bool bTranspose)
         {
             List<int> rgShape = new List<int>();
 
@@ -6458,27 +6464,29 @@ namespace MyCaffe.common
             {
                 double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_GET_TENSOR, null, m_param.AsLong(hFusedCompute, hTensor));
                 dt = (FUSEDCOMPUTE_DATA_TYPE)(int)rg[0];
+                bTranspose = (rg[1] == 0) ? false : true;
 
-                rgShape.Add((int)rg[1]);
-                if ((int)rg[2] > 0)
-                    rgShape.Add((int)rg[2]);
+                rgShape.Add((int)rg[2]);
                 if ((int)rg[3] > 0)
                     rgShape.Add((int)rg[3]);
                 if ((int)rg[4] > 0)
                     rgShape.Add((int)rg[4]);
+                if ((int)rg[5] > 0)
+                    rgShape.Add((int)rg[5]);
             }
             else
             {
                 float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_GET_TENSOR, null, m_param.AsLong(hFusedCompute, hTensor));
                 dt = (FUSEDCOMPUTE_DATA_TYPE)(int)rg[0];
+                bTranspose = (rg[1] == 0) ? false : true;
 
-                rgShape.Add((int)rg[1]);
-                if ((int)rg[2] > 0)
-                    rgShape.Add((int)rg[2]);
+                rgShape.Add((int)rg[2]);
                 if ((int)rg[3] > 0)
                     rgShape.Add((int)rg[3]);
                 if ((int)rg[4] > 0)
                     rgShape.Add((int)rg[4]);
+                if ((int)rg[5] > 0)
+                    rgShape.Add((int)rg[5]);
             }
 
             return rgShape;
@@ -6489,6 +6497,8 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
         /// <param name="op">Specifies the fused computation operation.</param>
+        /// <param name="dtCompute">Specifies the compute of the operation.</param>
+        /// <param name="dfPad">Specifies the padding to use.</param>
         /// <param name="hTensor1">Specifies the first tensor to operate on.</param>
         /// <param name="hTensor2">Specifies the second tensor to operate on or 0 if not used.</param>
         /// <param name="hTensor3">Specifies the third tensor to operate on or 0 if not used.</param>
@@ -6536,11 +6546,15 @@ namespace MyCaffe.common
         /// <param name="hWorkspace">Specifies the GPU workspace memory returned from the FusedCompBuild or Create method (when using a pre-built computation).</param>
         /// <param name="rghTensors">Specifies a list of handles to tensors created with the FusedCompAddTensor method.</param>
         /// <param name="rghTensorData">Specifies a list of handles to the tensor GPU data created with AllocMem.</param>
+        /// <param name="rghTensorWorkspaceData">Specifies the handles tot he tensor GPU workspace data required on any tensors that are transformed.  Each workspace should be the size in items of the tensor to be transformed.</param>
         /// <remarks>Note the list of tensors and list of tensor data must be of the same count.</remarks>
-        public void FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData)
+        public void FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData, List<long> rghTensorWorkspaceData)
         {
             if (rghTensorData.Count != rghTensors.Count)
                 throw new Exception("The number of tensors and tensor data must match.");
+
+            if (rghTensorWorkspaceData.Count != rghTensors.Count)
+                throw new Exception("The number of tensors and tensor workspace data must match.");
 
             if (rghTensorData.Count == 0)
                 throw new Exception("At least one tensor must be provided.");
@@ -6551,6 +6565,7 @@ namespace MyCaffe.common
             rgArgs.Add(rghTensors.Count);
             rgArgs.AddRange(rghTensors);
             rgArgs.AddRange(rghTensorData);
+            rgArgs.AddRange(rghTensorWorkspaceData);
 
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_EXECUTE, null, m_param.AsLong(rgArgs.ToArray()));
@@ -7358,7 +7373,7 @@ namespace MyCaffe.common
         /// Perform matmul operation hC = matmul(hA, hB), where hA, hB and hC are all in row-major format.
         /// </summary>
         /// <param name="nOuterCount">Specifies the outer count (e.g. batch * channels)</param>
-        /// <param name="m">Specifies the </param>
+        /// <param name="m"></param>
         /// <param name="n"></param>
         /// <param name="k"></param>
         /// <param name="hA">Specifies the handle to GPU memory holding the mxk matrix A (in row-major format)</param>
@@ -7383,6 +7398,7 @@ namespace MyCaffe.common
 
             gemm(bTransB, bTransA, n, m, k, dfScale, hB, hA, dfBeta, hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
         }
+
 
         /// <summary>
         /// Transpose a n*c number of matrices along the height and width dimensions.  All matrices are in row-major format.
