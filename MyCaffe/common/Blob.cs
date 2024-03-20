@@ -1070,46 +1070,67 @@ namespace MyCaffe.common
         /// <param name="bUseCuda">Optionally, specifies to use CUDA function for transformations (default = true)</param>
         public void CopyFromAndTransposeHeightWidth(Blob<T> blobSrc, bool bCopyDiff = false, bool bUseCuda = true)
         {
-            m_log.CHECK_EQ(blobSrc.num_axes, 4, "Currently, Blobs only support transposing 4 axis tensors.");
-
-            Reshape(blobSrc.num, blobSrc.channels, blobSrc.width, blobSrc.height);
-
-            SyncedMemory<T> dst = (bCopyDiff) ? m_diff : m_data;
-            SyncedMemory<T> src = (bCopyDiff) ? blobSrc.m_diff : blobSrc.m_data;
-
-            int nN = blobSrc.num;
-            int nC = blobSrc.channels;
-            int nH = blobSrc.height;
-            int nW = blobSrc.width;
-
-            if (bUseCuda)
+            bool bSqueezeNeeded2X = false;
+            if (blobSrc.num_axes == 2)
             {
-                m_cuda.transposeHW(nN, nC, nH, nW, src.gpu_data, dst.mutable_gpu_data);
+                blobSrc.Unsqueeze(0);
+                blobSrc.Unsqueeze(0);
+                bSqueezeNeeded2X = true;
             }
-            else
+
+            try
             {
-                T[] rgSrc = src.update_cpu_data();
-                T[] rgDst = dst.mutable_cpu_data;
+                m_log.CHECK_EQ(blobSrc.num_axes, 4, "Currently, Blobs only support transposing 4 axis tensors.");
 
-                for (int n = 0; n < nN; n++)
+                Reshape(blobSrc.num, blobSrc.channels, blobSrc.width, blobSrc.height);
+
+                SyncedMemory<T> dst = (bCopyDiff) ? m_diff : m_data;
+                SyncedMemory<T> src = (bCopyDiff) ? blobSrc.m_diff : blobSrc.m_data;
+
+                int nN = blobSrc.num;
+                int nC = blobSrc.channels;
+                int nH = blobSrc.height;
+                int nW = blobSrc.width;
+
+                if (bUseCuda)
                 {
-                    for (int c = 0; c < nC; c++)
-                    {
-                        int nOffset = (n * nC * nH * nW) + (c * nH * nW);
+                    m_cuda.transposeHW(nN, nC, nH, nW, src.gpu_data, dst.mutable_gpu_data);
+                }
+                else
+                {
+                    T[] rgSrc = src.update_cpu_data();
+                    T[] rgDst = dst.mutable_cpu_data;
 
-                        for (int h = 0; h < nH; h++)
+                    for (int n = 0; n < nN; n++)
+                    {
+                        for (int c = 0; c < nC; c++)
                         {
-                            for (int w = 0; w < nW; w++)
+                            int nOffset = (n * nC * nH * nW) + (c * nH * nW);
+
+                            for (int h = 0; h < nH; h++)
                             {
-                                int nSrcIdx = nOffset + (h * nW) + w;
-                                int nDstIdx = nOffset + (w + nH) + h;
-                                rgDst[nDstIdx] = rgSrc[nSrcIdx];
+                                for (int w = 0; w < nW; w++)
+                                {
+                                    int nSrcIdx = nOffset + (h * nW) + w;
+                                    int nDstIdx = nOffset + (w + nH) + h;
+                                    rgDst[nDstIdx] = rgSrc[nSrcIdx];
+                                }
                             }
                         }
                     }
-                }
 
-                dst.mutable_cpu_data = rgDst;
+                    dst.mutable_cpu_data = rgDst;
+                }
+            }
+            finally
+            {
+                if (bSqueezeNeeded2X)
+                {
+                    blobSrc.Squeeze(0);
+                    blobSrc.Squeeze(0);
+                    Squeeze(0);
+                    Squeeze(0);
+                }
             }
         }
 
