@@ -215,6 +215,7 @@ const int ERROR_BLOBLOADER_NOT_INITIALIZED       = ERROR_BLOBLOADER + 1;
 
 const int ERROR_FUSEDCOMP                        = ERROR_BLOBLOADER + 20;
 const int ERROR_FUSEDCOMP_NOT_INITIALIZED        = ERROR_FUSEDCOMP + 1;
+const int ERROR_FUSEDCOMP_NOT_SUPPORTED          = ERROR_FUSEDCOMP + 2;
 
 const int ERROR_CPD                              = ERROR_BLOBLOADER + 40;
 const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;

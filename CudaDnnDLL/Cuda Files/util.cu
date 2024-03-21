@@ -333,6 +333,10 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "FUSED_COMP: The FusedComputation is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_FUSEDCOMP_NOT_SUPPORTED:
+			_snprintf(szErr, lMaxErr, "FUSED_COMP: The FusedComputation not supported - must have cuDnn version 8.6 or greater. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_CPD:
 			_snprintf(szErr, lMaxErr, "CPD: A general CPD error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
