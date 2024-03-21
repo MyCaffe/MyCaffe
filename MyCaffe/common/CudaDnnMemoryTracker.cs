@@ -65,9 +65,9 @@ namespace MyCaffe.common
             int nKeyHash = strKey.GetHashCode();
 
             if (!m_rgItems.ContainsKey(nKeyHash))
-                throw new Exception("Memory item '" + strKey + "' does not exist!");
-
-            m_rgItems.Remove(nKeyHash);
+                Trace.WriteLine("WARNING: Memory item '" + strKey + "' does not exist!");
+            else
+                m_rgItems.Remove(nKeyHash);
 
 #if DEBUG
             if (m_bEnableMemoryTrace)
