@@ -40,6 +40,30 @@ protected:
 	LONG add_op_matmul(DataType dtCompute, T dfPadding, long hA, long hB, long* phC);
 	LONG transpose(T* data, T* dataT, long nS1, long nS2, long nS3);
 
+
+	long get_compute_capability(size_t* cc)
+	{
+		LONG lErr;
+		struct cudaDeviceProp prop;
+		if (lErr = cudaGetDeviceProperties(&prop, 0))
+			return lErr;
+		*cc = prop.major * 10 + prop.minor;
+		return 0;
+	}
+
+	bool is_arch_supported_by_cudnn()
+	{
+		size_t cc;
+		if (get_compute_capability(&cc))
+			return false;
+
+		// Hopper and Ada architecture is supported by CUDNN starting from version 8.6
+		if (cudnnGetVersion() < 8600 && (90 <= cc || cc == 89))
+			return false;
+
+		return true;
+	}
+
 public:
 	FusedCompData(Memory<T>* pMem, Math<T>* pMath) : m_tensor_map()
 	{
@@ -82,6 +106,9 @@ template <class T>
 long FusedCompData<T>::Initialize(long hCuda, int nGpuID, DataType dtIo, DataType dtIntermediate, DataType dtCompute, PreBuiltFusedComp preBuilt, long* phWokspace)
 {
 	LONG lErr;
+
+	if (!is_arch_supported_by_cudnn())
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	m_cuda = m_pMem->GetCuDNN(hCuda);
 	m_graph.set_io_data_type((cudnn_frontend::DataType_t)dtIo);
@@ -137,7 +164,7 @@ long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long
 	props.set_is_virtual(false);
 	props.set_is_pass_by_value(false);
 	props.set_dim(dim);
-	props.set_name("Tensor" + std::to_string(m_tensor_map.size() + 1));
+	props.set_name("Tensor" + std::to_string(m_tensor_map.size() + 1) + ((bTranspose) ? ".t" : ""));
 
 	//std::vector<int64_t> stride = { nS3 * nS4, nS4, 1 };
 	auto stride_order = cudnn_frontend::detail::generate_row_major_stride_order(ndim);
@@ -145,9 +172,11 @@ long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long
 
 	props.set_stride(stride);
 
+	std::shared_ptr<cudnn_frontend::graph::Tensor_attributes> tensor = m_graph.tensor(props);
 	long hTensor = m_tensor_map.size() + 1;
-	m_tensor_map[hTensor] = m_graph.tensor(props);
+
 	*phTensorWorkspace = 0;
+	m_tensor_map[hTensor] = tensor;
 
 	if (bTranspose)
 	{
@@ -158,30 +187,7 @@ long FusedCompData<T>::AddTensor(DataType dt, long nS1, long nS2, long nS3, long
 		if (lErr = m_pMem->AllocMemory(m_nGpuID, false, lWorksapceItems, NULL, 0, phTensorWorkspace))
 			return lErr;
 
-		std::vector<int64_t> dimt = { nS1 };
-
-		if (nS2 > 1)
-			dimt[0] *= nS2;
-
-		if (nS4 > 0)
-			dimt.push_back(nS4);
-
-		if (nS3 > 0)
-			dimt.push_back(nS3);
-
-		auto props_transpose = cudnn_frontend::graph::Tensor_attributes();
-		props_transpose.set_data_type((cudnn_frontend::DataType_t)dt);
-		props_transpose.set_is_virtual(false);
-		props_transpose.set_is_pass_by_value(false);
-		props_transpose.set_dim(dimt);
-		props_transpose.set_name("Tensor" + std::to_string(m_tensor_map_transposed.size() + 1) + ".t");
-
-		//std::vector<int64_t> stride = { nS3 * nS4, nS4, 1 };
-		auto stride_order = cudnn_frontend::detail::generate_row_major_stride_order(ndim);
-		std::vector<int64_t> stride = cudnn_frontend::detail::generate_stride(dim, stride_order);
-
-		props_transpose.set_stride(stride);
-		m_tensor_map_transposed[hTensor] = m_graph.tensor(props_transpose);
+		m_tensor_map_transposed[hTensor] = tensor;
 	}
 
 	*phTensorHandle = hTensor;
