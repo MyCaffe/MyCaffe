@@ -2212,6 +2212,9 @@ namespace MyCaffe.common
         /// <returns>If the shapes are the same, return <i>true</i>, othewise <i>false</i>.</returns>
         public bool CompareShape(List<int> rgShape, bool bCompareCpuDataLen = false)
         {
+            if (num_axes == 0 && rgShape.Count > 0)
+                return false;
+
             while (rgShape.Count < num_axes)
             {
                 rgShape.Add(1);
