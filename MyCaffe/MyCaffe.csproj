@@ -96,7 +96,8 @@
     <Compile Include="common\DebugInformation.cs" />
     <Compile Include="common\DictionaryEx.cs" />
     <Compile Include="common\EventArgs.cs" />
-    <Compile Include="common\FusedComputation.cs" />
+    <Compile Include="fused_ops\MatMul.cs" />
+    <Compile Include="fused_ops\FusedComputation.cs" />
     <Compile Include="common\HostBuffer.cs" />
     <Compile Include="common\Interfaces.cs" />
     <Compile Include="common\InternalThread.cs" />
@@ -124,6 +125,7 @@
     <Compile Include="Interfaces.cs" />
     <Compile Include="layers\ConstantLayer.cs" />
     <Compile Include="layers\BaseTokenizedDataLayer.cs" />
+    <Compile Include="layers\LinearLayer.cs" />
     <Compile Include="layers\MathLayer.cs" />
     <Compile Include="layers\ImageDataLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
@@ -204,6 +206,7 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.gpt\PreTokenizedDataParameter.cs" />
+    <Compile Include="param\LinearParameter.cs" />
     <Compile Include="weight_adapters\WeightAdapter.cs" />
     <Compile Include="weight_adapters\WeightAdapterLoRA.cs" />
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />
