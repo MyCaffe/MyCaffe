@@ -341,6 +341,10 @@ namespace MyCaffe.param
             /// </summary>
             INNERPRODUCT,
             /// <summary>
+            /// Initializes a parameter for the LinearLayer.
+            /// </summary>
+            LINEAR,
+            /// <summary>
             /// Initializes a parameter for the InputLayer.
             /// </summary>
             INPUT,
@@ -1393,6 +1397,12 @@ namespace MyCaffe.param
                     expected_top.Add("input");
                     expected_top.Add("interp");
                     m_rgLayerParameters[lt] = new InterpParameter();
+                    break;
+
+                case LayerType.LINEAR:
+                    expected_bottom.Add("input");
+                    expected_top.Add("ip");
+                    m_rgLayerParameters[lt] = new LinearParameter();
                     break;
 
                 case LayerType.LABELMAPPING:
@@ -2555,6 +2565,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.LINEAR
+        /// </summary>
+        public LinearParameter linear_param
+        {
+            get { return (LinearParameter)m_rgLayerParameters[LayerType.LINEAR]; }
+            set { m_rgLayerParameters[LayerType.LINEAR] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initializing the LayerType.INTERP
         /// </summary>
         public InterpParameter interp_param
@@ -3422,6 +3441,9 @@ namespace MyCaffe.param
                 case LayerType.INTERP:
                     return "Interp";
 
+                case LayerType.LINEAR:
+                    return "Linear";
+
                 case LayerType.KNN:
                     return "Knn";
 
@@ -3685,7 +3707,7 @@ namespace MyCaffe.param
             rgChildren.Add<string>("top", top);
             rgChildren.Add<double>("loss_weight", loss_weight);
 
-            if (m_type == LayerType.INNERPRODUCT)
+            if (m_type == LayerType.INNERPRODUCT || m_type == LayerType.LINEAR)
                 rgChildren.Add(weight_adapter.ToProto("weight_adapter"));
 
             if (group_start)
@@ -3762,6 +3784,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(input_param, "input_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(linear_param, "linear_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(labelmapping_param, "labelmapping_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_param, "log_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lrn_param, "lrn_param"));
@@ -4055,6 +4078,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("input_param")) != null)
                 p.input_param = InputParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("linear_param")) != null)
+                p.linear_param = LinearParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("labelmapping_param")) != null)
                 p.labelmapping_param = LabelMappingParameter.FromProto(rpp);
@@ -4548,6 +4574,9 @@ namespace MyCaffe.param
                 case "innerproduct":
                 case "inner_product":
                     return LayerType.INNERPRODUCT;
+
+                case "linear":
+                    return LayerType.LINEAR;
 
                 case "input":
                     return LayerType.INPUT;

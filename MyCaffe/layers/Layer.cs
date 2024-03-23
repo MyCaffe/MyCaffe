@@ -11,7 +11,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using System.IO;
 using System.Reflection;
-using MyCaffe.output_adapters;
+using MyCaffe.weight_adapters;
 using System.ComponentModel;
 using System.Diagnostics.SymbolStore;
 
@@ -123,7 +123,7 @@ namespace MyCaffe.layers
         /// <summary>
         /// Specifies the weight adapters used.
         /// </summary>
-        protected WeightAdapter<T> m_weightAdatper = null;
+        protected WeightAdapter<T> m_weightAdapter = null;
 
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
@@ -400,7 +400,7 @@ namespace MyCaffe.layers
         private void setupWeightAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Adapters currently only supported on InnerProduct layers.
-            if (m_param.type != LayerParameter.LayerType.INNERPRODUCT)
+            if (m_param.type != LayerParameter.LayerType.INNERPRODUCT && m_param.type != LayerParameter.LayerType.LINEAR)
                 return;
 
             if (m_param.weight_adapter == null ||
@@ -428,9 +428,9 @@ namespace MyCaffe.layers
                     pWeightAdapter = new WeightAdapterParameterEx<T>(pWeightAdapter, null, pEx2.SharedIntraLayerBlobs);
             }
 
-            m_weightAdatper = WeightAdapter<T>.Create(m_cuda, m_log, pWeightAdapter);
-            m_weightAdatper.Setup(layer_param, m_colBlobs[0]);
-            m_weightAdatper.Reshape(m_colBlobs[0]);
+            m_weightAdapter = WeightAdapter<T>.Create(m_cuda, m_log, pWeightAdapter, m_phase);
+            m_weightAdapter.Setup(layer_param, m_colBlobs[0]);
+            m_weightAdapter.Reshape(m_colBlobs[0]);
         }
 
         /// <summary>
@@ -844,7 +844,7 @@ namespace MyCaffe.layers
         /// </summary>
         public BlobCollection<T> blobs_adapted
         {
-            get { return (m_weightAdatper != null) ? m_weightAdatper.blobs : m_colBlobsAdaptedNone; }
+            get { return (m_weightAdapter != null) ? m_weightAdapter.blobs : m_colBlobsAdaptedNone; }
         }
 
         /// <summary>
@@ -1604,6 +1604,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.INPUT:
                     return new InputLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.LINEAR:
+                    return new LinearLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.LOG:
                     return new LogLayer<T>(cuda, log, p);
