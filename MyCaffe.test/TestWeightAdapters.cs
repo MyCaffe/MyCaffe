@@ -626,7 +626,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(blobX.height, 1, "The height should be 1.");
                 m_log.CHECK_EQ(blobX.width, 288, "The width should be 288.");
 
-                Layer<T> layer = net.FindLayer(LayerParameter.LayerType.LINEAR, "ip");
+                LayerParameter.LayerType layerType = (bUseLinear) ? LayerParameter.LayerType.LINEAR : LayerParameter.LayerType.INNERPRODUCT;
+                Layer<T> layer = net.FindLayer(layerType, "ip");
 
                 blobVal.LoadFromNumpy(strPath + "wq.npy");
                 layer.blobs[0].CopyFrom(blobVal);
