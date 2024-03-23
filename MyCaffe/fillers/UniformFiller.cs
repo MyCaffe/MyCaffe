@@ -46,7 +46,7 @@ namespace MyCaffe.fillers
             double dfMin = m_param.min;
             double dfMax = m_param.max;
 
-            if (m_param.min == 0 && m_param.max == 1 && m_param.std > 0)
+            if (m_param.min == 0 && m_param.max == 1 && m_param.std == 1)
             {
                 dfMin = -m_param.std;
                 dfMax = m_param.std;
