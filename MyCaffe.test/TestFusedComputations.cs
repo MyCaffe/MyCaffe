@@ -350,7 +350,7 @@ namespace MyCaffe.test
                 m_filler.Fill(A);
                 m_filler.Fill(B);
 
-                A.LoadFromNumpy(strPath + "x.npy");
+                A.LoadFromNumpy(strPath + "att.x.npy");
                 blobVal.LoadFromNumpy(strPath + "wq.npy");
                 B.CopyFromAndTransposeHeightWidth(blobVal);
 
@@ -448,7 +448,7 @@ namespace MyCaffe.test
                 m_filler.Fill(A);
                 m_filler.Fill(B);
 
-                A.LoadFromNumpy(strPath + "x.npy");
+                A.LoadFromNumpy(strPath + "att.x.npy");
                 blobVal.LoadFromNumpy(strPath + "wq.npy");
                 B.CopyFromAndTransposeHeightWidth(blobVal);
 
