@@ -8617,6 +8617,10 @@ long Math<T>::rng_uniform(int n, T fMin, T fMax, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
+	size_t sz1 = n * sizeof(T);
+	if (sz1 > pY->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
 	return rng_uniform(n, fMin, fMax, (T*)pY->Data());
 }
 
@@ -8694,6 +8698,10 @@ long Math<T>::rng_gaussian(int n, T fMu, T fSigma, long hY)
 
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
+
+	size_t sz1 = n * sizeof(T);
+	if (sz1 > pY->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	rng_gaussian(n, fMu, fSigma, (T*)pY->Data(), pY->Size());
 	return cudaStreamSynchronize(0);
