@@ -44,18 +44,28 @@ namespace MyCaffe.fillers
         }
 
         /// <summary>
+        /// Returns the filler parameter.
+        /// </summary>
+        public FillerParameter filler_param
+        {
+            get { return m_param; }
+        }
+
+        /// <summary>
         /// Fill the blob with values based on the actual filler used.
         /// </summary>
         /// <param name="b">Specifies the blob to fill.</param>
         public void Fill(Blob<T> b)
         {
+            if (b.Cuda.KernelHandle != m_cuda.KernelHandle)
+                throw new Exception("The blob must be created with the same CudaDnn instance as the filler.");
+
             int nNum = (b.num_axes > 0) ? b.shape(0) : 1;
             int nNumChannels = (b.num_axes > 1) ? b.shape(1) : 1;
             int nHeight = (b.num_axes > 2) ? b.shape(2) : 1;
             int nWidth = (b.num_axes > 3) ? b.shape(3) : 1;
             Fill(b.count(), b.mutable_gpu_data, b.num_axes, nNum, nNumChannels, nHeight, nWidth);
         }
-
 
         /// <summary>
         /// Fill the memory with values based on the actual filler used.
