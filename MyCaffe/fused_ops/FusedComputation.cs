@@ -209,7 +209,7 @@ namespace MyCaffe.fused_ops
         /// <param name="hBws">Returns a handle to the tensor B workspace GPU memory (or 0 if not used).</param>
         /// <param name="nSharedIndex">Optionally, specifies the shared index used for the fused computation.</param>
         /// <param name="bForceFallbackUse">Optionally, force using the fall-back.</param>
-        /// <returns>The handle to the operation is returned.</returns>
+        /// <returns>The handle to the operation is returned, or -1 if no Reshape occurs.</returns>
         public long ReshapeMatMulOp(long hFc, bool bTransA, bool bTransB, Blob<T> A, Blob<T> B, Blob<T> C, ref long hA, ref long hB, ref long hC, out long lWorkspaceSizeInItems, ref long hAws, ref long hBws, long nSharedIndex = -1, bool bForceFallbackUse = false)
         {
             lWorkspaceSizeInItems = 0;
@@ -237,7 +237,7 @@ namespace MyCaffe.fused_ops
             int nK = (bTransA) ? nHa : nWa;
 
             if (m_nOuter == nOuter && m_nM == nM && m_nN == nN && m_nK == nK)
-                return hFc;
+                return -1;
 
             // Reshape the output C to the new shape.
             FreeOp(hFc);
