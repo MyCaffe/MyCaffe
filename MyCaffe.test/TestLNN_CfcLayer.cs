@@ -1058,6 +1058,9 @@ namespace MyCaffe.test
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f);
             string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type);
+            Blob<T> blobX1 = null;
+            Blob<T> blobTt1 = null;
+            Blob<T> blobMask1 = null;
 
             //---------------------------------------------------
             // Setup MyCaffe and load the model.
@@ -1169,13 +1172,13 @@ namespace MyCaffe.test
                 // Use the test net for running the model.
                 Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
 
-                Blob<T> blobX1 = mycaffe.CreateBlob("x");
+                blobX1 = mycaffe.CreateBlob("x");
                 blobX1.Reshape(1, blobX.channels, 1, 1);
 
-                Blob<T> blobTt1 = mycaffe.CreateBlob("tt");
+                blobTt1 = mycaffe.CreateBlob("tt");
                 blobTt1.Reshape(1, blobTt.channels, 1, 1);
 
-                Blob<T> blobMask1 = mycaffe.CreateBlob("mask");
+                blobMask1 = mycaffe.CreateBlob("mask");
                 blobMask1.Reshape(1, blobMask.channels, 1, 1);
 
                 colInputs.Add(blobX1);
@@ -1222,6 +1225,10 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose(ref blobX1);
+                dispose(ref blobTt1);
+                dispose(ref blobMask1);
+
                 if (colInputs != null)
                     colInputs.Dispose();
 
