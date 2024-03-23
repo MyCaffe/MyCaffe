@@ -144,6 +144,12 @@ namespace MyCaffe.fused_ops
 
         private void prep(Blob<T> A, Blob<T> B, Blob<T> C, bool bTransA, bool bTransB)
         {
+            if (A.num_axes == 3)
+                A.Unsqueeze(m_nAxis);
+
+            if (B.num_axes == 3)
+                B.Unsqueeze(m_nAxis);
+
             if (A.num_axes != 2 && A.num_axes != 4)
                 throw new Exception("The tensor A must have either 2 or 4 axes.");
 
@@ -248,27 +254,31 @@ namespace MyCaffe.fused_ops
             try
             {
                 prep(A, B, C, bTransA, bTransB);
-                m_hMatMul = m_fc.ReshapeMatMulOp(m_hMatMul, bTransA, bTransB, A, B, C, ref m_hA, ref m_hB, ref m_hC, out lWorkspaceInItems, ref hAws, ref hBws, nSharedIndex, m_bForceFallbackUse);
+                long hMatMul = m_fc.ReshapeMatMulOp(m_hMatMul, bTransA, bTransB, A, B, C, ref m_hA, ref m_hB, ref m_hC, out lWorkspaceInItems, ref hAws, ref hBws, nSharedIndex, m_bForceFallbackUse);
 
-                if (m_hWorkspace != 0 && m_lWorkspaceInItems < lWorkspaceInItems)
+                if (hMatMul > 0)
                 {
-                    m_cuda.FreeMemory(m_hWorkspace);
-                    m_hWorkspace = 0;
-                }
+                    m_hMatMul = hMatMul;
+                    if (m_hWorkspace != 0 && m_lWorkspaceInItems < lWorkspaceInItems)
+                    {
+                        m_cuda.FreeMemory(m_hWorkspace);
+                        m_hWorkspace = 0;
+                    }
 
-                if (lWorkspaceInItems > 0)
-                {
-                    m_hWorkspace = m_cuda.AllocMemory(lWorkspaceInItems);
-                    m_lWorkspaceInItems = lWorkspaceInItems;
-                }
-                else
-                {
-                    m_hWorkspace = 0;
-                    m_lWorkspaceInItems = 0;
-                }
+                    if (lWorkspaceInItems > 0)
+                    {
+                        m_hWorkspace = m_cuda.AllocMemory(lWorkspaceInItems);
+                        m_lWorkspaceInItems = lWorkspaceInItems;
+                    }
+                    else
+                    {
+                        m_hWorkspace = 0;
+                        m_lWorkspaceInItems = 0;
+                    }
 
-                m_hAws = hAws;
-                m_hBws = hBws;
+                    m_hAws = hAws;
+                    m_hBws = hBws;
+                }
             }
             catch (Exception excpt)
             {
@@ -368,8 +378,8 @@ namespace MyCaffe.fused_ops
         /// <param name="bTransB">Specifies that the B blob was transposed during the forward pass.</param>
         public void Reshape(Blob<T> A, Blob<T> B, Blob<T> C, bool bTransA, bool bTransB)
         {
-            m_op1.Create(C, B, A, false, !bTransB);
-            m_op2.Create(A, C, B, !bTransA, false);
+            m_op1.Reshape(C, B, A, false, !bTransB);
+            m_op2.Reshape(A, C, B, !bTransA, false);
         }
 
         /// <summary>
