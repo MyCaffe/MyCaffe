@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Net;
 using static MyCaffe.param.beta.DecodeParameter;
+using MyCaffe.fillers;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
@@ -3786,6 +3787,16 @@ namespace MyCaffe
             Blob<T> b = new Blob<T>(m_cuda, m_log);
             b.Name = strName;
             return b;
+        }
+
+        /// <summary>
+        /// Create a new Filler on the same kernel as the MyCaffeControl.
+        /// </summary>
+        /// <param name="fp">Specifies the filler parameter.</param>
+        /// <returns>The new filler is returned.</returns>
+        public Filler<T> CreateFiller(FillerParameter fp)
+        {
+            return Filler<T>.Create(m_cuda, m_log, fp);
         }
 
         /// <summary>
