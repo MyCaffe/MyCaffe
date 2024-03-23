@@ -225,13 +225,11 @@ namespace MyCaffe.layers.beta
             double dfNormalizer = get_normalizer(m_normalization, -1);
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
-            m_cuda.scal(nCount, dfLossWeight, hBottomDiff);
+            if (dfLossWeight != 1.0)
+                m_cuda.scal(nCount, dfLossWeight, hBottomDiff);
 
-            if (colBottom.Count > 1)
-            {
-                long hBottomDiff2 = colBottom[1].mutable_gpu_diff;
-                m_cuda.scale(nCount, -1, hBottomDiff, hBottomDiff2);
-            }
+            if (colBottom.Count > 1 && rgbPropagateDown[1])
+                m_cuda.scale(nCount, -1, hBottomDiff, colBottom[1].mutable_gpu_diff);
         }
     }
 }
