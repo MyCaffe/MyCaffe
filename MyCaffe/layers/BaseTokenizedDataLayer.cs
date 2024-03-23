@@ -11,7 +11,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using System.IO;
 using System.Reflection;
-using MyCaffe.output_adapters;
+using MyCaffe.weight_adapters;
 using System.ComponentModel;
 using System.Diagnostics.SymbolStore;
 

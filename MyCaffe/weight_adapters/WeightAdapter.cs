@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 /// <summary>
 /// The MyCaffe.output_adapters namespace contains all output adapters.
 /// </summary>
-namespace MyCaffe.output_adapters
+namespace MyCaffe.weight_adapters
 {
     /// <summary>
     /// Abstract base class for all weight adapters.
@@ -171,13 +171,14 @@ namespace MyCaffe.output_adapters
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the output adapter parameters.</param>
         /// <returns>An instance of a new output adapter is returned.</returns>
+        /// <param name="phase">Specifies the phase on which the weight adapter will run.</param>
         /// <exception cref="Exception">An exception is returned if an unsupported output adapter type is specified in the parameters.</exception>
-        public static WeightAdapter<T> Create(CudaDnn<T> cuda, Log log, WeightAdapterParameter p)
+        public static WeightAdapter<T> Create(CudaDnn<T> cuda, Log log, WeightAdapterParameter p, Phase phase)
         {
             string strType = p.type.ToLower();
 
             if (strType == "lora")
-                return new WeightAdapterLoRA<T>(cuda, log, p);
+                return new WeightAdapterLoRA<T>(cuda, log, p, phase);
 
             throw new Exception("Unknown WeightAdapter type: " + strType);
         }
