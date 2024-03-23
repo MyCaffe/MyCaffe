@@ -560,56 +560,6 @@ class Memory
 //=============================================================================
 
 template <class T>
-inline long Memory<T>::alloc_host(void** ppDst, size_t lSize, bool bPinned)
-{
-	LONG lErr;
-
-#ifdef USE_PINNED_HOST_MEM
-	if (lErr = cudaMallocHost(ppDst, (size_t)lSize))
-		return lErr;
-#else
-	if (bPinned)
-	{
-		if (lErr = cudaMallocHost(ppDst, (size_t)lSize))
-			return lErr;
-	}
-	else
-	{
-		*ppDst = malloc((size_t)lSize);
-		if (*ppDst == NULL)
-			return ERROR_MEMORY_OUT;
-	}
-
-	m_memoryMap[*ppDst] = bPinned;
-#endif
-
-	return 0;
-}
-
-template <class T>
-inline long Memory<T>::free_host(void* p)
-{
-	if (p == NULL)
-		return 0;
-
-#ifdef USE_PINNED_HOST_MEM
-	return cudaFreeHost(p);
-#else
-	map<void*, bool>::iterator it = m_memoryMap.find(p);
-	if (it == m_memoryMap.end())
-		return ERROR_MEMORY_NOT_FOUND;
-
-	if (it->second)
-		cudaFreeHost(p);
-	else
-		free(p);
-
-	m_memoryMap.erase(p);
-	return 0;
-#endif
-}
-
-template <class T>
 inline long Memory<T>::convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSize, __half** ppDst)
 {
 	LONG lErr;
