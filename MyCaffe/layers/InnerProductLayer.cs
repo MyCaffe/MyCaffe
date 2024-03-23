@@ -275,8 +275,8 @@ namespace MyCaffe.layers
 
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
 
-            if (m_weightAdatper != null)
-                m_weightAdatper.Setup(layer_param, m_colBlobs[0]);
+            if (m_weightAdapter != null)
+                m_weightAdapter.Setup(layer_param, m_colBlobs[0]);
         }
 
         /// <summary>
@@ -328,8 +328,8 @@ namespace MyCaffe.layers
                 m_blobBiasMultiplier.SetData(1.0);
             }
 
-            if (m_weightAdatper != null)
-                m_weightAdatper.Reshape(m_colBlobs[0]);
+            if (m_weightAdapter != null)
+                m_weightAdapter.Reshape(m_colBlobs[0]);
         }
 
         /// <summary>
@@ -368,8 +368,8 @@ namespace MyCaffe.layers
             long hWeight = m_colBlobs[0].gpu_data;
             long hBias = (m_bBiasTerm) ? m_colBlobs[1].gpu_data : 0;
 
-            if (m_weightAdatper != null)
-                hWeight = m_weightAdatper.Forward(m_colBlobs[0]);
+            if (m_weightAdapter != null)
+                hWeight = m_weightAdapter.Forward(m_colBlobs[0]);
 
             if (m_bEnableNoise && m_phase == Phase.TRAIN)
             {
@@ -434,21 +434,21 @@ namespace MyCaffe.layers
                     else
                         m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tOne, m_colBlobs[0].mutable_gpu_diff);
 
-                    if (m_weightAdatper != null)
+                    if (m_weightAdapter != null)
                     {
-                        m_weightAdatper.Weight.CopyFrom(m_colBlobs[0], true);
-                        hWeightData = m_weightAdatper.Weight.gpu_data;
+                        m_weightAdapter.Weight.CopyFrom(m_colBlobs[0], true);
+                        hWeightData = m_weightAdapter.Weight.gpu_data;
                     }
                 }
                 else
                 {
-                    if (m_weightAdatper != null)
+                    if (m_weightAdapter != null)
                     {
                         if (m_bTranspose)
-                            m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tZero, m_weightAdatper.Weight.mutable_gpu_diff);
+                            m_cuda.gemm(true, false, m_nK, m_nN, m_nM, m_tOne, hBottomData, hTopDiff, m_tZero, m_weightAdapter.Weight.mutable_gpu_diff);
                         else
-                            m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tZero, m_weightAdatper.Weight.mutable_gpu_diff);
-                        hWeightData = m_weightAdatper.Weight.gpu_data;
+                            m_cuda.gemm(true, false, m_nN, m_nK, m_nM, m_tOne, hTopDiff, hBottomData, m_tZero, m_weightAdapter.Weight.mutable_gpu_diff);
+                        hWeightData = m_weightAdapter.Weight.gpu_data;
                     }
                 }
             }
@@ -492,8 +492,8 @@ namespace MyCaffe.layers
                 }
             }
 
-            if (m_weightAdatper != null)
-                m_weightAdatper.Backward(colTop, colBottom, m_weightAdatper.Weight);
+            if (m_weightAdapter != null)
+                m_weightAdapter.Backward(colTop, colBottom, m_weightAdapter.Weight);
         }
     }
 }
