@@ -109,6 +109,10 @@ namespace MyCaffe.fused_ops
             hAws = 0;
             hBws = 0;
 
+            // Fused computations are not supported for double precision.
+            if (typeof(T) == typeof(double))
+                bForceFallbackUse = true;
+
             if (m_hCuda == 0)
                 m_hCuda = m_cuda.CreateCuDNN();
 
