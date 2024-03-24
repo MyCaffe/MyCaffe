@@ -11341,7 +11341,7 @@ __device__ double sigmoid(double x)
 }
 
 template<typename T>
-__global__ void sigmoid_fwd_kernel(int n, T* in, T* out)
+__global__ void sigmoid_fwd_kernel(const int n, const T* in, T* out)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
@@ -11375,7 +11375,7 @@ template long Math<float>::sigmoid_fwd(int nCount, long hBottomData, long hTopDa
 
 
 template<typename T>
-__global__ void sigmoid_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
+__global__ void sigmoid_bwd_kernel(const int n, const T* in_diff, const T* out_data, T* out_diff)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
