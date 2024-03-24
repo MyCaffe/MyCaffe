@@ -381,11 +381,7 @@ namespace MyCaffe.test
                 hMatMul = fc.CreateMatMulOp(false, true, D, E, F, out hD, out hE, out hF, out lWorkspaceSize, out hAws, out hBws);
 
                 if (lWorkspaceSize > 0)
-                {
-                    long lBaseSize = (typeof(T) == typeof(float)) ? 4 : 8;
-                    long lSize = lWorkspaceSize / lBaseSize;
-                    hWorkspace = m_cuda.AllocMemory(lSize);
-                }
+                    hWorkspace = m_cuda.AllocMemory(lWorkspaceSize);
 
                 fc.RunOp(hMatMul, hD, hE, hF, D.gpu_data, E.gpu_data, F.mutable_gpu_data, hWorkspace, hAws, hBws);
                 fc.FreeOp(hMatMul);
