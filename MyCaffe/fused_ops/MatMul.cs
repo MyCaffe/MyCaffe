@@ -110,15 +110,24 @@ namespace MyCaffe.fused_ops
             if (b.num_axes == 2 || b.num_axes == 0)
                 return;
 
-            m_rgShape.Clear();
-            m_rgShape.Add(1);
-            m_rgShape.Add(1);
-
             if (!m_rgOriginalShapes.ContainsKey(b.gpu_data))
             {
                 List<int> rgShape = Utility.Clone<int>(b.shape());
                 m_rgOriginalShapes.Add(b.gpu_data, rgShape);
             }
+
+            if (b.shape(0) == 1 && b.shape(1) == 1)
+            {
+                m_rgShape.Clear();
+                m_rgShape.Add(b.shape(2));
+                m_rgShape.Add(b.shape(3));
+                b.Reshape(m_rgShape);
+                return;
+            }
+
+            m_rgShape.Clear();
+            m_rgShape.Add(1);
+            m_rgShape.Add(1);
 
             for (int i = 0; i < m_nAxis; i++)
             {
