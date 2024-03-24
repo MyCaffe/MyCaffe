@@ -1416,7 +1416,7 @@ namespace MyCaffe.test
                 if (!mycaffeOp_cfcNoGateT.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcNoGateT, strSolver, nInputSize, nOutputSize))
                     throw new Exception("Could not initialize the CFC No Gate (T) model!");
 
-                if (!mycaffeOp_ltc.Initialize(evtGlobalCancel, m_evtCancel, m_log, 1, strModelLtc, strSolver, nInputSize, nOutputSize))
+                if (!mycaffeOp_ltc.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelLtc, strSolver, nInputSize, nOutputSize))
                     throw new Exception("Could not initialize the LTC model!");
 
                 // Setup the curve gym for the data.
@@ -1580,7 +1580,7 @@ namespace MyCaffe.test
                 if (!mycaffeOp_lstm.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelLstm, strSolver, nInputSize, nOutputSize, bEmphasizeLstm))
                     throw new Exception("Could not initialize the LSTM model!");
 
-                if (!mycaffeOp_linear.Initialize(evtGlobalCancel, m_evtCancel, m_log, 1, strModelLinear, strSolver, nInputSize, nOutputSize, bEmphasizeLinear))
+                if (!mycaffeOp_linear.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelLinear, strSolver, nInputSize, nOutputSize, bEmphasizeLinear))
                     throw new Exception("Could not initialize the Linear model!");
 
                 // Setup the curve gym for the data.
