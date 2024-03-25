@@ -534,6 +534,14 @@ namespace MyCaffe.common
 
                     for (int param_id = 0; param_id < num_adapted_param_blobs; param_id++)
                     {
+                        ParamSpec param_spec = (param_id < param_size && layer_param.weight_adapter != null) ? layer_param.weight_adapter.parameters[param_id] : default_param_spec;
+                        bool param_need_backward = (param_spec.lr_mult != 0.0) ? true : false;
+
+                        need_backward |= param_need_backward;
+                    }
+
+                    for (int param_id = 0; param_id < num_adapted_param_blobs; param_id++)
+                    {
                         AppendAdaptedParam(param, layer_id, param_id);
                     }
 
