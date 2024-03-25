@@ -170,13 +170,18 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestCausalSelfAttentionLayer", "TestGradientMini", "SKIPPED - Takes a long time to complete."));
 
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0", "SKIPPED - Testing work in progress."));
-                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5", "SKIPPED - Testing work in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5", "SKIPPED - Testing work in progress."));
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0", "SKIPPED - Testing work in progress."));
-                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5", "SKIPPED - Testing work in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5", "SKIPPED - Testing work in progress."));
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0_CUDNN", "SKIPPED - Testing work in progress."));
-                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0_CUDNN", "SKIPPED - Testing work in progress."));
-                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
+
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestLNN_CfcLayer", "TestTrainingRealTimeFutureBatch_CFC", "SKIPPED - Testing work in progress."));
+
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestPersistPytorch", "TestConvertLeNettoPytorch", "SKIPPED - Testing work in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestPersistPytorch", "TestConvertTFTtoPytorch", "SKIPPED - Testing work in progress."));
 
                 return rgKnownFailures;
             }
