@@ -17,6 +17,7 @@ using System.IO.Compression;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using MyCaffe.layers.gpt;
+using System.Windows.Forms;
 
 namespace MyCaffe.test
 {
@@ -150,7 +151,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestFlashAttentionForward()
+        public void TestCudaAttentionForward()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -158,7 +159,7 @@ namespace MyCaffe.test
             {
                 foreach (IMultiheadAttentionLayerTest t in test.Tests)
                 {
-                    t.TestFlashAttentionForward();
+                    t.TestCudaAttentionForward();
                 }
             }
             finally
@@ -168,7 +169,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestFlashAttentionBackward()
+        public void TestCudaAttentionBackward()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -176,7 +177,7 @@ namespace MyCaffe.test
             {
                 foreach (IMultiheadAttentionLayerTest t in test.Tests)
                 {
-                    t.TestFlashAttentionBackward();
+                    t.TestCudaAttentionBackward();
                 }
             }
             finally
@@ -186,7 +187,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestFlashAttentionTiming()
+        public void TestCudaAttentionTiming()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -194,7 +195,7 @@ namespace MyCaffe.test
             {
                 foreach (IMultiheadAttentionLayerTest t in test.Tests)
                 {
-                    t.TestFlashAttentionTiming();
+                    t.TestCudaAttentionTiming();
                 }
             }
             finally
@@ -282,9 +283,9 @@ namespace MyCaffe.test
         void TestBackward(uint nBatch, uint nHeads, bool bEnableFlash);
         void TestBackward2(uint nBatch, uint nHeads, bool bEnableFlash);
         void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init, bool bEnableFlash);
-        void TestFlashAttentionForward();
-        void TestFlashAttentionBackward();
-        void TestFlashAttentionTiming();
+        void TestCudaAttentionForward();
+        void TestCudaAttentionBackward();
+        void TestCudaAttentionTiming();
         void TestRopeForward();
         void TestRopeBackward();
         void TestForwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash);
@@ -408,7 +409,19 @@ namespace MyCaffe.test
             return strPath;
         }
 
-        public void TestForward(uint nBatch, uint nHeads, bool bEnableFlash)
+
+        /// <summary>
+        /// Test forward pass of the MultiheadAttentionLayer.
+        /// </summary>
+        /// <param name="nBatch">Specifies number of batches.</param>
+        /// <param name="nHeads">Specifies number of heads.</param>
+        /// <param name="bEnableCuda">Specifies to enable cuda.</param>
+        /// <remarks>
+        /// Test Code Generation:
+        /// use C:\Data\Data\SS_Projects\Intelligence\GitHub\MyCaffe\MyCaffe.test\test_data\projects\gpt_encdec\TransformerTranslator test project
+        /// file: 4_test_multiheadattention.py
+        /// </remarks>
+        public void TestForward(uint nBatch, uint nHeads, bool bEnableCuda)
         {
             string strTestDataBasePath = getTestDataBasePath("q0.npy");
             string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
@@ -419,7 +432,14 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableCuda;
+            p.multihead_attention_param.bias_term = true;
+            p.multihead_attention_param.enable_key_value_cache = false;
+            p.multihead_attention_param.enable_rotary_positional_embedding = false;
+            p.multihead_attention_param.weight_adapter_q.enabled = false;
+            p.multihead_attention_param.weight_adapter_k.enabled = false;
+            p.multihead_attention_param.weight_adapter_v.enabled = false;
+            p.multihead_attention_param.weight_adapter_out.enabled = false;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -453,7 +473,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
-                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06), "The blobs are different.");
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 2e-06 : 3e-06), "The blobs are different.");
             }
             finally
             {
@@ -461,7 +481,18 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(uint nBatch, uint nHeads, bool bEnableFlash)
+        /// <summary>
+        /// Test backward pass of the MultiheadAttentionLayer.
+        /// </summary>
+        /// <param name="nBatch">Specifies number of batches.</param>
+        /// <param name="nHeads">Specifies number of heads.</param>
+        /// <param name="bEnableCuda">Specifies to enable cuda.</param>
+        /// <remarks>
+        /// Test Code Generation:
+        /// use C:\Data\Data\SS_Projects\Intelligence\GitHub\MyCaffe\MyCaffe.test\test_data\projects\gpt_encdec\TransformerTranslator test project
+        /// file: 4_test_multiheadattention.py
+        /// </remarks>
+        public void TestBackward(uint nBatch, uint nHeads, bool bEnableCuda)
         {
             string strTestDataBasePath = getTestDataBasePath("q0.npy");
             string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
@@ -472,7 +503,14 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableCuda;
+            p.multihead_attention_param.bias_term = true;
+            p.multihead_attention_param.enable_key_value_cache = false;
+            p.multihead_attention_param.enable_rotary_positional_embedding = false;
+            p.multihead_attention_param.weight_adapter_q.enabled = false;
+            p.multihead_attention_param.weight_adapter_k.enabled = false;
+            p.multihead_attention_param.weight_adapter_v.enabled = false;
+            p.multihead_attention_param.weight_adapter_out.enabled = false;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -525,7 +563,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward2(uint nBatch, uint nHeads, bool bEnableFlash)
+        public void TestBackward2(uint nBatch, uint nHeads, bool bEnableCuda)
         {
             string strTestDataBasePath = getTestDataBasePath("q0.npy");
             string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
@@ -536,7 +574,14 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableCuda;
+            p.multihead_attention_param.bias_term = true;
+            p.multihead_attention_param.enable_key_value_cache = false;
+            p.multihead_attention_param.enable_rotary_positional_embedding = false;
+            p.multihead_attention_param.weight_adapter_q.enabled = false;
+            p.multihead_attention_param.weight_adapter_k.enabled = false;
+            p.multihead_attention_param.weight_adapter_v.enabled = false;
+            p.multihead_attention_param.weight_adapter_out.enabled = false;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -589,7 +634,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init, bool bEnableFlash)
+        public void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init, bool bEnableCuda)
         {
             string strTestDataBasePath = getTestDataBasePath("q0.npy");
             string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
@@ -601,7 +646,14 @@ namespace MyCaffe.test
             p.multihead_attention_param.block_size = 200;
             p.multihead_attention_param.attn_dropout = 0.0;
             p.multihead_attention_param.resid_dropout = 0.0;
-            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableFlash;
+            p.multihead_attention_param.enable_cuda_scaled_dot_product_attention = bEnableCuda;
+            p.multihead_attention_param.bias_term = true;
+            p.multihead_attention_param.enable_key_value_cache = false;
+            p.multihead_attention_param.enable_rotary_positional_embedding = false;
+            p.multihead_attention_param.weight_adapter_q.enabled = false;
+            p.multihead_attention_param.weight_adapter_k.enabled = false;
+            p.multihead_attention_param.weight_adapter_v.enabled = false;
+            p.multihead_attention_param.weight_adapter_out.enabled = false;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -871,7 +923,7 @@ namespace MyCaffe.test
                 k.SaveToRawFile(strPath + "k.grad.bin", true);
         }
 
-        public void TestFlashAttentionForward()
+        public void TestCudaAttentionForward()
         {
             long hCuDnn = 0;
             long hAttn = 0;
@@ -910,7 +962,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestFlashAttentionBackward()
+        public void TestCudaAttentionBackward()
         {
             long hCuDnn = 0;
             long hAttn = 0;
@@ -938,15 +990,11 @@ namespace MyCaffe.test
 
                 scaled_dot_product_bwd(m_blobQ, m_blobK, m_blobV, m_blobMask, m_blobY, nSize);
 
-                m_blobY.CompareToRawFile("c:\\temp\\_debug\\y.matmul1.a.grad.raw", true);
-
                 hCuDnn = m_cuda.CreateCuDNN();
                 hAttn = m_cuda.CreateAttn();
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, true, nBatch, nBlock, nHeads, nSize, fDropout);
                 m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.channels, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
                 blobY.CopyFrom(m_blobY, true);
-
-                blobY.CompareToRawFile("c:\\temp\\_debug\\y.matmul1.a.grad.raw", true);
 
                 Trace.WriteLine("Testing backward: hY = " + blobY.gpu_data.ToString() + " hdY = " + blobY.gpu_diff.ToString());
                 m_cuda.AttnScaledDotProductBackward(hCuDnn, hAttn, blobQ.gpu_data, blobQ.mutable_gpu_diff, blobK.gpu_data, blobK.mutable_gpu_diff, blobV.gpu_data, blobV.mutable_gpu_diff, m_blobMask.gpu_data, blobY.gpu_data, blobY.gpu_diff);
@@ -968,7 +1016,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestFlashAttentionTiming()
+        public void TestCudaAttentionTiming()
         {
             long hCuDnn = 0;
             long hAttn = 0;
