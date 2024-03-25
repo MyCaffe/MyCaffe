@@ -21,7 +21,7 @@ namespace MyCaffe.param.tft
     {
         uint m_nNumInput = 0;
         uint m_nStateSize = 0;
-        bool m_bBiasTerm = true;
+        bool m_bBiasTerm = false;
         List<int> m_rgCardinalities = new List<int>();
 
         /** @copydoc LayerParameterBase */
