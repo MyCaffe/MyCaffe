@@ -296,6 +296,7 @@ long FusedCompData<float>::transpose(float* data, float* dataT, long nS1, long n
 
 	if (lErr = cublasSgeam(m_cublas, CUBLAS_OP_T, CUBLAS_OP_N, rows, cols, &alpha, data, cols, &beta, NULL, rows, dataT, rows))
 		return lErr | ERROR_CUBLAS_OFFSET;
+	return 0;
 }
 
 template <>
@@ -309,6 +310,7 @@ long FusedCompData<double>::transpose(double* data, double* dataT, long nS1, lon
 
 	if (lErr = cublasDgeam(m_cublas, CUBLAS_OP_T, CUBLAS_OP_N, rows, cols, &alpha, data, cols, &beta, NULL, rows, dataT, rows))
 		return lErr | ERROR_CUBLAS_OFFSET;
+	return 0;
 }
 
 
