@@ -134,21 +134,15 @@ namespace MyCaffe.layers
 
             m_nTotalItems = m_nLabelItems + m_nIgnoreItems;
 
-            Blob<T> data = new Blob<T>(m_cuda, m_log);
             m_rgDataShape = Utility.Clone<int>(colBottom[0].shape());
-
-            Blob<T> label = new common.Blob<T>(m_cuda, m_log, false);
             m_rgLabelShape = Utility.Clone<int>(colBottom[1].shape());
-
-            if (colBottom[1].num_axes > 2 && colBottom[1].shape(2) > 1)
-            {
-                m_rgDataShape[2] /= m_nTotalItems;
-                m_rgLabelShape[2] /= m_nLabelItems;
-            }
 
             // Allocate the temp batch storage.
             for (int i = 0; i < m_nMaxBatches; i++)
             {
+                Blob<T> data = new Blob<T>(m_cuda, m_log);
+                Blob<T> label = new common.Blob<T>(m_cuda, m_log, false);
+
                 data.Reshape(m_rgDataShape);
                 m_rgBatchData.Add(data);
 
@@ -195,9 +189,8 @@ namespace MyCaffe.layers
                     }
 
                     // Copy the data into the batch storage.
-                    int nEmbSize = colBottom[0].count(2) / m_nTotalItems;
-                    m_cuda.channel_copy(m_rgBatchData[m_nCurrentBatchIdx].count(), colBottom[0].num, colBottom[0].channels, m_nTotalItems, nEmbSize, m_nIgnoreItems + i, colBottom[0].gpu_data, m_rgBatchData[m_nCurrentBatchIdx].mutable_gpu_data, DIR.FWD);
-                    m_cuda.channel_copy(m_rgBatchLabels[m_nCurrentBatchIdx].count(), colBottom[1].num, colBottom[1].channels, m_nLabelItems, 1, i, colBottom[1].gpu_data, m_rgBatchLabels[m_nCurrentBatchIdx].mutable_gpu_data, DIR.FWD);
+                    m_rgBatchData[m_nCurrentBatchIdx].CopyFrom(colBottom[0]);
+                    m_rgBatchLabels[m_nCurrentBatchIdx].CopyFrom(colBottom[1]);
 
                     m_nLastBatchIdx = m_nCurrentBatchIdx;
                     m_nCurrentBatchIdx++;
