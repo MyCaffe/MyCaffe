@@ -494,6 +494,7 @@ namespace MyCaffe.test
             data.data_temporal_param.source = strSrc;
             data.data_temporal_param.source_type = srcType;
             data.data_temporal_param.shuffle_item_data = false;
+            data.data_temporal_param.shuffle_value_data = false;
             data.data_temporal_param.chunk_count = 1024;
             data.data_temporal_param.drip_refresh_rate_in_sec = 0;
             data.data_temporal_param.max_load_percent = 1.0;
@@ -594,11 +595,19 @@ namespace MyCaffe.test
             int nStatCatFields = schema.Data.StaticCat.Count;
             int nFields = nStatNumFields + nStatCatFields;
 
-            blobStatNum.Reshape(nBatchSize, 1, nStatNumFields, 1);
-            blobStatCat.Reshape(nBatchSize, 1, nStatCatFields, 1);
+            float[] rgStatNum = null;
+            float[] rgStatCat = null;
 
-            float[] rgStatNum = convertF(blobStatNum.mutable_cpu_data);
-            float[] rgStatCat = convertF(blobStatCat.mutable_cpu_data);
+            if (nStatNumFields > 0)
+            {
+                blobStatNum.Reshape(nBatchSize, 1, nStatNumFields, 1);
+                rgStatNum = convertF(blobStatNum.mutable_cpu_data);
+            }
+            if (nStatCatFields > 0)
+            {
+                blobStatCat.Reshape(nBatchSize, 1, nStatCatFields, 1);
+                rgStatCat = convertF(blobStatCat.mutable_cpu_data);
+            }
 
             for (int i = 0; i < nBatchSize; i++)
             {
@@ -633,9 +642,9 @@ namespace MyCaffe.test
                 }
             }
 
-            if (rgStatNum.Length > 0)
+            if (rgStatNum != null && rgStatNum.Length > 0)
                 blobStatNum.mutable_cpu_data = convert(rgStatNum);
-            if (rgStatCat.Length > 0)
+            if (rgStatCat != null && rgStatCat.Length > 0)
                 blobStatCat.mutable_cpu_data = convert(rgStatCat);
         }
 
