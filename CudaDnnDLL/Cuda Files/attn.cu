@@ -306,7 +306,10 @@ LONG blob<T>::apply_mask(blob<T>& blobMask)
 		return ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE;
 
 	float fInf = -1e+29f;
-	return m_pMath->mask(count(), blobMask.count(), T(0.0), T(fInf), m_data, blobMask.data(), m_data);
+	//return m_pMath->mask(count(), blobMask.count(), T(0.0), T(fInf), m_data, blobMask.data(), m_data);
+	int nBatch = n();
+	int nMaskDim = blobMask.count();
+	return m_pMath->mask_batch(count(), nBatch, nMaskDim, T(0.0), T(fInf), m_data, blobMask.data(), m_data);
 }
 
 template LONG blob<double>::apply_mask(blob<double>& blobMask);
