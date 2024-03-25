@@ -1036,6 +1036,8 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+            Blob<float> blobVal = null;
+            Blob<float> blobWork = null;
 
             try
             {
@@ -1044,8 +1046,8 @@ namespace MyCaffe.test
                 string strModel = buildModelEx(net_param, 1, 64, 128, 65, 0.0, Phase.TRAIN);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
-                Blob<float> blobVal = mycaffe.CreateBlob("val");
-                Blob<float> blobWork = mycaffe.CreateBlob("work");
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<float> solver = mycaffe.GetInternalSolver();
@@ -1273,6 +1275,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (blobVal != null)
+                    blobVal.Dispose();
+
+                if (blobWork != null)
+                    blobWork.Dispose();
+
                 mycaffe.Dispose();
             }
         }
@@ -1285,6 +1293,8 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+            Blob<float> blobVal = null;
+            Blob<float> blobWork = null;
 
             try
             {
@@ -1296,8 +1306,8 @@ namespace MyCaffe.test
                 string strModel = buildModelEx(net_param, 1, 512, 2048, 32000, 0.0, Phase.TRAIN, 32, true, 11008);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
-                Blob<float> blobVal = mycaffe.CreateBlob("val");
-                Blob<float> blobWork = mycaffe.CreateBlob("work");
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<float> solver = mycaffe.GetInternalSolver();
@@ -1312,6 +1322,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (blobVal != null)
+                    blobVal.Dispose();
+
+                if (blobWork != null)
+                    blobWork.Dispose();
+
                 mycaffe.Dispose();
             }
         }
@@ -1346,6 +1362,8 @@ namespace MyCaffe.test
             s.GpuIds = "0";
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
             Blob<float> blobInput = null;
+            Blob<float> blobVal = null;
+            Blob<float> blobWork = null;    
 
             try
             {
@@ -1355,8 +1373,8 @@ namespace MyCaffe.test
                 BlobShape shape = new BlobShape(1, 64, 1, 1);
 
                 mycaffe.LoadToRun(strModel, null, null, shape);
-                Blob<float> blobVal = mycaffe.CreateBlob("val");
-                Blob<float> blobWork = mycaffe.CreateBlob("work");
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
 
                 Net<float> net = mycaffe.GetInternalNet(Phase.RUN);
 
@@ -1496,6 +1514,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (blobVal != null)
+                    blobVal.Dispose();
+
+                if (blobWork != null)
+                    blobWork.Dispose();
+
                 if (blobInput != null)
                     blobInput.Dispose();
 
@@ -1667,6 +1691,8 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+            Blob<float> blobVal = null;
+            Blob<float> blobWork = null;
 
             try
             {
@@ -1683,8 +1709,8 @@ namespace MyCaffe.test
                 string strModel = buildModelLlama(net_param, nBatch, nSeqLen, nDim, nHeads, nVocab_size, fDropout, Phase.TRAIN, nLayers, false);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null,false, false);
-                Blob<float> blobVal = mycaffe.CreateBlob("val");
-                Blob<float> blobWork = mycaffe.CreateBlob("work");
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Solver<float> solver = mycaffe.GetInternalSolver();
@@ -1729,6 +1755,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (blobVal != null)
+                    blobVal.Dispose();
+
+                if (blobWork != null)
+                    blobWork.Dispose();
+
                 mycaffe.Dispose();
             }
         }

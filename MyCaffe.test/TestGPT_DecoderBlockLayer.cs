@@ -874,6 +874,9 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (blobDec != null)
+                    blobDec.Dispose();
+
                 mycaffe.Dispose();
             }
         }
