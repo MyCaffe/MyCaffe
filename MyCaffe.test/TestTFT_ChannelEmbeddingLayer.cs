@@ -205,6 +205,7 @@ namespace MyCaffe.test
             p.categorical_trans_param.num_input = 9;
             p.categorical_trans_param.cardinalities = new List<int> { 54, 3627, 23, 17, 6, 18, 33, 320, 3 };
             p.categorical_trans_param.state_size = 64;
+            p.categorical_trans_param.bias_term = false;
             ChannelEmbeddingLayer<T> layer = null;
             Blob<T> blobX_numeric = null;
             Blob<T> blobX_categorical = null;
@@ -284,6 +285,7 @@ namespace MyCaffe.test
             p.categorical_trans_param.num_input = 9;
             p.categorical_trans_param.cardinalities = new List<int> { 54, 3627, 23, 17, 6, 18, 33, 320, 3 };
             p.categorical_trans_param.state_size = 64;
+            p.categorical_trans_param.bias_term = false;
             ChannelEmbeddingLayer<T> layer = null;
             Blob<T> blobGradExp = null;
             Blob<T> blobX_numeric = null;
@@ -401,6 +403,7 @@ namespace MyCaffe.test
             p.categorical_trans_param.num_input = 7;
             p.categorical_trans_param.cardinalities = new List<int> { 2, 3, 8, 13, 72, 6, 28 };
             p.categorical_trans_param.state_size = 64;
+            p.categorical_trans_param.bias_term = false;
             ChannelEmbeddingLayer<T> layer = null;
             Blob<T> blobX_numeric = null;
             Blob<T> blobX_categorical = null;
@@ -488,6 +491,7 @@ namespace MyCaffe.test
             p.categorical_trans_param.num_input = 7;
             p.categorical_trans_param.cardinalities = new List<int> { 2, 3, 8, 13, 72, 6, 28 };
             p.categorical_trans_param.state_size = 64;
+            p.categorical_trans_param.bias_term = false;
             ChannelEmbeddingLayer<T> layer = null;
             Blob<T> blobGradExp = null;
             Blob<T> blobX_numeric = null;
@@ -628,6 +632,7 @@ namespace MyCaffe.test
             p.categorical_trans_param.num_input = 7;
             p.categorical_trans_param.cardinalities = new List<int> { 2, 3, 8, 13, 72, 6, 28 };
             p.categorical_trans_param.state_size = 64;
+            p.categorical_trans_param.bias_term = false;
             ChannelEmbeddingLayer<T> layer = null;
             Blob<T> blobX_numeric = null;
             Blob<T> blobX_categorical = null;
