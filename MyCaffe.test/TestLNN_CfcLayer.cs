@@ -788,7 +788,7 @@ namespace MyCaffe.test
             loss.bottom.Add("x_hat");
             loss.bottom.Add("target");
             loss.top.Add("loss");
-            //loss.include.Add(new NetStateRule(Phase.TRAIN));
+            loss.include.Add(new NetStateRule(Phase.TRAIN));
             p.layer.Add(loss);
 
             return p.ToProto("root").ToString();
