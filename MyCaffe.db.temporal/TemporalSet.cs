@@ -128,9 +128,13 @@ namespace MyCaffe.db.temporal
             List<DateTime> rgDateIdx = new List<DateTime>();
             int nDateIdx = -1;
             int nMax = 0;
+            Stopwatch sw = new Stopwatch();
 
-            foreach (ItemSet item in m_rgItems)
+            sw.Start();
+
+            for (int i=0; i<m_rgItems.Count; i++)
             {
+                ItemSet item = m_rgItems[i];
                 if (nMax < item.DataDates.Count)
                 {
                     nMax = item.DataDates.Count;
@@ -142,20 +146,28 @@ namespace MyCaffe.db.temporal
                     if (!rgDateIdx.Contains(dt))
                         rgDateIdx.Add(dt);
                 }
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    m_log.Progress = (double)i / m_rgItems.Count;
+                    m_log.WriteLine("Synchronizing (phase 1) '" + m_src.Name + "' data for item " + item.Item.Name + " (" + i.ToString() + " of " + m_rgItems.Count.ToString() + ")...", true);
+                    sw.Restart();
+                }
             }
 
             rgDateIdx = rgDateIdx.OrderBy(p => p).ToList();
 
-            foreach (ItemSet item in m_rgItems)
+            for (int i = 0; i < m_rgItems.Count; i++)
             {
+                ItemSet item = m_rgItems[i];
                 int nSteps = -1;
                 DateTime? dtSync = rgDateIdx[0];
 
-                for (int i = 0; i < rgDateIdx.Count; i++)
+                for (int j = 0; j < rgDateIdx.Count; j++)
                 {
-                    if (item.Item.StartTime == rgDateIdx[i])
+                    if (item.Item.StartTime == rgDateIdx[j])
                     {
-                        nSteps = i;
+                        nSteps = j;
                         break;
                     }
                 }
@@ -164,6 +176,13 @@ namespace MyCaffe.db.temporal
                     item.SetColumnStart(nSteps, dtSync.Value);
                 else
                     item.Active = false;
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    m_log.Progress = (double)i / m_rgItems.Count;
+                    m_log.WriteLine("Synchronizing (phase 2) '" + m_src.Name + "' data for item " + item.Item.Name + " (" + i.ToString() + " of " + m_rgItems.Count.ToString() + ")...", true);
+                    sw.Restart();
+                }
             }
 
             return rgDateIdx;
