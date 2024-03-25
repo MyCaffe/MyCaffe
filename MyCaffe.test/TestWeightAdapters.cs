@@ -672,13 +672,16 @@ namespace MyCaffe.test
                 string strSolver = buildSolver(type);
                 string strModel = buildModel(bEnableLoRA, strType, 64, 350, 1, 288, true, 2, 288, bUseLinear);
 
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
                 Solver<T> solver = mycaffe.GetInternalSolver();
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
                 Blob<T> blobX = net.FindBlob("data");
                 Blob<T> blobTrg = net.FindBlob("target");
+
+                if (netTest == null)
+                    netTest = net;
 
                 // Make sure to use the filler on the same kernel as the net.
                 filler = mycaffe.CreateFiller(m_filler.filler_param);
