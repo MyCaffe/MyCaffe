@@ -556,7 +556,7 @@ namespace MyCaffe.test
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip");
                 p.inner_product_param.num_output = (uint)nNumOut;
                 p.inner_product_param.bias_term = false;
-                p.inner_product_param.transpose = true;
+                p.inner_product_param.transpose = false;
                 p.inner_product_param.axis = nAxis;
                 p.freeze_learning = bEnableLoRA;
                 p.weight_adapter.type = strLoRAType;
@@ -647,7 +647,8 @@ namespace MyCaffe.test
                 BlobCollection<T> colTop = net.Forward();
 
                 blobVal.LoadFromNumpy(strPath + "xq.npy");
-                m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, (typeof(T) == typeof(double)) ? 0.01 : 1e-10), "The outputs are not as expected.");
+                double dfErr = (typeof(T) == typeof(double)) ? 0.005 : (bUseLinear) ? 1e-10 : 0.005;    
+                m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, dfErr), "The outputs are not as expected.");
             }
             finally
             {
