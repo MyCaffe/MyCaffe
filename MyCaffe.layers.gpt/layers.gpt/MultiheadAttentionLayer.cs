@@ -727,9 +727,11 @@ namespace MyCaffe.layers.gpt
                 {
                     m_blobAttA.MatMul(m_blobQt, m_blobKt1);
                     m_blobAttA.scale_data(dfScale);
+
                     // Apply mask to attention matrix
                     // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
-                    m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                    //m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.             
+                    m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
                 }
 
                 // Take softmax of attention along the last axis.
@@ -776,7 +778,6 @@ namespace MyCaffe.layers.gpt
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
             addInternal(m_blobWork, m_blobY);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop);
-
             m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
 
             // Apply output projection.
@@ -946,9 +947,9 @@ namespace MyCaffe.layers.gpt
                 }
                 else
                 {
-                    colBottom[0].CopyFrom(m_blobX0, true);
-                    colBottom[1].CopyFrom(m_blobX1, true);
-                    colBottom[2].CopyFrom(m_blobX2, true);
+                    colBottom[0].CopyFrom(m_blobX0, true, true);
+                    colBottom[1].CopyFrom(m_blobX1, true, true);
+                    colBottom[2].CopyFrom(m_blobX2, true, true);
                 }
             }
         }
