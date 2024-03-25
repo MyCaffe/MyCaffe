@@ -191,7 +191,7 @@ namespace MyCaffe.weight_adapters
             }
 
             //m_blobC.MatMul(blobB, blobA, true);
-            m_matmul.Run(blobA.gpu_data, blobB.gpu_data, m_blobC.mutable_gpu_data);
+            m_matmul.Run(blobB.gpu_data, blobA.gpu_data, m_blobC.mutable_gpu_data);
             m_blobC.scale_data(m_dfScale);
             m_cuda.add(wt.count(), wt.gpu_data, m_blobC.gpu_data, m_blobC.mutable_gpu_data);
 
@@ -221,7 +221,7 @@ namespace MyCaffe.weight_adapters
             Blob<T> blobB = m_colBlobs[1];
 
             m_cuda.scale(wt.count(), m_dfScale, wt.gpu_diff, m_blobC.mutable_gpu_diff);
-            m_matmulGrad.Run(blobA, blobB, m_blobC);
+            m_matmulGrad.Run(blobB, blobA, m_blobC);
 
             if (m_dropout != null)
             {
