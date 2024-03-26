@@ -942,16 +942,29 @@ namespace MyCaffe.layers.gpt
                 }
                 else if (colBottom[1].gpu_diff == colBottom[2].gpu_diff)
                 {
+                    squeeze(m_blobX0, colBottom[0]);
                     colBottom[0].CopyFrom(m_blobX0, true);
                     m_cuda.add(m_blobX1.count(), m_blobX1.gpu_diff, m_blobX2.gpu_diff, colBottom[1].mutable_gpu_diff);
                 }
                 else
                 {
-                    colBottom[0].CopyFrom(m_blobX0, true, true);
-                    colBottom[1].CopyFrom(m_blobX1, true, true);
-                    colBottom[2].CopyFrom(m_blobX2, true, true);
+                    squeeze(m_blobX0, colBottom[0]);
+                    squeeze(m_blobX1, colBottom[0]);
+                    squeeze(m_blobX2, colBottom[0]);
+                    colBottom[0].CopyFrom(m_blobX0, true);
+                    colBottom[1].CopyFrom(m_blobX1, true);
+                    colBottom[2].CopyFrom(m_blobX2, true);
                 }
             }
+        }
+
+        private void squeeze(Blob<T> b1, Blob<T> b2)
+        {
+            if (b1.num_axes <= 2 || b2.num_axes <= 2)
+                return;
+
+            if (b1.num_axes > 3 && b1.shape(2) == 1 && b2.num_axes == 3 && b2.shape(2) != 1)
+                b1.Squeeze(2);
         }
     }
 }
