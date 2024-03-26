@@ -1004,7 +1004,11 @@ namespace MyCaffe.test
                 builder.LoadWeights(net.learnable_parameters, strModelPath, "KPTH0");
 
                 // Train the model with fine-tuning.
-                mycaffe.Train(5000); // 5000 for full training.
+                int nIter = 50;
+#if DEBUG
+                nIter = 5000;
+#endif
+                mycaffe.Train(nIter); // 5000 for full training.
 
                 // Run inferencing test
                 generate(net); 
