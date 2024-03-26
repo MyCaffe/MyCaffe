@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>27d48474-c643-49d3-8074-4ed75afb5c81</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>7_test_transformer.py</StartupFile>
+    <StartupFile>4_test_multiheadattention.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
