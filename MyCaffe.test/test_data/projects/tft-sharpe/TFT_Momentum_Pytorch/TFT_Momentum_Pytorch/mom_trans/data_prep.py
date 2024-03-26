@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import trace
 
 from mom_trans.classical_strategies import (
     MACDStrategy,
@@ -63,7 +64,7 @@ def prepare_cpd_features(folder_path: str, lookback_window_length: int) -> pd.Da
     )
 
 
-def deep_momentum_strategy_features(df_asset: pd.DataFrame) -> pd.DataFrame:
+def deep_momentum_strategy_features(df_asset: pd.DataFrame, ticker) -> pd.DataFrame:
     """prepare input features for deep learning model
 
     Args:
@@ -72,6 +73,9 @@ def deep_momentum_strategy_features(df_asset: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: input features
     """
+    
+    if ticker == "CBOE_VX":
+        breakpoint()
 
     df_asset = df_asset[
         ~df_asset["close"].isna()
