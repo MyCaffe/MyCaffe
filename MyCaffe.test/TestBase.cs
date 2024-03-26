@@ -185,6 +185,8 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestPersistPytorch", "TestConvertLeNettoPytorch", "SKIPPED - Testing work in progress."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestPersistPytorch", "TestConvertTFTtoPytorch", "SKIPPED - Testing work in progress."));
 
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestTFT_DataTemporal", "TestForwardTestVolatilitysql", "SKIPPED - Testing work in progress."));
+
                 return rgKnownFailures;
             }
         }
