@@ -117,7 +117,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
                 }
             }
             finally
@@ -137,7 +137,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+                    t.TestForward(10, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
                 }
             }
             finally
@@ -157,7 +157,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+                    t.TestForward(10, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
                 }
             }
             finally
@@ -226,7 +226,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -246,7 +246,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+                    t.TestForward(10, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -266,7 +266,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+                    t.TestForward(10, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -287,7 +287,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Volatility", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -311,7 +311,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Volatility", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
+                    t.TestForward(10, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -334,7 +334,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -354,7 +354,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+                    t.TestForward(10, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -392,7 +392,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+                    t.TestForward(10, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
