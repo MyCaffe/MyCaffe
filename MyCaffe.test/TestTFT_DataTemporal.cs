@@ -467,17 +467,6 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private string getTestDataPath()
-        {
-            return "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
-        }
-
-        private string getTestWtsPath()
-        {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\static_enrichment_grn\\";
-        }
-
-
         private string buildModel(int nNumSamples, int nNumHist, int nNumFuture, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, Phase phase)
         {
             NetParameter p = new NetParameter();
@@ -864,8 +853,6 @@ namespace MyCaffe.test
         public void TestForward(int nMaxIter, Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, string strSrcPath, int nBatchSize, SOURCE src, IXDatabaseBase db)
         {
             CancelEvent evtCancel = new CancelEvent();
-            string strPath = getTestDataPath();
-            string strPathWt = getTestWtsPath();
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
             Blob<T> blob1 = null;
