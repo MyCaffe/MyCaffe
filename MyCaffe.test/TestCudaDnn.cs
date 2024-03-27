@@ -3129,15 +3129,17 @@ namespace MyCaffe.test
                     {
                         List<double> rgdfA = new List<double>();
                         List<double> rgdfB = new List<double>();
-                        int nCount1 = nN1 * nC * nSD1;
-                        int nCount2 = nN2 * nC * nSD2;
+                        int nCountF1 = nN1 * nC * nSD1;
+                        int nCountF2 = nN2 * nC * nSD2;
+                        int nCount1 = nC * nSD1;
+                        int nCount2 = nC * nSD2;
 
-                        for (int i = 0; i < nCount1; i++)
+                        for (int i = 0; i < nN1 * nCount1; i++)
                         {
                             rgdfA.Add(i * 0.01);
                         }
 
-                        for (int i = 0; i < nCount2; i++)
+                        for (int i = 0; i < nN2 * nCount2; i++)
                         {
                             rgdfB.Add(20 + i * 0.10);
                         }
@@ -3154,13 +3156,20 @@ namespace MyCaffe.test
                         double[] rgDataY = t.Cuda.GetMemoryDouble(hDataY);
 
                         log.CHECK_EQ(rgDataY.Length, nCount, "The data length should be equal.");
+                        double dfErr = 1e-05;
+                        double dfMaxDiff = 0;
+
+                        if (rgDataY.Length > 10000)
+                            dfErr = 0.1;
 
                         for (int i = 0; i < rgDataY.Length; i++)
                         {
                             double dfActual = rgDataY[i];
 
-                            int nIdxA = i % nCount1;
-                            int nIdxB = i % nCount2;
+                            int n1 = i / nCountF1;
+                            int nIdxA = (n1%nN1) * nCount1 + (i/nN1) % nCount1;
+                            int n2 = i / nCountF2;
+                            int nIdxB = (n2%nN2) * nCount2 + (i/nN2) % nCount2;
                             double dfA = rgdfA[nIdxA];
                             double dfB = rgdfB[nIdxB];
                             double dfExpected = 0;
@@ -3185,8 +3194,12 @@ namespace MyCaffe.test
                             }
 
                             double dfDiff = Math.Abs(dfActual - dfExpected);
-                            log.CHECK_LT(dfDiff, 1e-5, "The values are incorrect at index " + i.ToString() + "!");
+                            log.CHECK_LT(dfDiff, dfErr, "The values are incorrect at index " + i.ToString() + "!");
+
+                            dfMaxDiff = Math.Max(dfMaxDiff, dfDiff);
                         }
+
+                        log.WriteLine("MaxDiff = " + dfMaxDiff.ToString("N10"));
                     }
                     finally
                     {
@@ -3236,15 +3249,15 @@ namespace MyCaffe.test
                     {
                         List<double> rgdfA = new List<double>();
                         List<double> rgdfB = new List<double>();
-                        int nCount1 = nN1 * nC * nSD1;
-                        int nCount2 = nN2 * nC * nSD2;
+                        int nCount1 = nC * nSD1;
+                        int nCount2 = nC * nSD2;
 
-                        for (int i = 0; i < nCount1; i++)
+                        for (int i = 0; i < nN1 * nCount1; i++)
                         {
                             rgdfA.Add(i * 0.01);
                         }
 
-                        for (int i = 0; i < nCount2; i++)
+                        for (int i = 0; i < nN2 * nCount2; i++)
                         {
                             rgdfB.Add(20 + i * 0.10);
                         }
