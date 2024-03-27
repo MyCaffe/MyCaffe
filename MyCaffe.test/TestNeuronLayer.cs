@@ -1571,10 +1571,6 @@ namespace MyCaffe.test
                     double dfExpected = silu(dfBottom);
 
                     m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
-
-                    // check that we squashed the value between 0 and 1.
-                    m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
-                    m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
                 }
             }
             finally
@@ -1771,10 +1767,6 @@ namespace MyCaffe.test
                     double dfExpected = lecun(dfBottom);
 
                     m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
-
-                    // check that we squashed the value between 0 and 1.
-                    m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
-                    m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
                 }
             }
             finally
@@ -2842,13 +2834,16 @@ namespace MyCaffe.test
 
         public void TestForward()
         {
+            IXDatabaseBase db = createImageDb(m_log);
             LayerParameter layer_param = new LayerParameter(LayerParameter.LayerType.LABELMAPPING);
             layer_param.labelmapping_param.mapping.Add(new LabelMapping(0, 10, null, null));
             layer_param.labelmapping_param.mapping.Add(new LabelMapping(2, 30, null, null));
-            LabelMappingLayer<T> layer = new LabelMappingLayer<T>(m_cuda, m_log, layer_param, null);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, layer_param, null, db);
 
             try
             {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.LABELMAPPING, "The layer type should be LABELMAPPING.");
+
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
 
@@ -2861,6 +2856,7 @@ namespace MyCaffe.test
             finally
             {
                 layer.Dispose();
+                db.CleanUp();
             }
         }
 
