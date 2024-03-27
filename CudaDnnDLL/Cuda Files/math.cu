@@ -7587,59 +7587,36 @@ template long Math<float>::channel_percentile(int n, int nOutNum, int nChannels,
 template <typename T>
 __global__ void channel_op_mul_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
 {
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
+	const int nCountF1 = nN1 * nC * nSD1;
+	const int nCountF2 = nN2 * nC * nSD2;
+	const int nCount1 = nC * nSD1;
+	const int nCount2 = nC * nSD2;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = i % nCount1;
-		const int nIdx2 = i % nCount2;
+		const int n1 = i / nCountF1;
+		const int nIdx1 = (n1 % nN1) * nCount1 + (i / nN1) % nCount1;
+		const int n2 = i / nCountF2;
+		const int nIdx2 = (n2 % nN2) * nCount2 + (i / nN2) % nCount2;
 
 		y[i] = a[nIdx1] * b[nIdx2];
 	}
 }
-
-template <typename T>
-__global__ void channel_op_mul_fwd_kernel1(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
-{
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
-
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
-	{
-		const int nIdx1 = (i / nSD2) % nCount1;
-		const int nIdx2 = (i / nSD1) % nCount2;
-
-		y[i] = a[nIdx1] * b[nIdx2];
-	}
-}
-
 
 template <typename T>
 __global__ void channel_op_div_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
 {
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
+	const int nCountF1 = nN1 * nC * nSD1;
+	const int nCountF2 = nN2 * nC * nSD2;
+	const int nCount1 = nC * nSD1;
+	const int nCount2 = nC * nSD2;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = i % nCount1;
-		const int nIdx2 = i % nCount2;
-
-		y[i] = a[nIdx1] / b[nIdx2];
-	}
-}
-
-template <typename T>
-__global__ void channel_op_div_fwd_kernel1(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
-{
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
-
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
-	{
-		const int nIdx1 = (i / nSD2) % nCount1;
-		const int nIdx2 = (i / nSD1) % nCount2;
+		const int n1 = i / nCountF1;
+		const int nIdx1 = (n1 % nN1) * nCount1 + (i / nN1) % nCount1;
+		const int n2 = i / nCountF2;
+		const int nIdx2 = (n2 % nN2) * nCount2 + (i / nN2) % nCount2;
 
 		y[i] = a[nIdx1] / b[nIdx2];
 	}
@@ -7648,28 +7625,17 @@ __global__ void channel_op_div_fwd_kernel1(const int nYCount, const int nC, cons
 template <typename T>
 __global__ void channel_op_add_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
 {
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
+	const int nCountF1 = nN1 * nC * nSD1;
+	const int nCountF2 = nN2 * nC * nSD2;
+	const int nCount1 = nC * nSD1;
+	const int nCount2 = nC * nSD2;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = i % nCount1;
-		const int nIdx2 = i % nCount2;
-
-		y[i] = a[nIdx1] + b[nIdx2];
-	}
-}
-
-template <typename T>
-__global__ void channel_op_add_fwd_kernel1(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
-{
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
-
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
-	{
-		const int nIdx1 = (i / nSD2) % nCount1;
-		const int nIdx2 = (i / nSD1) % nCount2;
+		const int n1 = i / nCountF1;
+		const int nIdx1 = (n1 % nN1) * nCount1 + (i / nN1) % nCount1;
+		const int n2 = i / nCountF2;
+		const int nIdx2 = (n2 % nN2) * nCount2 + (i / nN2) % nCount2;
 
 		y[i] = a[nIdx1] + b[nIdx2];
 	}
@@ -7678,28 +7644,17 @@ __global__ void channel_op_add_fwd_kernel1(const int nYCount, const int nC, cons
 template <typename T>
 __global__ void channel_op_sub_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
 {
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
+	const int nCountF1 = nN1 * nC * nSD1;
+	const int nCountF2 = nN2 * nC * nSD2;
+	const int nCount1 = nC * nSD1;
+	const int nCount2 = nC * nSD2;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = i % nCount1;
-		const int nIdx2 = i % nCount2;
-
-		y[i] = a[nIdx1] - b[nIdx2];
-	}
-}
-
-template <typename T>
-__global__ void channel_op_sub_fwd_kernel1(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
-{
-	const int nCount1 = nN1 * nC * nSD1;
-	const int nCount2 = nN2 * nC * nSD2;
-
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
-	{
-		const int nIdx1 = (i / nSD2) % nCount1;
-		const int nIdx2 = (i / nSD1) % nCount2;
+		const int n1 = i / nCountF1;
+		const int nIdx1 = (n1 % nN1) * nCount1 + (i / nN1) % nCount1;
+		const int n2 = i / nCountF2;
+		const int nIdx2 = (n2 % nN2) * nCount2 + (i / nN2) % nCount2;
 
 		y[i] = a[nIdx1] - b[nIdx2];
 	}
@@ -7729,31 +7684,19 @@ long Math<T>::channel_op_fwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2,
 	switch (nOp)
 	{
 		case CHANNEL_OP_MUL:
-			if (nSD1 == nSD2)
-				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			else
-				channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			break;
 
 		case CHANNEL_OP_DIV:
-			if (nSD1 == nSD2)
-				channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			else
-				channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			break;
 
 		case CHANNEL_OP_ADD:
-			if (nSD1 == nSD2)
-				channel_op_add_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			else
-				channel_op_add_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			channel_op_add_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			break;
 
 		case CHANNEL_OP_SUB:
-			if (nSD1 == nSD2)
-				channel_op_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			else
-				channel_op_sub_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			channel_op_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			break;
 	}
 
@@ -7823,18 +7766,12 @@ long Math<T>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2,
 		switch (nOp)
 		{
 			case CHANNEL_OP_MUL:
-				if (nCount == nACount)
-					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);				
-				else
-					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, work);
+				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);				
 				lErr = cudaStreamSynchronize(0);
 				break;
 
 			case CHANNEL_OP_DIV:
-				if (nCount == nACount)
-					channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);
-				else
-					channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, work);
+				channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);
 				lErr = cudaStreamSynchronize(0);
 				break;
 
@@ -7894,18 +7831,12 @@ long Math<T>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2,
 				if (lErr = scal(nCount, (T)-1.0, work))
 					return lErr;
 
-				if (nCount == nBCount)
-					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nCc, nNc, nSDc, nNc, nSDc, work, yd, bd);
-				else
-					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nCc, nNc, nSDc, nNc, nSDc, work, yd, work);
+				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nCc, nNc, nSDc, nNc, nSDc, work, yd, bd);
 				lErr = cudaStreamSynchronize(0);
 				break;
 
 			case CHANNEL_OP_MUL:
-				if (nCount == nBCount)
-					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, bd);
-				else
-					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN1, nSD2, yd, a, work);
+				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, bd);
 				lErr = cudaStreamSynchronize(0);
 				break;
 
