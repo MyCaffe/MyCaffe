@@ -43,7 +43,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardWithFlash()
+        public void TestForwardWithCudaDirect()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -79,7 +79,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBackwardWithFlash()
+        public void TestBackwardWithCudaDirect()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
