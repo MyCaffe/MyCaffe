@@ -158,22 +158,29 @@ namespace MyCaffe.fused_ops
 
             FUSEDCOMPUTE_DATA_TYPE dt = (typeof(T) == typeof(double)) ? FUSEDCOMPUTE_DATA_TYPE.DOUBLE : FUSEDCOMPUTE_DATA_TYPE.FLOAT;
             long hFc = m_cuda.CreateFusedCompute(nSharedIndex, m_hCuda, m_cuda.GetDeviceID(), dt, dt, dt, FUSEDCOMPUTE_PREBUILT_OP.NONE);
-            hA = m_cuda.FusedCompAddTensor(hFc, dt, nB, nC, m_nM, m_nK, bTransA, out hAws);
-            hB = m_cuda.FusedCompAddTensor(hFc, dt, nB, nC, m_nK, m_nN, bTransB, out hBws);
-            FUSEDCOMPUTE_OP op = FUSEDCOMPUTE_OP.MATMUL;
-            hC = m_cuda.FusedCompAddOp(hFc, op, dt, 0, hA, hB);
+            hAws = 0;
+            hBws = 0;
+            lWorkspaceSizeInItems = 0;
+            hA = 0;
+            hB = 0;
+            hC = 0;
 
-            try
+            if (!bForceFallbackUse)
             {
-                if (!bForceFallbackUse)
+                try
                 {
+                    hA = m_cuda.FusedCompAddTensor(hFc, dt, nB, nC, m_nM, m_nK, bTransA, out hAws);
+                    hB = m_cuda.FusedCompAddTensor(hFc, dt, nB, nC, m_nK, m_nN, bTransB, out hBws);
+                    FUSEDCOMPUTE_OP op = FUSEDCOMPUTE_OP.MATMUL;
+                    hC = m_cuda.FusedCompAddOp(hFc, op, dt, 0, hA, hB);
+
                     long lWorkspaceSizeInBytes = m_cuda.FusedCompBuild(hFc, FUSEDCOMP_HEUR_MODE.A, FUSEDCOMP_HEUR_MODE.FALLBACK);
                     lWorkspaceSizeInItems = (lWorkspaceSizeInBytes == 0) ? 0 : (lWorkspaceSizeInBytes / m_lBaseSize) + 1;
                 }
-            }
-            catch (Exception)
-            {
-                bForceFallbackUse = true;
+                catch (Exception)
+                {
+                    bForceFallbackUse = true;
+                }
             }
 
             if (bForceFallbackUse)
@@ -217,6 +224,9 @@ namespace MyCaffe.fused_ops
         public long ReshapeMatMulOp(long hFc, bool bTransA, bool bTransB, Blob<T> A, Blob<T> B, Blob<T> C, ref long hA, ref long hB, ref long hC, out long lWorkspaceSizeInItems, ref long hAws, ref long hBws, long nSharedIndex = -1, bool bForceFallbackUse = false)
         {
             lWorkspaceSizeInItems = 0;
+
+            if (bForceFallbackUse)
+                return -1;
 
             if (m_hCuda == 0)
                 m_hCuda = m_cuda.CreateCuDNN();
