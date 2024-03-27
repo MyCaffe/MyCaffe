@@ -1224,7 +1224,7 @@ namespace MyCaffe
                 if (p == null || !bCreateRunNet)
                     return true;
 
-                if (m_solver.parameter.use_test_net_for_running)
+                if (m_solver != null && m_solver.parameter.use_test_net_for_running)
                 {
                     m_log.WriteLine("WARNING: Using the test net for running as specified in the solver parameter 'use_test_net_for_running' = true.", true);
                     m_net = m_solver.TestingNet;
