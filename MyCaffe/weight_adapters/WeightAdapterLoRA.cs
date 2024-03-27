@@ -41,9 +41,10 @@ namespace MyCaffe.weight_adapters
         /// <param name="phase">Specifies the phase over which the weight adapter will run.</param>
         public WeightAdapterLoRA(CudaDnn<T> cuda, Log log, WeightAdapterParameter p, Phase phase) : base(cuda, log, p)
         {            
-            m_matmul = new MatMulOp<T>(m_cuda, m_log);
+            // Force using backup until fused matmul caching is implemented.
+            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, true);
             if (phase == Phase.TRAIN)
-                m_matmulGrad = new MatMulGradOp<T>(m_cuda, m_log);
+                m_matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, 2, true);
         }
 
         /// <summary>
