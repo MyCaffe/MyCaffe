@@ -151,7 +151,9 @@ namespace MyCaffe.param
                 rgChildren.Add("ignore_label", ignore_label);
 
             rgChildren.Add("normalization", normalization.ToString());
-            rgChildren.Add("loss_scale", loss_scale.ToString());
+
+            if (loss_scale != 1.0)
+                rgChildren.Add("loss_scale", loss_scale.ToString());
 
             if (normalization == NormalizationMode.NONE && normalize != false)
                 rgChildren.Add("normalize", normalize.ToString());

@@ -151,7 +151,9 @@ namespace MyCaffe.param
 
             rgChildren.Add("num_output", num_output.ToString());
             rgChildren.Add("input_dim", input_dim.ToString());
-            rgChildren.Add("backward_compute_type", ((int)backward_compute_type).ToString());
+
+            if (backward_compute_type != COMPUTE_TYPE.FAST)
+                rgChildren.Add("backward_compute_type", ((int)backward_compute_type).ToString());
 
             if (bias_term != true)
                 rgChildren.Add("bias_term", bias_term.ToString());
