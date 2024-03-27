@@ -171,7 +171,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_cpd;
 		HandleCollection<MIN_HANDLES> m_layernorm;
 		HandleCollection<MIN_HANDLES> m_rope;
-		HandleCollection<MIN_HANDLES> m_fusedcomp;
+		HandleCollection<MID_HANDLES> m_fusedcomp;
 		HandleCollection<MIN_HANDLES> m_blobloaders;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
