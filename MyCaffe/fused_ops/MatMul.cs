@@ -221,7 +221,7 @@ namespace MyCaffe.fused_ops
                 long hAws;
                 long hBws;
                 m_hMatMul = m_fc.CreateMatMulOp(bTransA, bTransB, A, B, C, out m_hA, out m_hB, out m_hC, out m_lWorkspaceInItems, out hAws, out hBws, nSharedIndex, m_bForceFallbackUse);
-                
+
                 if (m_lWorkspaceInItems > 0)
                     m_hWorkspace = m_cuda.AllocMemory(m_lWorkspaceInItems);
                 else
@@ -263,6 +263,7 @@ namespace MyCaffe.fused_ops
             try
             {
                 prep(A, B, C, bTransA, bTransB);
+
                 long hMatMul = m_fc.ReshapeMatMulOp(m_hMatMul, bTransA, bTransB, A, B, C, ref m_hA, ref m_hB, ref m_hC, out lWorkspaceInItems, ref hAws, ref hBws, nSharedIndex, m_bForceFallbackUse);
 
                 if (hMatMul > 0)
