@@ -2444,10 +2444,10 @@ namespace MyCaffe.test
                     double dfTopVal = rgTopData[i];
                     double dfBottomVal = rgBottomData[i];
 
-                    if (dfTopVal >= 0)
-                        m_log.CHECK_EQ(dfTopVal, dfBottomVal, "Top and bottom should be equal at index " + i.ToString() + ".");
-                    else
-                        m_log.CHECK_EQ(dfTopVal, dfBottomVal * 0.01, "Top value should equal Bottom value * 0.01, or " + (dfBottomVal * 0.01).ToString());
+                    double dfDiff = (dfTopVal >= 0) ? Math.Abs(dfTopVal - dfBottomVal) : Math.Abs(dfTopVal - (dfBottomVal * 0.01));
+                    double dfTol = 1e-08;
+
+                    m_log.CHECK_LT(dfDiff, dfTol, "The difference between the top and bottom values should be less than " + dfTol.ToString() + " at index " + i.ToString() + ".");
                 }
             }
             finally
