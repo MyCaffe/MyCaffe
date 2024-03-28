@@ -3151,7 +3151,7 @@ namespace MyCaffe
 
                 sw.Restart();
 
-                if (tok.IsEOS(nTokenId))
+                if (tok.IsEOS(nTokenId) || m_evtCancel.WaitOne(0))
                     break;
             }
 
@@ -3247,6 +3247,9 @@ namespace MyCaffe
                             double dfPct = (double)nCount / nMax;
                             m_log.WriteLine("Generating response at " + dfPct.ToString("P") + "...");
                         }
+
+                        if (m_evtCancel.WaitOne(0))
+                            break;
                     }
 
                     strOut = "";
