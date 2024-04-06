@@ -89,6 +89,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMatMul4Cache()
+        {
+            FusedComputationTest test = new FusedComputationTest();
+
+            try
+            {
+                foreach (IFusedComputationTest t in test.Tests)
+                {
+                    t.TestMatMul4Cache();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMatMulGradPyTorchCompatible()
         {
             FusedComputationTest test = new FusedComputationTest();
@@ -123,6 +141,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatMulGradPyTorchCompatibleCache()
+        {
+            FusedComputationTest test = new FusedComputationTest();
+
+            try
+            {
+                foreach (IFusedComputationTest t in test.Tests)
+                {
+                    t.TestMatMulGradCache(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMatMulGradNonPyTorchCompatibleCache()
+        {
+            FusedComputationTest test = new FusedComputationTest();
+
+            try
+            {
+                foreach (IFusedComputationTest t in test.Tests)
+                {
+                    t.TestMatMulGradCache(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IFusedComputationTest : ITest
@@ -132,6 +186,8 @@ namespace MyCaffe.test
         void TestMatMul3();
         void TestMatMul4();
         void TestMatMulGrad(bool bForceFallbackUse);
+        void TestMatMul4Cache();
+        void TestMatMulGradCache(bool bForceFallbackUse);
     }
 
     class FusedComputationTest : TestBase
@@ -576,6 +632,218 @@ namespace MyCaffe.test
                 xv.Unsqueeze(nAxis);
 
                 matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse);
+                matmulGrad.Create(x1, wq, xq, false, (matmulQ.BwsHandle == 0) ? true : false);
+                matmulGrad.Run(x1, wq, xq, 0, matmulQ.BwsHandle);
+                matmulGrad.Run(x2, wk, xk, 0, matmulK.BwsHandle);
+                matmulGrad.Run(x3, wv, xv, 0, matmulV.BwsHandle);
+
+                x.CopyFrom(x1, true, true);
+                m_cuda.add(x.count(), x.gpu_diff, x2.gpu_diff, x.mutable_gpu_diff);
+                m_cuda.add(x.count(), x.gpu_diff, x3.gpu_diff, x.mutable_gpu_diff);
+
+                xq.Squeeze(nAxis);
+                xk.Squeeze(nAxis);
+                xv.Squeeze(nAxis);
+
+                blobVal.LoadFromNumpy(strPath + "att.x1.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(x1, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
+                blobVal.LoadFromNumpy(strPath + "att.x2.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(x2, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
+                blobVal.LoadFromNumpy(strPath + "att.x3.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(x3, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
+                blobVal.LoadFromNumpy(strPath + "att.x.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(x, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
+            }
+            finally
+            {
+                dispose(ref x);
+                dispose(ref x1);
+                dispose(ref x2);
+                dispose(ref x3);
+                dispose(ref wq);
+                dispose(ref wk);
+                dispose(ref wv);
+                dispose(ref xq);
+                dispose(ref xk);
+                dispose(ref xv);
+                dispose(ref blobWork);
+                dispose(ref blobVal);
+
+                if (matmulQ != null)
+                    matmulQ.Dispose();
+                if (matmulK != null)
+                    matmulK.Dispose();
+                if (matmulV != null)
+                    matmulV.Dispose();
+
+                if (matmulGrad != null)
+                    matmulGrad.Dispose();
+            }
+        }
+
+
+        public void TestMatMul4Cache()
+        {
+            Blob<T> A = null;
+            Blob<T> B = null;
+            Blob<T> C = null;
+            Blob<T> D = null;
+            Blob<T> E = null;
+            Blob<T> F = null;
+            Blob<T> blobWork = null;
+            Blob<T> blobVal = null;
+            MatMulOp<T> matmul = null;
+            string strPath = getDataPath();
+
+            try
+            {
+                int nB = 64;
+                int nC = 350;
+                int nH = 1;
+                int nW = 288;
+                List<int> rgShape = new List<int>() { nB, nC, nH, nW };
+                A = new Blob<T>(m_cuda, m_log, rgShape);
+                rgShape = new List<int>() { nW, nW };
+                B = new Blob<T>(m_cuda, m_log, rgShape);
+                C = new Blob<T>(m_cuda, m_log);
+
+                blobVal = new Blob<T>(m_cuda, m_log);
+
+                m_filler.Fill(A);
+                m_filler.Fill(B);
+
+                A.LoadFromNumpy(strPath + "att.x.npy");
+                blobVal.LoadFromNumpy(strPath + "wq.npy");
+                B.CopyFromAndTransposeHeightWidth(blobVal);
+
+                rgShape = new List<int>() { 1, 1, nB * nC, nW };
+                A.Reshape(rgShape);
+                rgShape = new List<int>() { 1, 1, nW, nW };
+                B.Reshape(rgShape);
+
+                C.MatMul(A, B, true);
+
+                D = new Blob<T>(m_cuda, m_log);
+                E = new Blob<T>(m_cuda, m_log);
+                F = new Blob<T>(m_cuda, m_log);
+                blobWork = new Blob<T>(m_cuda, m_log);
+
+                blobVal.LoadFromNumpy(strPath + "wq.npy");
+                B.CopyFrom(blobVal, false, true);
+
+                rgShape = new List<int>() { 1, 1, nW, nW };
+                B.Reshape(rgShape);
+
+                D.CopyFrom(A, false, true);
+                E.CopyFrom(B, false, true);
+
+                matmul = new MatMulOp<T>(m_cuda, m_log, 2, false, 1);
+                matmul.Create(D, E, F, false, true);
+                matmul.Run(D.gpu_data, E.gpu_data, F.mutable_gpu_data);
+
+                m_log.CHECK(C.Compare(F, blobWork, false, 0.01), "The blobs are different!");
+
+                blobVal.LoadFromNumpy(strPath + "xq.npy");
+                m_log.CHECK(blobVal.Compare(F, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 0.01), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(C, blobWork, false, 0.01), "The blobs are different!");
+            }
+            finally
+            {
+                dispose(ref A);
+                dispose(ref B);
+                dispose(ref C);
+                dispose(ref D);
+                dispose(ref E);
+                dispose(ref F);
+                dispose(ref blobWork);
+                dispose(ref blobVal);
+
+                if (matmul != null)
+                    matmul.Dispose();
+            }
+        }
+
+        public void TestMatMulGradCache(bool bForceFallbackUse)
+        {
+            Blob<T> x = null;
+            Blob<T> x1 = null;
+            Blob<T> x2 = null;
+            Blob<T> x3 = null;
+            Blob<T> wq = null;
+            Blob<T> wk = null;
+            Blob<T> wv = null;
+            Blob<T> xq = null;
+            Blob<T> xk = null;
+            Blob<T> xv = null;
+            Blob<T> blobWork = null;
+            Blob<T> blobVal = null;
+            MatMulOp<T> matmulQ = null;
+            MatMulOp<T> matmulK = null;
+            MatMulOp<T> matmulV = null;
+            MatMulGradOp<T> matmulGrad = null;
+            string strPath = getDataPath();
+
+            try
+            {
+                blobWork = new Blob<T>(m_cuda, m_log);
+                blobVal = new Blob<T>(m_cuda, m_log);
+
+                int nB = 64;
+                int nC = 350;
+                int nH = 1;
+                int nW = 288;
+                List<int> rgShape = new List<int>() { nB, nC, nH, nW };
+                x = new Blob<T>(m_cuda, m_log, rgShape);
+                x1 = new Blob<T>(m_cuda, m_log, rgShape);
+                x2 = new Blob<T>(m_cuda, m_log, rgShape);
+                x3 = new Blob<T>(m_cuda, m_log, rgShape);
+
+                rgShape = new List<int>() { nW, nW };
+                wq = new Blob<T>(m_cuda, m_log, rgShape);
+                wk = new Blob<T>(m_cuda, m_log, rgShape);
+                wv = new Blob<T>(m_cuda, m_log, rgShape);
+
+                xq = new Blob<T>(m_cuda, m_log);
+                xk = new Blob<T>(m_cuda, m_log);
+                xv = new Blob<T>(m_cuda, m_log);
+
+                x.LoadFromNumpy(strPath + "att.x.npy");
+
+                x1.LoadFromNumpy(strPath + "att.x1.npy");
+                x2.LoadFromNumpy(strPath + "att.x2.npy");
+                x3.LoadFromNumpy(strPath + "att.x3.npy");
+
+                wq.LoadFromNumpy(strPath + "wq.npy");
+                wk.LoadFromNumpy(strPath + "wk.npy");
+                wv.LoadFromNumpy(strPath + "wv.npy");
+
+                int nAxis = 2;
+
+                x1.Unsqueeze(nAxis);
+                x2.Unsqueeze(nAxis);
+                x3.Unsqueeze(nAxis);
+
+                matmulQ = new MatMulOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 1);
+                matmulQ.Create(x1, wq, xq, false, true);
+                matmulQ.Run(x.gpu_data, wq.gpu_data, xq.mutable_gpu_data);
+
+                matmulK = new MatMulOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 2);
+                matmulK.Create(x2, wk, xk, false, true);
+                matmulK.Run(x.gpu_data, wk.gpu_data, xk.mutable_gpu_data);
+
+                matmulV = new MatMulOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 3);
+                matmulV.Create(x3, wv, xv, false, true);
+                matmulV.Run(x.gpu_data, wv.gpu_data, xv.mutable_gpu_data);
+
+                xq.LoadFromNumpy(strPath + "xq.grad.npy", true);
+                xk.LoadFromNumpy(strPath + "xk.grad.npy", true);
+                xv.LoadFromNumpy(strPath + "xv.grad.npy", true);
+
+                xq.Unsqueeze(nAxis);
+                xk.Unsqueeze(nAxis);
+                xv.Unsqueeze(nAxis);
+
+                matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 4);
                 matmulGrad.Create(x1, wq, xq, false, (matmulQ.BwsHandle == 0) ? true : false);
                 matmulGrad.Run(x1, wq, xq, 0, matmulQ.BwsHandle);
                 matmulGrad.Run(x2, wk, xk, 0, matmulK.BwsHandle);
