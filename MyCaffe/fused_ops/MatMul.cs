@@ -37,12 +37,13 @@ namespace MyCaffe.fused_ops
         /// <param name="log">Specifies the output log.</param>
         /// <param name="nAxis">Specifies the axis of the operation (default = 2).</param>
         /// <param name="bForceFallbackUse">Optionally, force using the fallback.</param>
-        public MatMulOp(CudaDnn<T> cuda, Log log, int nAxis = 2, bool bForceFallbackUse = false)
+        /// <param name="nLocalID">Optionally, specifies the localID used for graph caching.</param>
+        public MatMulOp(CudaDnn<T> cuda, Log log, int nAxis = 2, bool bForceFallbackUse = false, int nLocalID = -1)
         {
             m_nAxis = nAxis;
             m_bForceFallbackUse = bForceFallbackUse;
             m_cuda = cuda;
-            m_fc = new FusedComputation<T>(cuda, log);
+            m_fc = new FusedComputation<T>(cuda, log, nLocalID);
         }
 
         /// <summary>
@@ -338,10 +339,17 @@ namespace MyCaffe.fused_ops
         /// <param name="log">Specifies the output log.</param>
         /// <param name="nAxis">Specifies the axis to run on (default = 2).</param>
         /// <param name="bForceFallbackUse">Optionally, specifies to force using the fallback.</param>
-        public MatMulGradOp(CudaDnn<T> cuda, Log log, int nAxis = 2, bool bForceFallbackUse = false)
+        /// <param name="nLocalID">Optionally, specifies the localID used for graph caching - NOTE, ID's must be factors of 2.</param>
+        public MatMulGradOp(CudaDnn<T> cuda, Log log, int nAxis = 2, bool bForceFallbackUse = false, int nLocalID = -1)
         {
-            m_op1 = new MatMulOp<T>(cuda, log, nAxis, bForceFallbackUse);
-            m_op2 = new MatMulOp<T>(cuda, log, nAxis, bForceFallbackUse);
+            if (nLocalID >= 0 && nLocalID % 2 != 0)
+                throw new Exception("The localID must be a factor of 2.");
+
+            int nLocalID1 = (nLocalID < 0) ? -1 : nLocalID;
+            int nLocalID2 = (nLocalID < 0) ? -1 : nLocalID + 1;
+
+            m_op1 = new MatMulOp<T>(cuda, log, nAxis, bForceFallbackUse, nLocalID1);
+            m_op2 = new MatMulOp<T>(cuda, log, nAxis, bForceFallbackUse, nLocalID2);
         }
 
         /// <summary>

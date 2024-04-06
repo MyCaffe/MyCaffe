@@ -29,17 +29,20 @@ namespace MyCaffe.fused_ops
         Dictionary<long, Tuple<FUSEDCOMPUTE_PREBUILT_OP, bool, bool>> m_rgUseFallback = new Dictionary<long, Tuple<FUSEDCOMPUTE_PREBUILT_OP, bool, bool>>();
         long m_lBaseSize;
         List<int> m_rgShape = new List<int>(4);
+        int m_nLocalID = -1;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="cuda">Specifies the connection to the low-level CUDA implementations.</param>
         /// <param name="log">Specifies the output log.</param>
-        public FusedComputation(CudaDnn<T> cuda, Log log)
+        /// <param name="nLocalID">Optionally, specifies the local ID used for graph caching.</param>
+        public FusedComputation(CudaDnn<T> cuda, Log log, int nLocalID = -1)
         {
             m_lBaseSize = (typeof(T) == typeof(double)) ? 8 : 4;    
             m_cuda = cuda;
             m_log = log;
+            m_nLocalID = nLocalID;
         }
 
         /// <summary>
@@ -174,7 +177,7 @@ namespace MyCaffe.fused_ops
                     FUSEDCOMPUTE_OP op = FUSEDCOMPUTE_OP.MATMUL;
                     hC = m_cuda.FusedCompAddOp(hFc, op, dt, 0, hA, hB);
 
-                    long lWorkspaceSizeInBytes = m_cuda.FusedCompBuild(hFc, FUSEDCOMP_HEUR_MODE.A, FUSEDCOMP_HEUR_MODE.FALLBACK);
+                    long lWorkspaceSizeInBytes = m_cuda.FusedCompBuild(hFc, FUSEDCOMP_HEUR_MODE.A, FUSEDCOMP_HEUR_MODE.FALLBACK, m_nLocalID);
                     lWorkspaceSizeInItems = (lWorkspaceSizeInBytes == 0) ? 0 : (lWorkspaceSizeInBytes / m_lBaseSize) + 1;
                 }
                 catch (Exception)
@@ -326,7 +329,7 @@ namespace MyCaffe.fused_ops
             m_rgDataWs.Add(hBws);
             m_rgDataWs.Add(0);
 
-            m_cuda.FusedCompExecute(hFc, hWorkspace, m_rgTensors, m_rgData, m_rgDataWs);
+            m_cuda.FusedCompExecute(hFc, hWorkspace, m_rgTensors, m_rgData, m_rgDataWs, m_nLocalID);
         }
     }
 }

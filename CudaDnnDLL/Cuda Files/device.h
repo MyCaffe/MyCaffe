@@ -4439,14 +4439,15 @@ inline long Device<T>::FusedCompBuild(long lInput, T* pfInput, long llInput, LON
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
-	HeurMode nHeurMode1 = (HeurMode)(int)plInput[1];
-	HeurMode nHeurMode2 = (HeurMode)(int)plInput[2];
+	int nLocalID = (int)plInput[1];
+	HeurMode nHeurMode1 = (HeurMode)(int)plInput[2];
+	HeurMode nHeurMode2 = (HeurMode)(int)plInput[3];
 
-	if (lErr = m_memory.FusedCompBuild(hFusedComp, nHeurMode1, nHeurMode2, &lWorkspaceSize))
+	if (lErr = m_memory.FusedCompBuild(hFusedComp, nLocalID, nHeurMode1, nHeurMode2, &lWorkspaceSize))
 		return lErr;
 
 	return setOutput(lWorkspaceSize, plOutput, ppfOutput);
@@ -4457,13 +4458,14 @@ inline long Device<T>::FusedCompExecute(long lInput, T* pfInput, long llInput, L
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 3 + 90))
+	if (lErr = verifyInput(llInput, plInput, 4, 4 + 90))
 		return lErr;
 
 	long hFusedComp = (long)plInput[0];
-	long hWorkspace = (long)plInput[1];
-	long lCount = (long)plInput[2];
-	long lRemaining = llInput - 3;
+	int nLocalID = (int)plInput[1];
+	long hWorkspace = (long)plInput[2];
+	long lCount = (long)plInput[3];
+	long lRemaining = llInput - 4;
 
 	if (lRemaining %3 != 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -4473,11 +4475,11 @@ inline long Device<T>::FusedCompExecute(long lInput, T* pfInput, long llInput, L
 	if (lCount != lActualCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	LONGLONG* rghTensor = (LONGLONG*)&(plInput[3]);
-	LONGLONG* rghTensorData = (LONGLONG*)&(plInput[3 + lCount*1]);
-	LONGLONG* rghTensorWorkspace = (LONGLONG*)&(plInput[3 + lCount*2]);
+	LONGLONG* rghTensor = (LONGLONG*)&(plInput[4]);
+	LONGLONG* rghTensorData = (LONGLONG*)&(plInput[4 + lCount*1]);
+	LONGLONG* rghTensorWorkspace = (LONGLONG*)&(plInput[4 + lCount*2]);
 
-	if (lErr = m_memory.FusedCompExecute(hFusedComp, hWorkspace, rghTensor, rghTensorData, rghTensorWorkspace, lCount))
+	if (lErr = m_memory.FusedCompExecute(hFusedComp, nLocalID, hWorkspace, rghTensor, rghTensorData, rghTensorWorkspace, lCount))
 		return lErr;
 
 	return 0;

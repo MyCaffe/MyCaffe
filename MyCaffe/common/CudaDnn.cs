@@ -6524,17 +6524,18 @@ namespace MyCaffe.common
         /// <param name="hFusedCompute">Specifies the handle to the FusedComp instance.</param>
         /// <param name="heur1">Specifies the first heuristics to use.</param>
         /// <param name="heur2">Specifies the second heuristics to use.</param>
+        /// <param name="nLocalID">Optionally, specifies the local ID used for caching graphs.</param>
         /// <returns>Returns the workspace size needed (in bytes) to execute the computation.</returns>
-        public long FusedCompBuild(long hFusedCompute, FUSEDCOMP_HEUR_MODE heur1, FUSEDCOMP_HEUR_MODE heur2)
+        public long FusedCompBuild(long hFusedCompute, FUSEDCOMP_HEUR_MODE heur1, FUSEDCOMP_HEUR_MODE heur2, int nLocalID = -1)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, (int)heur1, (int)heur2));
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, nLocalID, (int)heur1, (int)heur2));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, (int)heur1, (int)heur2));
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_FUSED_COMP_BUILD, null, m_param.AsLong(hFusedCompute, nLocalID, (int)heur1, (int)heur2));
                 return (long)rg[0];
             }
         }
@@ -6547,8 +6548,9 @@ namespace MyCaffe.common
         /// <param name="rghTensors">Specifies a list of handles to tensors created with the FusedCompAddTensor method.</param>
         /// <param name="rghTensorData">Specifies a list of handles to the tensor GPU data created with AllocMem.</param>
         /// <param name="rghTensorWorkspaceData">Specifies the handles tot he tensor GPU workspace data required on any tensors that are transformed.  Each workspace should be the size in items of the tensor to be transformed.</param>
+        /// <param name="nLocalID">Optionally, specifies the local ID used for caching graphs.</param>
         /// <remarks>Note the list of tensors and list of tensor data must be of the same count.</remarks>
-        public void FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData, List<long> rghTensorWorkspaceData)
+        public void FusedCompExecute(long hFusedCompute, long hWorkspace, List<long> rghTensors, List<long> rghTensorData, List<long> rghTensorWorkspaceData, int nLocalID = -1)
         {
             if (rghTensorData.Count != rghTensors.Count)
                 throw new Exception("The number of tensors and tensor data must match.");
@@ -6561,6 +6563,7 @@ namespace MyCaffe.common
 
             List<long> rgArgs = new List<long>();
             rgArgs.Add(hFusedCompute);
+            rgArgs.Add(nLocalID);
             rgArgs.Add(hWorkspace);
             rgArgs.Add(rghTensors.Count);
             rgArgs.AddRange(rghTensors);

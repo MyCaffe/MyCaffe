@@ -544,8 +544,8 @@ class Memory
 		long FusedCompAddTensor(long hFusedComp, DataType dt, long nS1, long nS2, long nS3, long nS4, bool bTranspose, long* phTensorHandle, long* plTensorWorkspaceItems);
 		long FusedCompGetTensor(long hFusedComp, long hTensorHandle, DataType* pdt, long* pnS1, long* pnS2, long* pnS3, long* pnS4, bool* pbTranspose);
 		long FusedCompAddOp(long hFusedComp, FusedCompOp nOp, DataType dtCompute, T fPadding, long hTensor1, long hTensor2, long hTensor3, long hTensor4, long* plIntermediateTensor);
-		long FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* phWorkspace);
-		long FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount);
+		long FusedCompBuild(long hFusedComp, int nLocalID, HeurMode heur1, HeurMode heur2, long* phWorkspace);
+		long FusedCompExecute(long hFusedComp, int nLocalID, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -2365,23 +2365,23 @@ inline long Memory<T>::FusedCompAddOp(long hFusedComp, FusedCompOp nOp, DataType
 }
 
 template <class T>
-inline long Memory<T>::FusedCompBuild(long hFusedComp, HeurMode heur1, HeurMode heur2, long* plWorkspaceSize)
+inline long Memory<T>::FusedCompBuild(long hFusedComp, int nLocalID, HeurMode heur1, HeurMode heur2, long* plWorkspaceSize)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->Build(heur1, heur2, plWorkspaceSize);
+	return pFc->Build(nLocalID, heur1, heur2, plWorkspaceSize);
 }
 
 template <class T>
-inline long Memory<T>::FusedCompExecute(long hFusedComp, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount)
+inline long Memory<T>::FusedCompExecute(long hFusedComp, int nLocalID, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount)
 {
 	fusedcompHandle<T>* pFc = (fusedcompHandle<T>*)m_fusedcomp.GetData(hFusedComp);
 	if (pFc == NULL)
 		return ERROR_FUSEDCOMP_NOT_INITIALIZED;
 
-	return pFc->Execute(hWorkspace, rghTensor, rghTensorData, rghTensorWorkspaceData, lCount);
+	return pFc->Execute(nLocalID, hWorkspace, rghTensor, rghTensorData, rghTensorWorkspaceData, lCount);
 }
 
 
