@@ -120,8 +120,18 @@ namespace MyCaffe.fused_ops
             if (b.shape(0) == 1 && b.shape(1) == 1)
             {
                 m_rgShape.Clear();
-                m_rgShape.Add(b.shape(2));
-                m_rgShape.Add(b.shape(3));
+
+                if (b.num_axes == 3)
+                {
+                    m_rgShape.Add(1);
+                    m_rgShape.Add(b.shape(2));
+                }
+                else
+                {
+                    m_rgShape.Add(b.shape(2));
+                    m_rgShape.Add(b.shape(3));
+                }
+
                 b.Reshape(m_rgShape);
                 return;
             }
