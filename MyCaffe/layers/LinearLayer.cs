@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using MyCaffe.fused_ops;
+using System.Diagnostics;
 
 namespace MyCaffe.layers
 {
@@ -26,8 +27,10 @@ namespace MyCaffe.layers
         bool m_bBiasTerm;
         bool m_bTranspose;
         Blob<T> m_blobBiasMultiplier;
+        Blob<T> m_blobWork = null;
         MatMulOp<T> m_matmul = null;
         MatMulGradOp<T> m_matmulgrad = null;
+        List<int> m_rgOriginalShape;
 
         /// <summary>
         /// The LinearLayer constructor.
@@ -52,7 +55,11 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.LINEAR;
             m_blobBiasMultiplier = new Blob<T>(cuda, log);
-            m_blobBiasMultiplier.Name = m_param.name + " biasmult";
+            m_blobBiasMultiplier.Name = m_param.name + ".biasmult";
+            m_bTranspose = p.linear_param.transpose;
+
+            if (m_bTranspose)
+                m_blobWork = createIntraLayerBlob("ip.work", false);
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -61,6 +68,7 @@ namespace MyCaffe.layers
         protected override void dispose()
         {
             dispose(ref m_blobBiasMultiplier);
+            dispose(ref m_blobWork);
 
             if (m_matmul != null)
             {
@@ -150,7 +158,6 @@ namespace MyCaffe.layers
 
             int nNumOutput = (int)m_param.linear_param.num_output;
             m_bBiasTerm = m_param.linear_param.bias_term;
-            m_bTranspose = m_param.linear_param.transpose;
             m_nN = nNumOutput;
 
             int nAxis = colBottom[0].CanonicalAxisIndex(m_param.linear_param.axis);
@@ -191,7 +198,6 @@ namespace MyCaffe.layers
                     rgWeightShape[1] = m_nK;
                 }
 
-                double dfNoiseRange = 1.0 / Math.Sqrt(rgWeightShape[1]);
                 Blob<T> blobWeight = new Blob<T>(m_cuda, m_log, !layer_param.freeze_learning);
                 blobWeight.Name = m_param.name + " weights";
                 blobWeight.blob_type = BLOB_TYPE.IP_WEIGHT;
@@ -203,6 +209,8 @@ namespace MyCaffe.layers
                     weight_filler.Fill(blobWeight);
                 }
                 m_colBlobs.Add(blobWeight);
+                if (m_blobWork != null)
+                    m_blobWork.ReshapeLike(blobWeight);
 
                 // If necessary, initialize and fill the bias term.
                 if (m_bBiasTerm)
@@ -227,12 +235,13 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 m_weightAdapter.Setup(layer_param, m_colBlobs[0]);
 
-            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, false);
+            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, true);
             m_matmul.Create(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
+            m_rgOriginalShape = Utility.Clone<int>(colBottom[0].shape());
 
             if (m_param.phase == Phase.TRAIN)
             {
-                m_matmulgrad = new MatMulGradOp<T>(m_cuda, m_log, 2, false);
+                m_matmulgrad = new MatMulGradOp<T>(m_cuda, m_log, 2, true);
                 m_matmulgrad.Create(colBottom[0], m_colBlobs[0], colTop[0], false, (m_matmul.BwsHandle == 0) ? true : false);
             }
         }
@@ -244,6 +253,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (colBottom[0].CompareShape(m_rgOriginalShape))
+                return;
+
             List<int> rgShape = new List<int>(colBottom[0].shape());
 
             // Figure out the dimensions
@@ -335,7 +347,13 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 blobWeight = m_weightAdapter.Weight;
 
-            m_matmulgrad.Run(colBottom[0], blobWeight, colTop[0]);
+            m_matmulgrad.Run(colBottom[0], blobWeight, colTop[0], 0, m_matmul.BwsHandle);
+
+            if (m_bTranspose)
+            {
+                m_cuda.transposeHW(1, 1, 24, 24, blobWeight.gpu_diff, m_blobWork.mutable_gpu_data);
+                m_cuda.copy(blobWeight.count(), m_blobWork.gpu_data, blobWeight.mutable_gpu_diff);
+            }
 
             if (m_weightAdapter != null)
                 m_weightAdapter.Backward(colTop, colBottom, blobWeight);
