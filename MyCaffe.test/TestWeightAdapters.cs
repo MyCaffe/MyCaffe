@@ -556,7 +556,7 @@ namespace MyCaffe.test
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip");
                 p.inner_product_param.num_output = (uint)nNumOut;
                 p.inner_product_param.bias_term = false;
-                p.inner_product_param.transpose = false;
+                p.inner_product_param.transpose = true;
                 p.inner_product_param.axis = nAxis;
                 p.freeze_learning = bEnableLoRA;
                 p.weight_adapter.type = strLoRAType;
@@ -608,7 +608,7 @@ namespace MyCaffe.test
             try
             {
                 string strSolver = buildSolver(type);
-                string strModel = buildModel(bEnableLoRA, strType, 64, 350, 1, 288, false, 3, 288, bUseLinear);
+                string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, false, 3, 288, bUseLinear);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
@@ -622,7 +622,7 @@ namespace MyCaffe.test
                 blobX.Unsqueeze(2);
 
                 m_log.CHECK_EQ(blobX.num, 64, "The batch size should be 64.");
-                m_log.CHECK_EQ(blobX.channels, 350, "The channels should be 350.");
+                m_log.CHECK_EQ(blobX.channels, 256, "The channels should be 350.");
                 m_log.CHECK_EQ(blobX.height, 1, "The height should be 1.");
                 m_log.CHECK_EQ(blobX.width, 288, "The width should be 288.");
 
@@ -670,7 +670,7 @@ namespace MyCaffe.test
             try
             {
                 string strSolver = buildSolver(type);
-                string strModel = buildModel(bEnableLoRA, strType, 64, 350, 1, 288, true, 2, 288, bUseLinear);
+                string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, true, 2, 288, bUseLinear);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
@@ -687,6 +687,9 @@ namespace MyCaffe.test
                 filler = mycaffe.CreateFiller(m_filler.filler_param);
                 filler.Fill(blobX);
                 filler.Fill(blobTrg);
+
+                blobX.LoadFromNumpy(strPath + "att.x.npy");
+                blobX.Unsqueeze(2);
 
                 LayerParameter.LayerType layerType = (bUseLinear) ? LayerParameter.LayerType.LINEAR : LayerParameter.LayerType.INNERPRODUCT;
                 Layer<T> layer = net.FindLayer(layerType, "ip");
