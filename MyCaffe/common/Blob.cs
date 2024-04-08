@@ -1279,6 +1279,115 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Compare the data (or diff) of one blob to another and return true if all items fall within the specified tolerance or not.
+        /// </summary>
+        /// <param name="nCount1">Specifies the number of items in hData.</param>
+        /// <param name="hData">Specifies the GPU handle to the other data.</param>
+        /// <param name="work">Specifies a temporary work blob.</param>
+        /// <param name="bDiff">Specifies to compare the diff.</param>
+        /// <param name="dfTol">Specifies the accepted tolerance.</param>
+        /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
+        /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
+        /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
+        /// <param name="bForceOtherData">Optionally, force using the other blobs data even when bDiff = true.</param>
+        /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
+        public bool Compare(int nCount1, long hData, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true, bool bForceOtherData = false)
+        {
+            double dfMin;
+            double dfMax;
+            return CompareEx(nCount1, hData, work, out dfMin, out dfMax, bDiff, dfTol, bZeroCheck, bFullCompare, bDetectNans, bForceOtherData);
+        }
+
+        /// <summary>
+        /// Compare the data (or diff) of one blob to another and return true if all items fall within the specified tolerance or not.
+        /// </summary>
+        /// <param name="nCount1">Specifies the number of items in hData.</param>
+        /// <param name="hData">Specifies the GPU handle to the other data.</param>
+        /// <param name="work">Specifies a temporary work blob.</param>
+        /// <param name="dfMin">Returns the min difference.</param>
+        /// <param name="dfMax">Returns the max difference.</param>
+        /// <param name="bDiff">Specifies to compare the diff.</param>
+        /// <param name="dfTol">Specifies the accepted tolerance.</param>
+        /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
+        /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
+        /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
+        /// <param name="bForceOtherData">Optionally, force using the other blobs data even when bDiff = true.</param>
+        /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
+        public bool CompareEx(int nCount1, long hData, Blob<T> work, out double dfMin, out double dfMax, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true, bool bForceOtherData = false)
+        {
+            dfMin = -1;
+            dfMax = -1;
+
+            int nCount = count();
+            if (nCount != nCount1)
+                return false;
+
+            if (nCount == 0)
+                return true;
+
+            if (Cuda.KernelHandle != work.Cuda.KernelHandle)
+                throw new Exception("The work blob has a different Cuda Kernel Handle!");
+
+            work.ReshapeLike(this);
+
+            long h1 = (bDiff) ? gpu_diff : gpu_data;
+            long h2 = hData;
+            long lPos;
+
+            m_cuda.sub(nCount, h1, h2, work.mutable_gpu_data);
+            dfMin = m_cuda.min(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+            dfMax = m_cuda.max(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+
+            if (Math.Abs(dfMin) > dfTol)
+                return false;
+
+            if (dfMax > dfTol)
+                return false;
+
+            if (bDetectNans)
+            {
+                Tuple<double, double, double, double> minmax1 = m_cuda.minmax(nCount, h1, work.gpu_data, work.gpu_diff, true);
+                if (minmax1.Item3 > 0 || minmax1.Item4 > 0)
+                    return false;
+
+                Tuple<double, double, double, double> minmax2 = m_cuda.minmax(nCount, h2, work.gpu_data, work.gpu_diff, true);
+                if (minmax2.Item3 > 0 || minmax2.Item4 > 0)
+                    return false;
+            }
+
+            if (bZeroCheck)
+            {
+                double dfZero1 = m_cuda.asum_double(nCount, h1);
+                double dfZero2 = m_cuda.asum_double(nCount, h2);
+
+                if ((dfZero1 == 0 && dfZero2 != 0) || (dfZero1 != 0 && dfZero2 == 0))
+                    return false;
+            }
+
+            if (bFullCompare)
+            {
+                float[] rgf1 = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
+                float[] rgf2 = m_cuda.GetMemoryFloat(hData, nCount1);
+                Dictionary<int, float> rgErr = new Dictionary<int, float>();
+
+                for (int i = 0; i < rgf1.Length; i++)
+                {
+                    float f1 = rgf1[i];
+                    float f2 = rgf2[i];
+                    float fDiff = Math.Abs(f1 - f2);
+
+                    if (fDiff > dfTol)
+                        rgErr.Add(i, fDiff);
+                }
+
+                if (rgErr.Count > 0)
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Validate the data or diff looking for NAN or Inf.
         /// </summary>
         /// <param name="work">Specifies the work blob.</param>
