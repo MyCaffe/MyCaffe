@@ -2099,6 +2099,17 @@ namespace MyCaffe.app
             FormTestDataDownload dlg = new FormTestDataDownload(m_strOutputFolder, rgstrUrl);
             dlg.ShowDialog();
         }
+
+        private void testDataDownloadLlamaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            List<string> rgstrUrl = new List<string>();
+            string m_strOutputFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "MyCaffe\\test_data\\llama");
+
+            rgstrUrl.Add("https://signalpopcdn.blob.core.windows.net/mycaffesupport/llama_test.zip");
+
+            FormTestDataDownload dlg = new FormTestDataDownload(m_strOutputFolder, rgstrUrl);
+            dlg.ShowDialog();
+        }
     }
 
     class Settings
