@@ -21,10 +21,21 @@ namespace MyCaffe.param
         int m_nAxis = 2;
         bool m_bOutputContainsPredictions = false;
         bool m_bTranspose = false;
+        bool m_bUseFusedComp = false;
 
         /** @copydoc LayerParameterBase */
         public LinearParameter()
         {
+        }
+
+        /// <summary>
+        /// Enable fused computation (default = false).
+        /// </summary>
+        [Description("Enable fused computation (default = false).")]
+        public bool enable_fused_comp
+        {
+            get { return m_bUseFusedComp; }
+            set { m_bUseFusedComp = value; }
         }
 
         /// <summary>
@@ -133,6 +144,7 @@ namespace MyCaffe.param
             m_nAxis = p.m_nAxis;
             m_bOutputContainsPredictions = p.m_bOutputContainsPredictions;
             m_bTranspose = p.m_bTranspose;
+            m_bUseFusedComp = p.m_bUseFusedComp;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -169,6 +181,9 @@ namespace MyCaffe.param
             if (transpose != false)
                 rgChildren.Add("transpose", transpose.ToString());
 
+            if (enable_fused_comp != false)
+                rgChildren.Add("enable_fused_comp", enable_fused_comp.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -204,6 +219,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("transpose")) != null)
                 p.transpose = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_fused_comp")) != null)
+                p.enable_fused_comp = bool.Parse(strVal);
 
             return p;
         }
