@@ -306,6 +306,42 @@ namespace MyCaffe.test
             }
         }
 
+        //[TestMethod]
+        //public void TestLayerGradientLoRAEnabledFull_linear()
+        //{
+        //    OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+        //    try
+        //    {
+        //        foreach (IWeightAdapterTest t in test.Tests)
+        //        {
+        //            t.TestLayerGradientFull(true, true, "lora", SolverParameter.SolverType.SGD);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
+
+        //[TestMethod]
+        //public void TestLayerGradientLoRADisabledFull_linear()
+        //{
+        //    OutputAdapterTest test = new OutputAdapterTest(EngineParameter.Engine.CAFFE);
+
+        //    try
+        //    {
+        //        foreach (IWeightAdapterTest t in test.Tests)
+        //        {
+        //            t.TestLayerGradientFull(false, true, "lora", SolverParameter.SolverType.SGD);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
+
         [TestMethod]
         public void TestLayerForwardLoRAEnabledAtSize_linear()
         {
@@ -455,6 +491,7 @@ namespace MyCaffe.test
     {
         void TestLayerForward(bool bEnableLoRa, bool bUseLinear, string strType, SolverParameter.SolverType type);
         void TestLayerGradient(bool bEnableLoRa, bool bUseLinear, string strType, SolverParameter.SolverType type);
+        void TestLayerGradientFull(bool bEnableLoRa, bool bUseLinear, string strType, SolverParameter.SolverType type);
         void TestLayerForward(bool bUseLinear, string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW);
         void TestLayerGradient(bool bUseLinear, string strType, SolverParameter.SolverType type, int nN, int nC, int nH, int nW);
     }
@@ -493,14 +530,13 @@ namespace MyCaffe.test
 
         private string getDataPath()
         {
-            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\instr_llama\\";
-            return "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\test\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\instr_llama\\test\\";
         }
 
-        private string buildSolver(SolverParameter.SolverType type)
+        private string buildSolver(SolverParameter.SolverType type, double dfLearningRate)
         {
             SolverParameter solverParam = new SolverParameter();
-            solverParam.base_lr = 0.01;
+            solverParam.base_lr = dfLearningRate;
             solverParam.type = type;
             solverParam.test_iter[0] = 1;
             solverParam.test_interval = 1000;
@@ -510,7 +546,7 @@ namespace MyCaffe.test
             solverParam.momentum = 0.9;
 
             if (type == SolverParameter.SolverType.ADAM || type == SolverParameter.SolverType.ADAMW)
-                solverParam.momentum2 = 0.999;
+                solverParam.momentum2 = 0.95;
 
             if (type == SolverParameter.SolverType.ADAGRAD || type == SolverParameter.SolverType.RMSPROP)
                 solverParam.momentum = 0.0;
@@ -518,7 +554,7 @@ namespace MyCaffe.test
             return solverParam.ToProto("root").ToString();
         }
 
-        private string buildModel(bool bEnableLoRA, string strLoRAType, int nN, int nC, int nH, int nW, bool bFwdAndBwd, int nAxis = 2, int nNumOut = 1, bool bUseLinear = false)
+        private string buildModel(bool bEnableLoRA, string strLoRAType, int nN, int nC, int nH, int nW, bool bFwdAndBwd, int nAxis = 2, int nNumOut = 1, bool bUseLinear = false, bool bUseFusedComp = false)
         {
             NetParameter pNet = new NetParameter();
             pNet.name = "lora_test";
@@ -542,6 +578,7 @@ namespace MyCaffe.test
                 p.linear_param.bias_term = false;
                 p.linear_param.transpose = true;
                 p.linear_param.axis = nAxis;
+                p.linear_param.enable_fused_comp = bUseFusedComp;
                 p.freeze_learning = bEnableLoRA;
                 p.weight_adapter.type = strLoRAType;
                 p.weight_adapter.alpha = 1.0;
@@ -556,7 +593,7 @@ namespace MyCaffe.test
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip");
                 p.inner_product_param.num_output = (uint)nNumOut;
                 p.inner_product_param.bias_term = false;
-                p.inner_product_param.transpose = true;
+                p.inner_product_param.transpose = false;
                 p.inner_product_param.axis = nAxis;
                 p.freeze_learning = bEnableLoRA;
                 p.weight_adapter.type = strLoRAType;
@@ -604,11 +641,13 @@ namespace MyCaffe.test
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
             string strPath = getDataPath();
+            bool bUseFusedComp = true;
+            double dfLr = 0.01;
 
             try
             {
-                string strSolver = buildSolver(type);
-                string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, false, 3, 288, bUseLinear);
+                string strSolver = buildSolver(type, dfLr);
+                string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, false, 3, 288, bUseLinear, bUseFusedComp);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
 
@@ -618,8 +657,7 @@ namespace MyCaffe.test
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 Blob<T> blobX = net.FindBlob("data");
 
-                blobX.LoadFromNumpy(strPath + "att.x.npy");
-                blobX.Unsqueeze(2);
+                blobX.LoadFromNumpy(strPath + "att.x1.npy");
 
                 m_log.CHECK_EQ(blobX.num, 64, "The batch size should be 64.");
                 m_log.CHECK_EQ(blobX.channels, 256, "The channels should be 350.");
@@ -647,7 +685,7 @@ namespace MyCaffe.test
                 BlobCollection<T> colTop = net.Forward();
 
                 blobVal.LoadFromNumpy(strPath + "xq.npy");
-                double dfErr = (typeof(T) == typeof(double)) ? 0.005 : (bUseLinear) ? 1e-10 : 0.005;    
+                double dfErr = 0.0006;    
                 m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, dfErr), "The outputs are not as expected.");
             }
             finally
@@ -666,10 +704,12 @@ namespace MyCaffe.test
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
             Filler<T> filler = null;
             string strPath = getDataPath();
+            double dfLr = 0.01;
+            Blob<T> blobWork = null;
 
             try
             {
-                string strSolver = buildSolver(type);
+                string strSolver = buildSolver(type, dfLr);
                 string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, true, 2, 288, bUseLinear);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
@@ -679,6 +719,7 @@ namespace MyCaffe.test
                 Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
                 Blob<T> blobX = net.FindBlob("data");
                 Blob<T> blobTrg = net.FindBlob("target");
+                blobWork = mycaffe.CreateBlob("work");
 
                 if (netTest == null)
                     netTest = net;
@@ -688,8 +729,7 @@ namespace MyCaffe.test
                 filler.Fill(blobX);
                 filler.Fill(blobTrg);
 
-                blobX.LoadFromNumpy(strPath + "att.x.npy");
-                blobX.Unsqueeze(2);
+                blobX.LoadFromNumpy(strPath + "att.x1.npy");
 
                 LayerParameter.LayerType layerType = (bUseLinear) ? LayerParameter.LayerType.LINEAR : LayerParameter.LayerType.INNERPRODUCT;
                 Layer<T> layer = net.FindLayer(layerType, "ip");
@@ -702,12 +742,20 @@ namespace MyCaffe.test
                 }
 
                 float[] rgTarget = convertF(blobTrg.update_cpu_data());
+                blobWork.ReshapeLike(blobX);
 
                 for (int i = 0; i < 200; i++)
                 {
                     double dfLoss;
                     net.Forward(out dfLoss);
-                    Trace.WriteLine("Iter #" + i.ToString() + " Loss = " + dfLoss.ToString());  
+
+                    blobWork.Cuda.sub(blobWork.count(), blobX.gpu_data, blobTrg.gpu_data, blobWork.mutable_gpu_data);
+                    T fDiff1 = blobWork.asum_data();
+
+                    Trace.WriteLine("Iter #" + i.ToString() + " Loss = " + dfLoss.ToString());
+
+                    Blob<T> pred1 = net.FindBlob("ip");
+                    float[] rgTopTrain = convertF(pred1.mutable_cpu_data);
 
                     float[] rgWeight = convertF(layer.blobs[0].mutable_cpu_data);
 
@@ -743,12 +791,13 @@ namespace MyCaffe.test
                         m_log.CHECK_GT(nDiffCount, 0, "The weights should have changed.");
                     }
 
-                    Blob<T> pred1 = net.FindBlob("ip");
-                    float[] rgTopTrain = convertF(pred1.mutable_cpu_data);
-
                     BlobCollection<T> colTop = netTest.Forward();
                     Blob<T> pred2 = colTop.FindBlob("ip");
                     float[] rgTopTest = convertF(pred2.mutable_cpu_data);
+
+                    blobWork.ReshapeLike(pred1);
+                    pred1.Cuda.sub(pred1.count(), pred1.gpu_data, pred2.gpu_data, blobWork.mutable_gpu_data);
+                    T fDiff2 = blobWork.asum_data();
 
                     if (rgTopTest != null)
                     {
@@ -758,7 +807,7 @@ namespace MyCaffe.test
                             for (int j = 0; j < rgTopTest.Length; j++)
                             {
                                 double dfDiff = Math.Abs(rgTopTest[j] - rgTopTrain[j]);
-                                if (dfDiff >= 1e-07)
+                                if (dfDiff != 0)
                                     nDiffCount++;
                                 
                                 rgTopTest[j] = rgTopTrain[j];
@@ -794,6 +843,98 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose(ref blobWork);
+
+                mycaffe.Dispose();
+            }
+        }
+
+        public void TestLayerGradientFull(bool bEnableLoRA, bool bUseLinear, string strType, SolverParameter.SolverType type)
+        {
+            CancelEvent evtCancel = new CancelEvent();
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+            string strPath = "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\test\\iter_\\iter_";
+            double dfLr = 0.01;
+            Blob<T> blobWork = null;
+            Blob<T> blobVal = null;
+
+            try
+            {
+                string strSolver = buildSolver(type, dfLr);
+                string strModel = buildModel(bEnableLoRA, strType, 64, 256, 1, 288, true, 2, 288, bUseLinear);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, null, false, false);
+
+                Solver<T> solver = mycaffe.GetInternalSolver();
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
+                Blob<T> blobX = net.FindBlob("data");
+                Blob<T> blobTrg = net.FindBlob("target");
+                blobWork = mycaffe.CreateBlob("work");
+                blobVal = mycaffe.CreateBlob("val");
+
+                if (netTest == null)
+                    netTest = net;
+
+                LayerParameter.LayerType layerType = (bUseLinear) ? LayerParameter.LayerType.LINEAR : LayerParameter.LayerType.INNERPRODUCT;
+                Layer<T> layer = net.FindLayer(layerType, "ip");
+                layer.blobs[0].LoadFromNumpy(strPath + "0\\" + "wq.npy");
+
+                if (bEnableLoRA)
+                {
+                    layer.blobs_adapted[0].LoadFromNumpy(strPath + "0\\" + "lora_a.npy");
+                    layer.blobs_adapted[1].LoadFromNumpy(strPath + "0\\" + "lora_b.npy");
+                }
+
+                for (int i = 0; i < 100; i++)
+                {
+                    string strLocalPath = strPath + i.ToString() + "\\";
+                    string strLocalPath1 = strPath + (i+1).ToString() + "\\";
+                    blobX.LoadFromNumpy(strLocalPath + "att.x1.npy");
+
+                    if (bEnableLoRA)
+                    {
+                        blobVal.LoadFromNumpy(strLocalPath + "lora_a.npy");
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[0], blobWork, false, 3e-08), "The adapted weights are not as expected.");
+                        blobVal.LoadFromNumpy(strLocalPath + "lora_b.npy");
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[1], blobWork, false, 3e-08), "The adapted weights are not as expected.");
+                    }
+
+                    net.ForwardFromTo(0, 1);
+
+                    Blob<T> blobLogits = net.FindBlob("ip");
+                    blobLogits.LoadFromNumpy(strLocalPath + "xq.grad.npy", true);
+
+                    net.Backward(1, 0);
+
+                    if (bEnableLoRA)
+                    {
+                        blobVal.LoadFromNumpy(strLocalPath + "lora_a.grad.npy", true);
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[0], blobWork, true, 3e-06), "The adapted weights are not as expected.");
+                        blobVal.LoadFromNumpy(strLocalPath + "lora_b.grad.npy", true);
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[1], blobWork, true, 3e-06), "The adapted weights are not as expected.");
+                    }
+
+                    solver.ApplyUpdate(i);
+
+                    if (bEnableLoRA)
+                    {
+                        blobVal.LoadFromNumpy(strLocalPath1 + "lora_a.npy");
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[0], blobWork, false, 3e-08), "The adapted weights are not as expected.");
+                        blobVal.LoadFromNumpy(strLocalPath1 + "lora_b.npy");
+                        m_log.CHECK(blobVal.Compare(layer.blobs_adapted[1], blobWork, false, 3e-08), "The adapted weights are not as expected.");
+                    }
+
+                    net.ClearParamDiffs();
+                }
+            }
+            finally
+            {
+                dispose(ref blobWork);
+                dispose(ref blobVal);
+
                 mycaffe.Dispose();
             }
         }
@@ -804,10 +945,11 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+            double dfLr = 0.01;
 
             try
             {
-                string strSolver = buildSolver(type);
+                string strSolver = buildSolver(type, dfLr);
                 string strModel = buildModel(true, strType, nN, nC, nH, nW, false, 2, nH, bUseLinear);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
@@ -839,10 +981,11 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+            double dfLr = 0.01;
 
             try
             {
-                string strSolver = buildSolver(type);
+                string strSolver = buildSolver(type, dfLr);
                 string strModel = buildModel(true, strType, nN, nC, nH, nW, true, 2, nH, bUseLinear);
 
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel);
