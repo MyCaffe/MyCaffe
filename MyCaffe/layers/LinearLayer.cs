@@ -29,8 +29,9 @@ namespace MyCaffe.layers
         Blob<T> m_blobBiasMultiplier;
         Blob<T> m_blobWork = null;
         MatMulOp<T> m_matmul = null;
-        MatMulGradOp<T> m_matmulgrad = null;
         List<int> m_rgOriginalShape;
+        List<int> m_rgBtmShape = new List<int>(4);
+        List<int> m_rgTopShape = new List<int>(4);
 
         /// <summary>
         /// The LinearLayer constructor.
@@ -74,12 +75,6 @@ namespace MyCaffe.layers
             {
                 m_matmul.Dispose();
                 m_matmul = null;
-            }
-
-            if (m_matmulgrad != null)
-            {
-                m_matmulgrad.Dispose();
-                m_matmulgrad = null;
             }
 
             base.dispose();
@@ -235,15 +230,18 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 m_weightAdapter.Setup(layer_param, m_colBlobs[0]);
 
-            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, true);
+            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, m_param.linear_param.enable_fused_comp);
             m_matmul.Create(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
-            m_rgOriginalShape = Utility.Clone<int>(colBottom[0].shape());
 
-            if (m_param.phase == Phase.TRAIN)
-            {
-                m_matmulgrad = new MatMulGradOp<T>(m_cuda, m_log, 2, true);
-                m_matmulgrad.Create(colBottom[0], m_colBlobs[0], colTop[0], false, (m_matmul.BwsHandle == 0) ? true : false);
-            }
+            Reshape(colBottom, colTop);
+
+            m_rgOriginalShape = Utility.Clone<int>(colBottom[0].shape());
+        }
+
+        private void copyShape(Blob<T> b, List<int> rgShape)
+        {
+            rgShape.Clear();
+            rgShape.AddRange(b.shape());
         }
 
         /// <summary>
@@ -253,6 +251,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            copyShape(colBottom[0], m_rgBtmShape);
+            copyShape(colTop[0], m_rgTopShape);
+
             if (colBottom[0].CompareShape(m_rgOriginalShape))
                 return;
 
@@ -296,8 +297,6 @@ namespace MyCaffe.layers
                 m_weightAdapter.Reshape(m_colBlobs[0]);
 
             m_matmul.Reshape(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
-            if (m_matmulgrad != null)
-                m_matmulgrad.Reshape(colBottom[0], m_colBlobs[0], colTop[0], false, (m_matmul.BwsHandle == 0) ? true : false);  
         }
 
         /// <summary>
@@ -347,11 +346,21 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 blobWeight = m_weightAdapter.Weight;
 
-            m_matmulgrad.Run(colBottom[0], blobWeight, colTop[0], 0, m_matmul.BwsHandle);
+            colBottom[0].Reshape(1, 1, m_nM, m_nK);
+            colTop[0].Reshape(1, 1, m_nM, m_nN);
+            blobWeight.Unsqueeze(0);
+            blobWeight.Unsqueeze(0);
+
+            colTop[0].MatMulGrad(colBottom[0], blobWeight);
+
+            colBottom[0].Reshape(m_rgBtmShape);
+            colTop[0].Reshape(m_rgTopShape);
+            blobWeight.Squeeze(0);
+            blobWeight.Squeeze(0);
 
             if (m_bTranspose)
             {
-                m_cuda.transposeHW(1, 1, 24, 24, blobWeight.gpu_diff, m_blobWork.mutable_gpu_data);
+                m_cuda.transposeHW(1, 1, blobWeight.num, blobWeight.channels, blobWeight.gpu_diff, m_blobWork.mutable_gpu_data);
                 m_cuda.copy(blobWeight.count(), m_blobWork.gpu_data, blobWeight.mutable_gpu_diff);
             }
 
