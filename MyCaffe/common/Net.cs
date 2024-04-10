@@ -1845,6 +1845,17 @@ namespace MyCaffe.common
                     m_log.CHECK(Utility.Compare<int>(target_blobs[j].shape(), source_blob.shape()), "Cannot copy param " + j.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[j].shape_string);
                     target_blobs[j].CopyFrom(source_blob);
                 }
+
+                m_log.WriteLine("Copying source layer weight adapters " + source_layer_name);
+                target_blobs = dstNet.m_rgLayers[target_layer_id].blobs_adapted;
+                m_log.CHECK_EQ(target_blobs.Count, source_layer.blobs_adapted.Count, "Incompatible number of adapted blobs for layer " + source_layer_name);
+
+                for (int j = 0; j < target_blobs.Count; j++)
+                {
+                    Blob<T> source_blob = source_layer.blobs_adapted[j];
+                    m_log.CHECK(Utility.Compare<int>(target_blobs[j].shape(), source_blob.shape()), "Cannot copy param " + j.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[j].shape_string);
+                    target_blobs[j].CopyFrom(source_blob);
+                }
             }
         }
 
@@ -1870,7 +1881,7 @@ namespace MyCaffe.common
                         {
                             if (targetLayer.layer_param.name == strTargetLayer)
                             {
-                                m_log.WriteLine("Copying source layer " + source_layer_name);
+                                m_log.WriteLine("Copying source layer blobs " + source_layer_name);
                                 BlobCollection<T> target_blobs = targetLayer.blobs;
                                 m_log.CHECK_EQ(target_blobs.Count, sourceLayer.blobs.Count, "Incompatible number of blobs for layer " + source_layer_name);
                                 int nCount = 1;  // currently the bias is ignored.
@@ -1884,6 +1895,18 @@ namespace MyCaffe.common
                                         target_blobs[i].CopyFromAndTransposeHeightWidth(source_blob, false);
                                     else
                                         target_blobs[i].CopyFrom(source_blob, false, false);
+                                }
+
+                                m_log.WriteLine("Copying source layer adapted blobs " + source_layer_name);
+                                target_blobs = targetLayer.blobs_adapted;
+                                m_log.CHECK_EQ(target_blobs.Count, sourceLayer.blobs_adapted.Count, "Incompatible number of adapted blobs for layer " + source_layer_name);
+                                nCount = target_blobs.Count();
+
+                                for (int i = 0; i < nCount; i++)
+                                {
+                                    Blob<T> source_blob = sourceLayer.blobs[i];
+                                    m_log.CHECK(Utility.Compare<int>(target_blobs[i].shape(), source_blob.shape()), "Cannot copy param " + i.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[i].shape_string);
+                                    target_blobs[i].CopyFrom(source_blob, false, false);
                                 }
                             }
                         }
