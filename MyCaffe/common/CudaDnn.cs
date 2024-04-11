@@ -14,6 +14,39 @@ using System.Xml.Linq;
 namespace MyCaffe.common
 {
     /// <summary>
+    /// Specifies the function indexes supported by the Low-Level Cuda Extension DLL for LLM's.
+    /// </summary>
+    /// <remarks><b>IMPORTANT:</b> These index values must match the index values 
+    /// specified within the Low-Level Cuda Extension DLL for LLMs.</remarks>
+    public enum CUDAFN_EXTENSION_LLM
+    {
+        /// <summary>
+        /// Specifies to create a new LLM inference engine.
+        /// </summary>
+        CREATE = 1,
+        /// <summary>
+        /// Specifies to destroy an existing LLM inference engine.
+        /// </summary>
+        DESTROY = 2,
+        /// <summary>
+        /// Specifies to load a model into an LLM inference engine.
+        /// </summary>
+        LOAD = 3,
+        /// <summary>
+        /// Specifies to query the status of a LLM inference engine.
+        /// </summary>
+        QUERY_STATUS = 4,
+        /// <summary>
+        /// Specifies to generate text using a LLM inference engine.
+        /// </summary>
+        GENERATE = 5,
+        /// <summary>
+        /// Specifies to query the generated response of an LLM inference engine.
+        /// </summary>
+        QUERY_RESPONSE = 6
+    }
+
+    /// <summary>
     /// Defines the direction of data flow.
     /// </summary>
     public enum DIR
@@ -1094,7 +1127,11 @@ namespace MyCaffe.common
             /// <summary>
             /// Query the device (GPU) general information such as memory and processor usage.
             /// </summary>
-            DEVICE_INFO = 1002
+            DEVICE_INFO = 1002,
+            /// <summary>
+            /// Query a set of strings from an extension.
+            /// </summary>
+            EXTENSION_STRING = 1003
         }
 
 #pragma warning disable 1591
@@ -2112,7 +2149,7 @@ namespace MyCaffe.common
         public void SetDeviceID(int nDeviceID = -1, DEVINIT flags = DEVINIT.NONE, long? lSeed = null)
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             if (nDeviceID == -1)
                 nDeviceID = m_nDeviceId;
@@ -2142,7 +2179,7 @@ namespace MyCaffe.common
         public void SetRandomSeed(long lSeed)
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, m_param.AsDouble(lSeed));
@@ -2165,7 +2202,7 @@ namespace MyCaffe.common
         public int GetDeviceID()
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             if (m_dt == DataType.DOUBLE)
             {
@@ -2187,7 +2224,7 @@ namespace MyCaffe.common
         public string GetDeviceName(int nDeviceID)
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_NAME, new int[] { nDeviceID });
             return rgstr[0];
@@ -2201,7 +2238,7 @@ namespace MyCaffe.common
         public string GetDeviceP2PInfo(int nDeviceID)
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_P2P_INFO, new int[] { nDeviceID });
             return rgstr[0];
@@ -2216,7 +2253,7 @@ namespace MyCaffe.common
         public string GetDeviceInfo(int nDeviceID, bool bVerbose = false)
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_INFO, new int[] { nDeviceID, (bVerbose) ? 1 : 0 });
             return rgstr[0];
@@ -2231,7 +2268,7 @@ namespace MyCaffe.common
         public void ResetDevice()
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RESETDEVICE, null);
@@ -2245,7 +2282,7 @@ namespace MyCaffe.common
         public void SynchronizeDevice()
         {
             if (m_cuda == null || m_hKernel <= 0)
-                throw new Exception("CudaDnn has already nbeen disposed!");
+                throw new Exception("CudaDnn has already been disposed!");
 
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SYNCHRONIZEDEVICE, null);
@@ -3689,6 +3726,60 @@ namespace MyCaffe.common
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.EXTENSION_RUN, rgf.ToArray());
                 return Utility.ConvertVec<T>(rg);
             }
+        }
+
+
+        /// <summary>
+        /// Run a function on the extension specified.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the extension created with CreateExtension.</param>
+        /// <param name="lfnIdx">Specifies the extension function to run.</param>
+        /// <param name="rgParam">Specifies the parameters to pass to the extension.</param>
+        /// <param name="strInput">Specifies the string input.</param>
+        /// <returns>The values returned by the extension are returned.</returns>
+        public T[] RunExtensionEx(long hExtension, long lfnIdx, T[] rgParam, string strInput)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgdf = new List<double>() { hExtension, lfnIdx };
+
+                if (rgParam != null)
+                    rgdf.AddRange(Utility.ConvertVec<T>(rgParam));
+
+                double[] rg = m_cuda.RunDoubleEx((int)m_hKernel, (int)CUDAFN.EXTENSION_RUN, rgdf.ToArray(), strInput);
+                return Utility.ConvertVec<T>(rg);
+            }
+            else
+            {
+                List<float> rgf = new List<float>() { hExtension, lfnIdx };
+
+                if (rgParam != null)
+                    rgf.AddRange(Utility.ConvertVecF<T>(rgParam));
+
+                float[] rg = m_cuda.RunFloatEx((int)m_hKernel, (int)CUDAFN.EXTENSION_RUN, rgf.ToArray(), strInput);
+                return Utility.ConvertVec<T>(rg);
+            }
+        }
+
+        /// <summary>
+        /// Query a string result from the extension specified.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the extension created with CreateExtension.</param>
+        /// <param name="lfnIdx">Specifies the extension function to run.</param>
+        /// <param name="rgParam">Specifies the parameters to pass to the extension.</param>
+        /// <returns>The values returned by the extension are returned.</returns>
+        public string[] QueryExtensionStrings(long hExtension, long lfnIdx, int[] rgParam)
+        {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already been disposed!");
+
+            List<int> rgParam1 = new List<int>() { (int)hExtension, (int)lfnIdx };
+            rgParam1.AddRange(rgParam);
+
+            if (m_dt == DataType.DOUBLE)
+                return m_cuda.QueryStringDoubleEx((int)m_hKernel, (int)CUDAQRY.EXTENSION_STRING, rgParam1.ToArray());
+            else
+                return m_cuda.QueryStringFloatEx((int)m_hKernel, (int)CUDAQRY.EXTENSION_STRING, rgParam1.ToArray());
         }
 
 
