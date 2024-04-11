@@ -686,31 +686,31 @@ LONG RopeDataGpu<T>::allocGpu(int nCount)
 		if (lErr = cudaMalloc(&m_pfXr, nSize * sizeof(T)))
 		{
 			CleanUp();
-			return ERROR_MEMORY_OUT;
+			return lErr;
 		}
 
 		if (lErr = cudaMalloc(&m_pfXi, nSize * sizeof(T)))
 		{
 			CleanUp();
-			return ERROR_MEMORY_OUT;
+			return lErr;
 		}
 
 		if (lErr = cudaMalloc(&m_pfX_out_r, nSize * sizeof(T)))
 		{
 			CleanUp();
-			return ERROR_MEMORY_OUT;
+			return lErr;
 		}
 
 		if (lErr = cudaMalloc(&m_pfX_out_i, nSize * sizeof(T)))
 		{
 			CleanUp();
-			return ERROR_MEMORY_OUT;
+			return lErr;
 		}
 
 		if (m_pfXr == NULL || m_pfXi == NULL || m_pfX_out_r == NULL || m_pfX_out_i == NULL)
 		{
 			CleanUp();
-			return ERROR_MEMORY_OUT;
+			return lErr;
 		}
 
 		m_nCount = nCount;
