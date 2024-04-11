@@ -37,6 +37,7 @@ const int DEVICE_PROP_MULTIGPUBOARDGROUPID = 2;
 const int CUDA_FN_GET_DEVICE_NAME	= 1000;
 const int CUDA_FN_GET_P2P_INFO		= 1001;
 const int CUDA_FN_GET_DEVICE_INFO   = 1002;
+const int CUDA_FN_GET_EXTENSION_STRING	= 1003;
 
 
 //=============================================================================
@@ -158,9 +159,19 @@ public:
 		return m_device.CreateExtensionFloat(hParent, lKernelIdx, plCount, ppfOutput, pszInput);
 	}
 
+	long RunExtensionFloat(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** ppfOutput, long* plCount, LPTSTR szErr, long lErrMax)
+	{
+		return m_device.RunExtensionFloat(hExtension, lfnIdx, pfInput, lCount, plCount, ppfOutput, pszInput, szErr, lErrMax);
+	}
+
 	long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszInput, T** ppfOutput, long* plCount)
 	{
 		return m_device.CreateExtensionDouble(hParent, lKernelIdx, plCount, ppfOutput, pszInput);
+	}
+
+	long RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** ppfOutput, long* plCount, LPTSTR szErr, long lErrMax)
+	{
+		return m_device.RunExtensionDouble(hExtension, lfnIdx, pfInput, lCount, plCount, ppfOutput, pszInput, szErr, lErrMax);
 	}
 
 	long CreateBlobLoader(LPTSTR pszInput, T** ppfOutput, long* plCount)
@@ -168,7 +179,8 @@ public:
 		return m_device.CreateBlobLoader(plCount, ppfOutput, pszInput);
 	}
 
-	long Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppfOutput);
+	long Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput, LPTSTR szErr, LONG lErrMax);
+	long QueryEx(long lfnIdx, LONG* pfInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR szErr, LONG lErrMax);
 };
 
 

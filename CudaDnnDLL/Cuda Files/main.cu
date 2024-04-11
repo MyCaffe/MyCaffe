@@ -2424,9 +2424,12 @@ char* GetApiName(long lfnIdx)
 #endif
 
 template <class T>
-long Kernel<T>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput)
+long Kernel<T>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput, LPTSTR szErr, LONG lErrMax)
 {
 	cudaGetLastError();
+
+	if (szErr != NULL && lErrMax > 0)
+		szErr[0] = 0;
 
 	switch (lfnIdx)
 	{
@@ -2444,8 +2447,30 @@ long Kernel<T>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput)
 	}
 }
 
-template long Kernel<double>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput);
-template long Kernel<float>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput);
+template long Kernel<double>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput, LPTSTR szErr, LONG lErrMax);
+template long Kernel<float>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput, LPTSTR szErr, LONG lErrMax);
+
+
+template <class T>
+long Kernel<T>::QueryEx(long lfnIdx, LONG* pfInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR szErr, LONG lErrMax)
+{
+	cudaGetLastError();
+
+	if (szErr != NULL && lErrMax > 0)
+		szErr[0] = 0;
+
+	switch (lfnIdx)
+	{
+	case CUDA_FN_GET_EXTENSION_STRING:
+		return m_device.QueryExtensionResult(lCount, pfInput, pszOutput, lOutputMax, szErr, lErrMax);
+
+	default:
+		return ERROR_PARAM_OUT_OF_RANGE;
+	}
+}
+
+template long Kernel<double>::QueryEx(long lfnIdx, LONG* pfInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR szErr, LONG lErrMax);
+template long Kernel<float>::QueryEx(long lfnIdx, LONG* pfInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR szErr, LONG lErrMax);
 
 
 //end main.cu

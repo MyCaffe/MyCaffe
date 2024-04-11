@@ -868,6 +868,35 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 	//	Process the requested function.
 	//-------------------------------------------
 
+	Kernel<float>* pKernelF = NULL;
+	if ((pKernelF = g_rgdwFloatKernelTable[lKernelIdx]) != NULL)
+	{
+		switch (lFunctionIdx)
+		{
+		case CUDA_DLL_FREEMEM:
+			if (ppOutput != NULL && *ppOutput != NULL)
+			{
+				free(*ppOutput);
+				*ppOutput = NULL;
+			}
+			break;
+
+		default:
+			if (ppOutput != NULL)
+				*ppOutput = NULL;
+			lErr = pKernelF->Query(lFunctionIdx, pInput, lInput, ppOutput, szErr, lszErrMax);
+			break;
+		}
+
+		if (lErr && szErr[0] == 0)
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		return 0;
+	}
+
 	Kernel<double>* pKernelD = NULL;
 	if ((pKernelD = g_rgdwDoubleKernelTable[lKernelIdx]) != NULL)
 	{
@@ -884,11 +913,11 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 			default:
 				if (ppOutput != NULL)
 					*ppOutput = NULL;
-				lErr = pKernelD->Query(lFunctionIdx, pInput, lInput, ppOutput);
+				lErr = pKernelD->Query(lFunctionIdx, pInput, lInput, ppOutput, szErr, lszErrMax);
 				break;
 		}
 
-		if (lErr)
+		if (lErr && szErr[0] == 0)
 		{
 			getError(lKernelIdx, lErr, szErr, lszErrMax);
 			return lErr;
@@ -897,27 +926,80 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 		return 0;
 	}
 
+	lErr = ERROR_PARAM_OUT_OF_RANGE;
+	getError(lKernelIdx, lErr, szErr, lszErrMax);
+
+	return lErr;
+}
+
+extern "C" LONG WINAPI DLL_QueryStringFloatEx(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	LONG * pInput, LONG lInput,
+	LPTSTR pszOutput, LONG lOutputMax,
+	LPTSTR szErr, LONG lszErrMax)
+{
+	LONG lErr = 0;
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
 	Kernel<float>* pKernelF = NULL;
 	if ((pKernelF = g_rgdwFloatKernelTable[lKernelIdx]) != NULL)
 	{
 		switch (lFunctionIdx)
 		{
-			case CUDA_DLL_FREEMEM:
-				if (ppOutput != NULL && *ppOutput != NULL)
-				{
-					free(*ppOutput);
-					*ppOutput = NULL;
-				}
-				break;
-
-			default:
-				if (ppOutput != NULL)
-					*ppOutput = NULL;
-				lErr = pKernelF->Query(lFunctionIdx, pInput, lInput, ppOutput);
-				break;
+		default:
+			lErr = pKernelF->QueryEx(lFunctionIdx, pInput, lInput, pszOutput, lOutputMax, szErr, lszErrMax);
+			break;
 		}
 
-		if (lErr)
+		if (lErr && szErr[0] == 0)
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		return 0;
+	}
+
+	lErr = ERROR_PARAM_OUT_OF_RANGE;
+	getError(lKernelIdx, lErr, szErr, lszErrMax);
+
+	return lErr;
+}
+
+extern "C" LONG WINAPI DLL_QueryStringDoubleEx(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	LONG * pInput, LONG lInput,
+	LPTSTR pszOutput, LONG lOutputMax,
+	LPTSTR szErr, LONG lszErrMax)
+{
+	LONG lErr = 0;
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
+	Kernel<double>* pKernelD = NULL;
+	if ((pKernelD = g_rgdwDoubleKernelTable[lKernelIdx]) != NULL)
+	{
+		switch (lFunctionIdx)
+		{
+		default:
+			lErr = pKernelD->QueryEx(lFunctionIdx, pInput, lInput, pszOutput, lOutputMax, szErr, lszErrMax);
+			break;
+		}
+
+		if (lErr && szErr[0] == 0)
 		{
 			getError(lKernelIdx, lErr, szErr, lszErrMax);
 			return lErr;
@@ -966,6 +1048,21 @@ extern "C" LONG WINAPI DLL_InvokeFloatEx(LONG lKernelIdx,
 				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
+			break;
+
+		case CUDA_FN_EXTENSION_RUN:
+			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lInput < 2)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			if (lErr = pKernel->RunExtensionFloat((long)pInput[0], (long)pInput[1], &pInput[2], lInput-2, pszInput, ppOutput, plOutput, szErr, lszErrMax))
+				return lErr;
 			break;
 
 		case CUDA_FN_CREATE_BLOBLOADER:
@@ -1024,6 +1121,21 @@ extern "C" LONG WINAPI DLL_InvokeDoubleEx(LONG lKernelIdx,
 				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
+			break;
+
+		case CUDA_FN_EXTENSION_RUN:
+			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lInput < 2)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			if (lErr = pKernel->RunExtensionFloat((long)pInput[0], (long)pInput[1], &pInput[2], lInput-2, pszInput, ppOutput, plOutput, szErr, lszErrMax))
+				return lErr;
 			break;
 
 		case CUDA_FN_CREATE_BLOBLOADER:

@@ -253,9 +253,12 @@ class Device
 		long NcclAllReduce(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput);
+		long RunExtensionFloat(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, long* plOutput, T** ppfOutput, LPTSTR pszInput, LPTSTR szErr, long lErrMax);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput);
+		long RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, long* plOutput, T** ppfOutput, LPTSTR pszInput, LPTSTR szErr, long lErrMax);
 		long FreeExtension(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long ExtensionRun(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput, LPTSTR szErr, long lErrMax);
+		long QueryExtensionResult(long lInput, LONG* pfInput, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax);
 
 		long CreateBlobLoader(long* plOutput, T** ppfOutput, LPTSTR pszInput);
 		long FreeBlobLoader(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -4382,12 +4385,12 @@ inline long Device<T>::FusedCompGetTensor(long lInput, T* pfInput, long llInput,
 	// ppfOutput has MAX_OUTPUT(16) pre-allocated items.
 	T* pfOutput = *ppfOutput;
 
-	pfOutput[0] = (long)dt;
-	pfOutput[1] = (long)nS1;
-	pfOutput[2] = (long)nS2;
-	pfOutput[3] = (long)nS3;
-	pfOutput[4] = (long)nS4;
-	pfOutput[5] = (bTranspose) ? 1 : 0;
+	pfOutput[0] = (T)(long)dt;
+	pfOutput[1] = (T)(long)nS1;
+	pfOutput[2] = (T)(long)nS2;
+	pfOutput[3] = (T)(long)nS3;
+	pfOutput[4] = (T)(long)nS4;
+	pfOutput[5] = (T)(bTranspose) ? 1 : 0;
 
 	*ppfOutput = pfOutput;
 	*plOutput = 6;
@@ -4485,7 +4488,6 @@ inline long Device<T>::FusedCompExecute(long lInput, T* pfInput, long llInput, L
 	return 0;
 }
 
-
 template <class T>
 inline long Device<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput)
 {
@@ -4502,6 +4504,20 @@ inline long Device<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, lo
 }
 
 template <class T>
+inline long Device<T>::RunExtensionFloat(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, long* plOutput, T** ppfOutput, LPTSTR pszInput, LPTSTR szErr, long lErrMax)
+{
+	LONG lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.RunExtensionFloat(hExtension, lfnIdx, pfInput, lCount, pszInput, szErr, lErrMax))
+		return lErr;
+
+	return 0;
+}
+
+template <class T>
 inline long Device<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput)
 {
 	LONG lErr;
@@ -4514,6 +4530,20 @@ inline long Device<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, l
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, long* plOutput, T** ppfOutput, LPTSTR pszInput, LPTSTR szErr, long lErrMax)
+{
+	LONG lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.RunExtensionDouble(hExtension, lfnIdx, pfInput, lCount, pszInput, szErr, lErrMax))
+		return lErr;
+
+	return 0;
 }
 
 template <class T>
@@ -4549,6 +4579,23 @@ inline long Device<T>::ExtensionRun(long lInput, T* pfInput, long llInput, LONGL
 		pfInput = &pfInput[2];
 
 	return m_memory.ExtensionRun(hExtension, lfnIdx, pfInput, lInput, ppfOutput, plOutput, szErr, lErrMax);
+}
+
+template <class T>
+inline long Device<T>::QueryExtensionResult(long lInput, LONG* pInput, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax)
+{
+	LONG lErr;
+
+	if (lInput < 2)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (pInput == NULL)
+		return ERROR_PARAM_NULL;
+
+	long hExtension = pInput[0];
+	long lfnIdx = pInput[1];
+
+	return m_memory.QueryExtensionResult(hExtension, lfnIdx, &pInput[2], lInput-2, pszOutput, lOutputMax, pszErr, lErrMax);
 }
 
 template <class T>

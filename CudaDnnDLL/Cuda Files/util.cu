@@ -344,6 +344,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 		case ERROR_CPD_NOT_INITIALIZED:
 			_snprintf(szErr, lMaxErr, "CPD: The CPD is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
+
+		case ERROR_EXTENSION:
+			_snprintf(szErr, lMaxErr, "CPD: A general Extension error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_EXTENSION_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "CPD: The Extension is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
 	}
 
 	return false;

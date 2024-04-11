@@ -14,3 +14,5 @@ EXPORTS
 	Internal_GetPointerDouble @101
 	Internal_AllocHostFloat @102
 	Internal_AllocHostDouble @103
+	DLL_QueryStringFloatEx @200
+	DLL_QueryStringDoubleEx @201

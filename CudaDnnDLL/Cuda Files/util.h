@@ -220,6 +220,9 @@ const int ERROR_FUSEDCOMP_NOT_SUPPORTED          = ERROR_FUSEDCOMP + 2;
 const int ERROR_CPD                              = ERROR_BLOBLOADER + 40;
 const int ERROR_CPD_NOT_INITIALIZED              = ERROR_CPD + 1;
 
+const int ERROR_EXTENSION                        = ERROR_CPD + 40;   
+const int ERROR_EXTENSION_NOT_INITIALIZED        = ERROR_EXTENSION + 1;
+
 const int ERROR_CUDNN_OFFSET					= 0x10000;
 const int ERROR_CUBLAS_OFFSET					= 0x20000;
 const int ERROR_CUDNNFE_OFFSET					= 0x40000;

@@ -548,10 +548,13 @@ class Memory
 		long FusedCompExecute(long hFusedComp, int nLocalID, long hWorkspace, LONGLONG* rghTensor, LONGLONG* rghTensorData, LONGLONG* rghTensorWorkspaceData, long lCount);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
+		long RunExtensionFloat(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, LPTSTR pszErr, LONG lErrMax);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
+		long RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, LPTSTR pszErr, LONG lErrMax);
 		long FreeExtension(long hHandle);
 		extensionHandle<T>* GetExtension(long hHandle);
 		long ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR pszErr, LONG lErrMax);
+		long QueryExtensionResult(long hHandle, long lfnIdx, LONG* pInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax);
 };
 
 
@@ -2495,7 +2498,7 @@ inline long Memory<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LP
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if ((extension = new extensionHandle<T>()) == NULL)
+	if ((extension = new extensionHandle<T>(this)) == NULL)
 		return ERROR_MEMORY_OUT;
 
 	if (lErr = extension->InitializeFloat(hParent, lKernelIdx, pszDllPath))
@@ -2516,6 +2519,14 @@ inline long Memory<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LP
 }
 
 template <class T>
+inline long Memory<T>::RunExtensionFloat(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, LPTSTR pszErr, LONG lErrMax)
+{
+	LONG lErr;
+	extensionHandle<T>* extension = GetExtension(hExtension);
+	return extension->Run(lfnIdx, pfInput, lCount, pszInput, pszErr, lErrMax);
+}
+
+template <class T>
 inline long Memory<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle)
 {
 	LONG lErr;
@@ -2524,7 +2535,7 @@ inline long Memory<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, L
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if ((extension = new extensionHandle<T>()) == NULL)
+	if ((extension = new extensionHandle<T>(this)) == NULL)
 		return ERROR_MEMORY_OUT;
 
 	if (lErr = extension->InitializeDouble(hParent, lKernelIdx, pszDllPath))
@@ -2542,6 +2553,28 @@ inline long Memory<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, L
 
 	*phHandle = hHandle;
 	return 0;
+}
+
+template <class T>
+inline long Memory<T>::RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, LPTSTR pszErr, LONG lErrMax)
+{
+	LONG lErr;
+	extensionHandle<T>* extension = GetExtension(hExtension);
+	if (extension == NULL)
+		return ERROR_EXTENSION_NOT_INITIALIZED;
+
+	return extension->Run(lfnIdx, pfInput, lCount, pszInput, pszErr, lErrMax);
+}
+
+template <class T>
+inline long Memory<T>::QueryExtensionResult(LONG hExtension, LONG lfnIdx, LONG* pInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax)
+{
+	LONG lErr;
+	extensionHandle<T>* extension = GetExtension(hExtension);
+	if (extension == NULL)
+		return ERROR_EXTENSION_NOT_INITIALIZED;
+
+	return extension->Query(lfnIdx, pInput, lCount, pszOutput, lOutputMax, pszErr, lErrMax);
 }
 
 template <class T>
@@ -2567,7 +2600,11 @@ inline extensionHandle<T>* Memory<T>::GetExtension(long hHandle)
 template <class T>
 inline long Memory<T>::ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR pszErr, LONG lErrMax)
 {
-	return GetExtension(hHandle)->Run(lfnIdx, pfInput, lCount, ppfOutput, plCount, pszErr, lErrMax);
+	extensionHandle<T>* extension = GetExtension(hHandle);
+	if (extension == NULL)
+		return ERROR_EXTENSION_NOT_INITIALIZED;
+
+	return extension->Run(lfnIdx, pfInput, lCount, ppfOutput, plCount, pszErr, lErrMax);
 }
 
 
