@@ -31,6 +31,9 @@ namespace MyCaffe.test
             {
                 foreach (IExtensionTestLlm t in test.Tests)
                 {
+                    // Llama tests only support float.
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
                     t.TestLoad();
                 }
             }
@@ -49,6 +52,9 @@ namespace MyCaffe.test
             {
                 foreach (IExtensionTestLlm t in test.Tests)
                 {
+                    // Llama tests only support float.
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
                     t.TestGenerate();
                 }
             }
@@ -172,9 +178,16 @@ namespace MyCaffe.test
             try
             {
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+                string strInput = strModelFile + ";" + strTokenizerFile;
 
-                T[] rgLlm = m_cuda.RunExtension(hExtension, (int)CUDAFN_EXTENSION_LLM.CREATE, null);
-                m_cuda.RunExtensionEx(hExtension, (int)CUDAFN_EXTENSION_LLM.LOAD, rgLlm, strModelFile);
+                T[] rgParam = new T[3];
+                rgParam[0] = Utility.ConvertVal<T>(1.0); // temperature
+                rgParam[1] = Utility.ConvertVal<T>(0.9); // topp
+                rgParam[2] = Utility.ConvertVal<T>(0);   // seed
+
+                T[] rgLlm = m_cuda.RunExtension(hExtension, (int)CUDAFN_EXTENSION_LLM.CREATE, rgParam);
+                m_cuda.RunExtensionEx(hExtension, (int)CUDAFN_EXTENSION_LLM.LOAD, rgLlm, strInput);
 
                 float fStatus = 0;
                 while (fStatus < 1)
@@ -200,7 +213,7 @@ namespace MyCaffe.test
             try
             {
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
-                string strTokenizerFile = "C:\\temp\\projects\\llama2\\llama2\\llama2\\models\\tokenizer.bin";
+                string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 string strInput = strModelFile + ";" + strTokenizerFile;
 
                 T[] rgParam = new T[3];
@@ -232,6 +245,8 @@ namespace MyCaffe.test
                     if (!string.IsNullOrEmpty(strText))
                         strResponse += strText; 
                 }
+
+                m_log.WriteLine(strResponse);
 
                 m_cuda.RunExtension(hExtension, (int)CUDAFN_EXTENSION_LLM.DESTROY, rgLlm);
             }
