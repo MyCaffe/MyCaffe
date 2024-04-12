@@ -170,13 +170,13 @@ namespace MyCaffe.test
 
         public void TestLoad()
         {
-            m_cuda.debug();
-
-            long hExtension = m_cuda.CreateExtension(DllPath);
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            long hExtension = 0;
 
             try
             {
+                hExtension = m_cuda.CreateExtension(DllPath);
+                m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                 string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 string strInput = strModelFile + ";" + strTokenizerFile;
@@ -207,11 +207,13 @@ namespace MyCaffe.test
 
         public void TestGenerate()
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            long hExtension = 0;
 
             try
             {
+                hExtension = m_cuda.CreateExtension(DllPath);
+                m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                 string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 string strInput = strModelFile + ";" + strTokenizerFile;
