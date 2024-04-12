@@ -119,29 +119,35 @@ namespace MyCaffe.test
                 if (nPos >= 0)
                     strVersion = strVersion.Substring(nPos + strTarget.Length);
 
+                string strPath1 = m_cuda.Path;
+                nPos = strPath1.LastIndexOf('\\');
+                if (nPos >= 0)
+                    strPath1 = strPath1.Substring(0, nPos);
+
                 string strPath;
+
                 if (strVersion.Length > 0)
                 {
                     if (strVersion != "12.3" && strVersion.Contains("12.3"))
                         strVersion = "12.3";
 
-                    strPath = AssemblyDirectory + "\\CudaExtension.llm16." + strVersion + ".dll";
+                    strPath = strPath1 + "\\CudaExtension.llm16." + strVersion + ".dll";
                 }
                 else
                 {
-                    strPath = AssemblyDirectory + "\\CudaExtension.llm16.12.3.dll";
+                    strPath = strPath1 + "\\CudaExtension.llm16.12.3.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = AssemblyDirectory + "\\CudaExtension.llm16.12.2.dll";
+                        strPath = strPath1 + "\\CudaExtension.llm16.12.2.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = AssemblyDirectory + "\\CudaExtension.llm16.12.1.dll";
+                            strPath = strPath1 + "\\CudaExtension.llm16.12.1.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = AssemblyDirectory + "\\CudaExtension.llm16.12.0.dll";
+                                strPath = strPath1 + "\\CudaExtension.llm16.12.0.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = AssemblyDirectory + "\\CudaExtension.llm16.11.8.dll";
+                                    strPath = strPath1 + "\\CudaExtension.llm16.11.8.dll";
                                     if (!File.Exists(strPath))
                                     {
                                         throw new Exception("Could not find the CudaExtension.llm16.xx.dll file!");
@@ -194,9 +200,16 @@ namespace MyCaffe.test
             try
             {
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                string strTokenizerFile = "C:\\temp\\projects\\llama2\\llama2\\llama2\\models\\tokenizer.bin";
+                string strInput = strModelFile + ";" + strTokenizerFile;
 
-                T[] rgLlm = m_cuda.RunExtension(hExtension, (int)CUDAFN_EXTENSION_LLM.CREATE, null);
-                m_cuda.RunExtensionEx(hExtension, (int)CUDAFN_EXTENSION_LLM.LOAD, rgLlm, strModelFile);
+                T[] rgParam = new T[3];
+                rgParam[0] = Utility.ConvertVal<T>(1.0); // temperature
+                rgParam[1] = Utility.ConvertVal<T>(0.9); // topp
+                rgParam[2] = Utility.ConvertVal<T>(0);   // seed
+
+                T[] rgLlm = m_cuda.RunExtension(hExtension, (int)CUDAFN_EXTENSION_LLM.CREATE, rgParam);
+                m_cuda.RunExtensionEx(hExtension, (int)CUDAFN_EXTENSION_LLM.LOAD, rgLlm, strInput);
 
                 float fStatus = 0;
                 while (fStatus < 1)
