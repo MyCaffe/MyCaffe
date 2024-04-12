@@ -53,7 +53,7 @@
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="SimpleGraphing, Version=1.12.3.27, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleGraphingControl.1.12.3.27\lib\net40\SimpleGraphing.dll</HintPath>
+      <HintPath>..\packages\SimpleGraphingControl.1.12.3.43\lib\net40\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
