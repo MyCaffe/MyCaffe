@@ -87,14 +87,9 @@ public:
         cleanup();
     }
 
-    void build(const char* checkpoint_path);
+    long build(const char* checkpoint_path);
     float* forward(int token, int pos);
     void cleanup();
-
-    void print(const char* name, void* x, size_t n, long long nLayer = -1)
-    {
-        printHost(name, (float*)x, n, nLayer);
-    }
 };
 
 void softmax(float* x, int size);

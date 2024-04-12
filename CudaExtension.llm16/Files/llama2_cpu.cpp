@@ -26,7 +26,7 @@ inline void cuda_check(cudaError_t error_code, const char* file, int line)
     }
 }
 
-void malloc_run_state(RunState* s, Config* p) {
+long malloc_run_state(RunState* s, Config* p) {
     // we calloc instead of malloc to keep valgrind happy
     int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
     s->x = (float*)calloc(p->dim, sizeof(float));
@@ -46,12 +46,12 @@ void malloc_run_state(RunState* s, Config* p) {
     // ensure all mallocs went fine
     if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q
         || !s->k || !s->v || !s->att || !s->logits || !s->key_cache
-        || !s->value_cache) {
-        fprintf(stderr, "malloc failed!\n");
-        exit(EXIT_FAILURE);
-    }
+        || !s->value_cache)
+        return ERROR_OUTOFMEMORY;
 
     precompute_freqs_cis(p->dim / p->n_heads, p->seq_len, s->freq_real, s->freq_imag);
+
+    return 0;
 }
 
 void free_run_state(RunState* s) {
@@ -71,7 +71,7 @@ void free_run_state(RunState* s) {
     free(s->freq_imag);
 }
 
-void memory_map_weights(TransformerWeights* w, Config* p, float* ptr, int shared_weights) {
+long memory_map_weights(TransformerWeights* w, Config* p, float* ptr, int shared_weights) {
     int head_size = p->dim / p->n_heads;
     // make sure the multiplications below are done in 64bit to fit the parameter counts of 13B+ models
     unsigned long long n_layers = p->n_layers;
@@ -101,26 +101,42 @@ void memory_map_weights(TransformerWeights* w, Config* p, float* ptr, int shared
     w->w3 = ptr;
     ptr += n_layers * p->dim * p->hidden_dim;
     w->wcls = shared_weights ? w->token_embedding_table : ptr;
+
+    return 0;
 }
 
-void read_checkpoint(const char* checkpoint, Config* config, TransformerWeights* weights,
+long read_checkpoint(const char* checkpoint, Config* config, TransformerWeights* weights,
     int* fd, float** data, ssize_t* file_size) {
     FILE* file = fopen(checkpoint, "rb");
-    if (!file) { fprintf(stderr, "Couldn't open file %s\n", checkpoint); exit(EXIT_FAILURE); }
+    if (!file)
+        return ERROR_FILE_INVALID;
+
     // read in magic number (uint32), has to be 0x616b3432, i.e. "ak42" in ASCII
     uint32_t magic_number;
-    if (fread(&magic_number, sizeof(uint32_t), 1, file) != 1) { exit(EXIT_FAILURE); }
-    if (magic_number != 0x616b3432) { fprintf(stderr, "Bad magic number\n"); exit(EXIT_FAILURE); }
+    if (fread(&magic_number, sizeof(uint32_t), 1, file) != 1)
+        return ERROR_FILE_INVALID;
+
+    if (magic_number != 0x616b3432)
+        return ERROR_FILE_INVALID;
+
     // read in the version number (uint32), has to be 1
     int version;
-    if (fread(&version, sizeof(int), 1, file) != 1) { exit(EXIT_FAILURE); }
-    if (version != 1) { fprintf(stderr, "Bad version %d, need version 1\n", version); exit(EXIT_FAILURE); }
+    if (fread(&version, sizeof(int), 1, file) != 1)
+        return ERROR_FILE_INVALID;
+
+    if (version != 1)
+        return ERROR_FILE_INVALID;
+
     int header_size = 256; // the header size for version 2 in bytes
     // read in the Config
-    if (fread(config, sizeof(Config), 1, file) != 1) { exit(EXIT_FAILURE); }
+    if (fread(config, sizeof(Config), 1, file) != 1)
+        return ERROR_FILE_INVALID;
+    
     // read in flags
     uint8_t shared_classifier; // a byte to indicate if the classifier is shared
-    if (fread(&shared_classifier, sizeof(uint8_t), 1, file) != 1) { exit(EXIT_FAILURE); }
+    if (fread(&shared_classifier, sizeof(uint8_t), 1, file) != 1)
+        return ERROR_FILE_INVALID;
+
     // figure out the file size
     fseek(file, 0, SEEK_END); // move file pointer to end of file
     *file_size = ftell(file); // get the file size, in bytes
@@ -131,19 +147,28 @@ void read_checkpoint(const char* checkpoint, Config* config, TransformerWeights*
 
     // memory map the Transformer weights into the data pointer
     *fd = _open(checkpoint, O_RDONLY); // open in read only mode
-    if (*fd == -1) { fprintf(stderr, "open failed!\n"); exit(EXIT_FAILURE); }
+    if (*fd == -1)
+        return ERROR_FILE_INVALID;
+
     *data = (float*)mmap(NULL, *file_size, PROT_READ, MAP_PRIVATE, *fd, 0);
-    if (*data == MAP_FAILED) { fprintf(stderr, "mmap failed!\n"); exit(EXIT_FAILURE); }
+    if (*data == MAP_FAILED)
+        return ERROR_FILE_INVALID;
+
     void* weights_ptr = ((char*)*data) + header_size; // skip header bytes. char is 1 byte
-    memory_map_weights(weights, config, (float*)weights_ptr, shared_classifier);
+    return memory_map_weights(weights, config, (float*)weights_ptr, shared_classifier);
 }
 
-void TransformerCpu::build(const char* checkpoint_path)
+long TransformerCpu::build(const char* checkpoint_path)
 {
+    LONG lErr;
     // read in the Config and the Weights from the checkpoint
-    read_checkpoint(checkpoint_path, &m_config, &m_weights, &fd, &data, &file_size);
+    if (lErr = read_checkpoint(checkpoint_path, &m_config, &m_weights, &fd, &data, &file_size))
+        return lErr;
     // allocate the RunState buffers
-    malloc_run_state(&m_state, &m_config);
+    if (lErr = malloc_run_state(&m_state, &m_config))
+        return lErr;
+
+    return 0;
 }
 
 void TransformerCpu::cleanup() {
@@ -252,40 +277,22 @@ float* TransformerCpu::forward(int token, int pos) {
     // copy the token embedding into x
     float* content_row = w->token_embedding_table + token * dim;
     memcpy(x, content_row, dim * sizeof(*x));
-    print("x", x, dim);
 
     // pluck out the 'pos' row of freq_cis_real and freq_cis_imag
     int nFreqOffset = pos * head_size / 2;
 
-    if (pos == 1)
-        printf("here we go!");
-
     // forward all the layers
     for (unsigned long long l = 0; l < p->n_layers; l++)
     {
-        print("rms.att.wt", w->rms_att_weight + l * dim, dim, l);
-        print("x", x, dim, l);
-
         // attention rmsnorm
         rmsnorm(s->xb, x, w->rms_att_weight + l * dim, dim);
-        print("xb", s->xb, dim, l);
 
         // qkv matmuls for this position
         matmul(s->q, s->xb, w->wq + l * dim * dim, dim, dim);
         matmul(s->k, s->xb, w->wk + l * dim * kv_dim, dim, kv_dim);
         matmul(s->v, s->xb, w->wv + l * dim * kv_dim, dim, kv_dim);
 
-        print("q", s->q, dim, l);
-        print("k", s->k, kv_dim, l);
-        print("v", s->v, kv_dim, l);
-
-        print("freq_real", s->freq_real, kv_dim);
-        print("freq_imag", s->freq_imag, kv_dim);
-
         rope(p->n_heads, head_size, s->q, s->k, s->freq_real, s->freq_imag, nFreqOffset);
-
-        print("q.rope", s->q, dim, l);
-        print("k.rope", s->k, kv_dim, l);
 
         // save key,value at this time step (pos) to our kv cache
         unsigned long long loff = l * p->seq_len * kv_dim; // kv cache layer offset for convenience
@@ -293,9 +300,6 @@ float* TransformerCpu::forward(int token, int pos) {
         float* value_cache_row = s->value_cache + loff + pos * kv_dim;
         memcpy(key_cache_row, s->k, kv_dim * sizeof(*key_cache_row));
         memcpy(value_cache_row, s->v, kv_dim * sizeof(*value_cache_row));
-
-        print("key_cache", key_cache_row, kv_dim, l);
-        print("value_cache", value_cache_row, kv_dim, l);
 
         // multihead attention. iterate over all heads
         int h;
@@ -337,30 +341,21 @@ float* TransformerCpu::forward(int token, int pos) {
             }
         }
 
-        print("xb.att", s->xb, dim, l);
-
         // final matmul to get the output of the attention
         matmul(s->xb2, s->xb, w->wo + l * dim * dim, dim, dim);
-        print("xb2", s->xb2, dim, l);
 
         // residual connection back into x
         for (int i = 0; i < dim; i++) {
             x[i] += s->xb2[i];
         }
 
-        print("x.resid.1", x, dim, l);
-
         // ffn rmsnorm
         rmsnorm(s->xb, x, w->rms_ffn_weight + l * dim, dim);
-        print("xb.ffn", s->xb, dim, l);
 
         // Now for FFN in PyTorch we have: self.w2(F.silu(self.w1(x)) * self.w3(x))
         // first calculate self.w1(x) and self.w3(x)
         matmul(s->hb, s->xb, w->w1 + l * dim * hidden_dim, dim, hidden_dim);
         matmul(s->hb2, s->xb, w->w3 + l * dim * hidden_dim, dim, hidden_dim);
-
-        print("hb", s->hb, hidden_dim, l);
-        print("hb2", s->hb2, hidden_dim, l);
 
         // SwiGLU non-linearity
         for (int i = 0; i < hidden_dim; i++) {
@@ -372,27 +367,20 @@ float* TransformerCpu::forward(int token, int pos) {
             s->hb[i] = val;
         }
 
-        print("hb.swiglu", s->hb, hidden_dim, l);
-
         // final matmul to get the output of the ffn
         matmul(s->xb, s->hb, w->w2 + l * dim * hidden_dim, hidden_dim, dim);
-        print("xb.ffn2", s->xb, dim, l);
 
         // residual connection
         for (int i = 0; i < dim; i++) {
             x[i] += s->xb[i];
         }
-
-        print("x.resid.2", x, dim, l);
     }
 
     // final rmsnorm
     rmsnorm(x, x, w->rms_final_weight, dim);
-    print("x.final", x, dim);
 
     // classifier into logits
     matmul(s->logits, x, w->wcls, p->dim, p->vocab_size);
-    print("logits", s->logits, p->vocab_size);
 
     return s->logits;
 }

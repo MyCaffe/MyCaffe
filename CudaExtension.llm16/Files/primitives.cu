@@ -256,31 +256,6 @@ void Primitives::ToHost(size_t n, float* o, float* x, bool bSync)
 }
 
 
-void Primitives::Print(const char* name, float* x, size_t n, long long nLayer)
-{
-    long lErr;
-    
-    if (lErr = cudaStreamSynchronize(0))
-    {
-        printf("Error copying %s to CPU\n", name);
-        exit(1);
-    }
-    
-    if (n > m_nMaxWorkspace)
-        n = m_nMaxWorkspace;
-
-    if (lErr = cudaMemcpy(m_host_workspace, x, sizeof(float) * n, cudaMemcpyDeviceToHost))
-    {
-        printf("Error copying %s to CPU\n", name);
-        exit(1);
-    }
-
-    if (nLayer >= 0)
-        printf("Layer %d - %s: (%ld) { %lf, %lf, %lf, %lf, ...}\n", (int)nLayer, name, (int)n, m_host_workspace[0], m_host_workspace[1], m_host_workspace[2], m_host_workspace[3]);
-    else
-        printf("%s: (%ld) { %lf, %lf, %lf, %lf, ...}\n", name, (int)n, m_host_workspace[0], m_host_workspace[1], m_host_workspace[2], m_host_workspace[3]);
-}
-
 int Primitives::denan(int n, float* o, float* x, bool bSync)
 {
     LONG lErr;

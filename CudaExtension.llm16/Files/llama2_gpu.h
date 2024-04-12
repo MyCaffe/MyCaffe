@@ -89,10 +89,9 @@ public:
 		cleanup();
 	}
 
-    void build(const char* checkpoint_path);
+    long build(const char* checkpoint_path);
     float* forward(int token, int pos);
     void cleanup();
-    void print(const char* name, void* x, size_t n, long long nLayer = -1);
 };
 
 #endif // __LLAMA2_GPU_H_

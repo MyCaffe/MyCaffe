@@ -8,6 +8,8 @@
 #include "LLM.h"
 
 #include <string>
+#include <mutex>
+#include <chrono>
 
 #include "llama2_gpu.h"
 #include "llama2_tokenizer.h"
@@ -35,9 +37,12 @@ class LLMData
 	int m_nMaxPromptTokens;
 	int* m_pnPromptTokens;
 	std::string m_strResponse;
+	std::atomic<bool>* m_pbCancel;
+	std::atomic<bool> m_bLoaded;
+	std::mutex m_mtxResponse;
 
 public:
-	LLMData(T fTemperature, T fTopp, long lSeed) : m_tokenizer(), m_sampler()
+	LLMData(T fTemperature, T fTopp, long lSeed, std::atomic<bool>* pbCancel) : m_tokenizer(), m_sampler(), m_strResponse(), m_mtxResponse(), m_bLoaded(false)
 	{
 		m_fTemperature = fTemperature;
 		m_fTopp = fTopp;
@@ -48,6 +53,7 @@ public:
 		m_nMaxRenderedPrompt = 4096;
 		m_nMaxPromptTokens = 4096;
 		m_pnPromptTokens = (int*)malloc(m_nMaxPromptTokens * sizeof(int));
+		m_pbCancel = pbCancel;
 	}
 
 	~LLMData()
@@ -99,28 +105,41 @@ public:
 template <class T>
 long LLMData<T>::Load(LPTSTR szInput)
 {
-	LONG lErr;
+	LONG lErr = 0;
 
 	if (m_pnPromptTokens == NULL)
 		return ERROR_MEMORY_OUT;
 
-	if (m_transformer != NULL)
+	try
 	{
-		delete m_transformer;
-		m_transformer = NULL;
+		if (m_transformer != NULL)
+		{
+			delete m_transformer;
+			m_transformer = NULL;
+		}
+
+		std::string strModelPath;
+		std::string strTokenizerPath;
+		split(szInput, strModelPath, strTokenizerPath);
+
+		m_transformer = new TransformerGpu();
+		m_transformer->build(strModelPath.c_str());
+
+		build_tokenizer(&m_tokenizer, (char*)strTokenizerPath.c_str(), m_transformer->m_config.vocab_size);
+		build_sampler(&m_sampler, m_transformer->m_config.vocab_size, (float)m_fTemperature, (float)m_fTopp, m_lSeed);
+
+		m_bLoaded.store(true);
+	}
+	catch (std::exception& e)
+	{
+		lErr = ERROR_LLM_LOAD_MODEL;
+	}
+	catch (...)
+	{
+		lErr = ERROR_LLM_LOAD_MODEL;
 	}
 
-	std::string strModelPath;
-	std::string strTokenizerPath;
-	split(szInput, strModelPath, strTokenizerPath);
-
-	m_transformer = new TransformerGpu();
-	m_transformer->build(strModelPath.c_str());
-
-	build_tokenizer(&m_tokenizer, (char*)strTokenizerPath.c_str(), m_transformer->m_config.vocab_size);
-	build_sampler(&m_sampler, m_transformer->m_config.vocab_size, (float)m_fTemperature, (float)m_fTopp, m_lSeed);
-
-	return 0;
+	return lErr;
 }
 
 template long LLMData<float>::Load(LPTSTR szInput);
@@ -132,8 +151,16 @@ long LLMData<T>::QueryStatus(float* pPct, LONG* plStatus)
 {
 	LONG lErr;
 
-	*pPct = 1;
-	*plStatus = 1;
+	if (!m_bLoaded.load())
+	{
+		*pPct = 0;
+		*plStatus = 0;
+	}
+	else
+	{
+		*pPct = 1;
+		*plStatus = 1;
+	}
 
 	return 0;
 }
@@ -146,62 +173,76 @@ template <class T>
 long LLMData<T>::Generate(LPTSTR szRenderedPrompt)
 {
 	USES_CONVERSION;
-	LONG lErr;
+	LONG lErr = 0;
 	int num_prompt_tokens = 0;
 	int user_idx;
 
 	// start the main loop
 	int user_turn = 1;	// user starts.
-	int next;			// will store the next token in the sequence.
+	int next = 0;		// will store the next token in the sequence.
 	int token;			// stores current token to feed into the transformer.
 	int prev_token = 0;	// previous token
 	int pos = 0;		// position in sequence
 
-	if (_tcslen(szRenderedPrompt) > m_nMaxRenderedPrompt)
-		return ERROR_LLM_RENDERED_PROMPT_TO_LONG;
-
-	std::string strRenderedPrompt = T2A(szRenderedPrompt);
-
-	while (pos < m_nSteps)
+	try
 	{
-		// when it is the user's turn, we need to get the next token from the user.
-		if (user_turn)
-		{
-			encode(&m_tokenizer, (char*)strRenderedPrompt.c_str(), 1, 0, m_pnPromptTokens, &num_prompt_tokens);
-			user_idx = 0; // reset the user index.
-			user_turn = 0;
-		}
+		if (_tcslen(szRenderedPrompt) > m_nMaxRenderedPrompt)
+			return ERROR_LLM_RENDERED_PROMPT_TO_LONG;
 
-		// determine the token to pass into the transformer next
-		if (user_idx < num_prompt_tokens)
-		{
-			// if we are still processing the input prompt, force the next prompt token
-			token = m_pnPromptTokens[user_idx++];
-		}
-		else
-		{
-			// otherwise use the next token sampled form the previous turn.
-			token = next;
-		}
+		std::string strRenderedPrompt = T2A(szRenderedPrompt);
 
-		// forward the transformer to get logits for the next token
-		float* logits = m_transformer->forward(token, pos);
-		next = sample(&m_sampler, logits);
-		pos++;
-
-		if (user_idx >= num_prompt_tokens && next != 2)
+		while (pos < m_nSteps)
 		{
-			// The assistant is responding, so we need to add the token to the response.
-			char* piece = decode(&m_tokenizer, token, next);
-			m_strResponse += piece;
-		}
+			// when it is the user's turn, we need to get the next token from the user.
+			if (user_turn)
+			{
+				encode(&m_tokenizer, (char*)strRenderedPrompt.c_str(), 1, 0, m_pnPromptTokens, &num_prompt_tokens);
+				user_idx = 0; // reset the user index.
+				user_turn = 0;
+			}
 
-		// EOS (=2) token is the end of the sequence.
-		if (token == 2 || next == 2)
-			break;
+			// determine the token to pass into the transformer next
+			if (user_idx < num_prompt_tokens)
+			{
+				// if we are still processing the input prompt, force the next prompt token
+				token = m_pnPromptTokens[user_idx++];
+			}
+			else
+			{
+				// otherwise use the next token sampled form the previous turn.
+				token = next;
+			}
+
+			// forward the transformer to get logits for the next token
+			float* logits = m_transformer->forward(token, pos);
+			next = sample(&m_sampler, logits);
+			pos++;
+
+			if (user_idx >= num_prompt_tokens && next != 2)
+			{
+				// The assistant is responding, so we need to add the token to the response.
+				char* piece = decode(&m_tokenizer, token, next);
+
+				// lock the response mutex to prevent multiple threads from writing to the response at the same time.
+				std::lock_guard<std::mutex> lock(m_mtxResponse);
+				m_strResponse += piece;
+			}
+
+			// EOS (=2) token is the end of the sequence.
+			if (token == 2 || next == 2 || m_pbCancel->load())
+				break;
+		}
+	}
+	catch (std::exception& e)
+	{
+		lErr = ERROR_LLM_GENERATE;
+	}
+	catch (...)
+	{
+		lErr = ERROR_LLM_GENERATE;
 	}
 
-	return 0;
+	return lErr;
 }
 
 template long LLMData<float>::Generate(LPTSTR szInput);
@@ -213,6 +254,9 @@ long LLMData<T>::QueryResults(LPTSTR szOutput, LONG lMax, LONG* lEnd)
 {
 	USES_CONVERSION;
 	LONG lErr;
+
+	// lock the response mutex to prevent multiple threads from writing to the response at the same time.
+	std::lock_guard<std::mutex> lock(m_mtxResponse);
 
 	if (m_strResponse.length() < lMax)
 	{
@@ -259,9 +303,9 @@ template long LLM<float>::cleanup();
 //=============================================================================
 
 template <class T>
-LLM<T>::LLM(T fTemperature, T fTopp, long lSeed)
+LLM<T>::LLM(T fTemperature, T fTopp, long lSeed) : m_bCancel(false), m_bBusy(false)
 {
-	m_pObj = new LLMData<T>(fTemperature, fTopp, lSeed);
+	m_pObj = new LLMData<T>(fTemperature, fTopp, lSeed, &m_bCancel);
 }
 
 template LLM<float>::LLM(float fTemperature, float fTopp, long lSeed);

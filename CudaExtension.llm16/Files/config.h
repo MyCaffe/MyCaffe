@@ -19,25 +19,13 @@ public:
     Config m_config;
     bool m_bDebug;
 
-    Transformer() 
+    Transformer() : m_config(), m_bDebug(false)
     {
-        m_bDebug = false;
-    }
+	}
 
-    virtual void build(const char* checkpoint_path) = 0;
+    virtual long build(const char* checkpoint_path) = 0;
     virtual float* forward(int token, int pos) = 0;
     virtual void cleanup() = 0;
-    virtual void print(const char* name, void* x, size_t n, long long nLayer = -1) = 0;
-
-    void printHost(const char* name, float* x, size_t n, long long nLayer = -1)
-    {
-        if (!m_bDebug) return;
-
-        if (nLayer >= 0)
-			printf("Layer %d - %s: (%ld) { %lf, %lf, %lf, %lf, ...}\n", (int)nLayer, name, (int)n, x[0], x[1], x[2], x[3]);
-		else
-            printf("%s: (%ld) { %lf, %lf, %lf, %lf, ...}\n", name, (int)n, x[0], x[1], x[2], x[3]);
-	}
 };
 
 #endif // __CONFIG_H_

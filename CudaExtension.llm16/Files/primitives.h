@@ -49,7 +49,6 @@ public:
 	long Initialize(size_t nMaxWorkspace, int nDim, int nNumLayers, int nNumHeads, int nSeqLen);
 
 	void ToHost(size_t n, float* o, float* x, bool bSync = true);
-	void Print(const char* name, float* x, size_t n, long long nLayer = -1);
 
 	int denan(int n, float* o, float* x, bool bSync = true);
 	void add(size_t n, float* o, float* x, bool bSync = true);

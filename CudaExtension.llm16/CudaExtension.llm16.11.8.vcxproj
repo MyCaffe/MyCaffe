@@ -203,7 +203,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
