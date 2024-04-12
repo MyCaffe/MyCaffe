@@ -11,7 +11,7 @@ Inference for Llama-2 Transformer model in pure Cuda.
 #include <time.h>
 
 #include "config.h"
-#include "llama2.h"
+#include "llama2_gpu.h"
 
 
 // Each CUDA function call should be checked for errors.
@@ -207,34 +207,6 @@ void cuda_malloc_run_state(RunStateCuda* s, Config* p)
 
     free(freq_real);
     free(freq_imag);
-}
-
-void precompute_freqs_cis(int dim, size_t seq_len, float* freq_real, float* freq_imag)
-{
-    float fTheta = 10000.0f;
-
-    float* pfreqs = (float*)calloc(dim / 2, sizeof(float));
-    if (pfreqs == NULL)
-        throw ERROR_OUTOFMEMORY;
-
-    for (int i = 0; i < dim; i += 2)
-    {
-        float fVal = i / (float)dim;
-        float fDiv = powf(fTheta, fVal);
-        float fFreq = (fDiv == 0.0) ? 0 : 1.0f / fDiv;
-        pfreqs[i / 2] = fFreq;
-    }
-
-    for (size_t i = 0; i < seq_len; i++)
-    {
-        for (int j = 0; j < dim / 2; j++)
-        {
-            freq_real[i * dim / 2 + j] = cosf(i * pfreqs[j]);
-            freq_imag[i * dim / 2 + j] = sinf(i * pfreqs[j]);
-        }
-    }
-
-    free(pfreqs);
 }
 
 void cuda_free_run_state(RunStateCuda* s) {

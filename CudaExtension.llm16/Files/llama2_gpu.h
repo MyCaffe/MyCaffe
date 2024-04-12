@@ -1,5 +1,5 @@
-#ifndef __LLAMA2_H_
-#define __LLAMA2_H_
+#ifndef __LLAMA2_GPU_H_
+#define __LLAMA2_GPU_H_
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,6 +20,10 @@
 
 #include "config.h"
 #include "primitives.h"
+
+//----------------------------------------------------------------------------
+// Transformer model on GPU
+//----------------------------------------------------------------------------
 
 typedef struct {
     // token embedding table
@@ -73,7 +77,7 @@ public:
     float* data; // memory mapped data pointer
     ssize_t file_size; // size of the checkpoint file in bytes
 
-    TransformerGpu()
+    TransformerGpu() : m_state(), m_weights(), m_primitives()
     {
         fd = -1;
         data = NULL;
@@ -91,7 +95,4 @@ public:
     void print(const char* name, void* x, size_t n, long long nLayer = -1);
 };
 
-
-#pragma once
-
-#endif // __LLAMA2_H_
+#endif // __LLAMA2_GPU_H_

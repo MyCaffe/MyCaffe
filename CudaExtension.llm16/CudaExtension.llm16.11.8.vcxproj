@@ -21,7 +21,10 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="CudaExtension.llm16.cpp" />
-    <ClCompile Include="Files\llama2.cpp" />
+    <ClCompile Include="Files\llama2_cpu.cpp" />
+    <ClCompile Include="Files\llama2_gpu.cpp" />
+    <ClCompile Include="Files\llama2_sampler.cpp" />
+    <ClCompile Include="Files\llama2_tokenizer.cpp" />
     <ClCompile Include="Files\llm.cpp" />
     <ClCompile Include="Files\win.c" />
     <ClCompile Include="stdafx.cpp">
@@ -33,7 +36,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Files\config.h" />
-    <ClInclude Include="Files\llama2.h" />
+    <ClInclude Include="Files\llama2_cpu.h" />
+    <ClInclude Include="Files\llama2_gpu.h" />
+    <ClInclude Include="Files\llama2_sampler.h" />
+    <ClInclude Include="Files\llama2_tokenizer.h" />
     <ClInclude Include="Files\llm.h" />
     <ClInclude Include="Files\primitives.h" />
     <ClInclude Include="Files\win.h" />
@@ -110,7 +116,8 @@
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)$(Platform)\$(Configuration)\bin\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)$(Platform)\$(Configuration)\obj.11.8\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    </LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,14 +144,15 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CUDA11_5;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;CUDA11_5;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121\cudnn.lib;$(CUDA_PATH_V11_8)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -195,17 +203,23 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(CUDA_PATH_V11_8)\cudnn-frontend-1.2.0\include;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(CUDA_PATH_V11_8)\nvapi_510;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;CUDA11_5;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <SDLCheck>true</SDLCheck>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <AdditionalDependencies>nvml.lib;cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121\cudnn.lib;$(CUDA_PATH_V11_8)\nvapi_510\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -223,7 +237,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_52,sm_52;compute_53,sm_53;compute_60,sm_60;compute_70,sm_70;compute_80,sm_80</CodeGeneration>
-      <Optimization>O2</Optimization>
+      <Optimization>InheritFromHost</Optimization>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121;$(SolutionDir)CudaDnnDLL\inc</Include>
       <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
@@ -231,9 +245,9 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <CompileOut>$(CudaIntDirFullPath).11.8\%(Filename)%(Extension).obj</CompileOut>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>%systemroot%\System32\xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-
-%systemroot%\System32\xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
+      <Command>if not exist $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8 md $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8
+xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8
+xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

@@ -4,13 +4,22 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="CudaExtension.llm16.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="Files\llama2.cpp">
-      <Filter>Files</Filter>
-    </ClCompile>
     <ClCompile Include="Files\llm.cpp">
       <Filter>Files</Filter>
     </ClCompile>
     <ClCompile Include="Files\win.c">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Files\llama2_cpu.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Files\llama2_gpu.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Files\llama2_sampler.cpp">
+      <Filter>Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Files\llama2_tokenizer.cpp">
       <Filter>Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -30,7 +39,16 @@
     <ClInclude Include="Files\win.h">
       <Filter>Files</Filter>
     </ClInclude>
-    <ClInclude Include="Files\llama2.h">
+    <ClInclude Include="Files\llama2_cpu.h">
+      <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Files\llama2_gpu.h">
+      <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Files\llama2_sampler.h">
+      <Filter>Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Files\llama2_tokenizer.h">
       <Filter>Files</Filter>
     </ClInclude>
   </ItemGroup>
