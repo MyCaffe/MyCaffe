@@ -140,6 +140,73 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies whether or not the net supports pre-load inferencing.  Both the 'base_weight_file' and 'base_tokenizer_file' must exist to support pre-load inferencing.
+        /// </summary>
+        [Description("Specifies whether or not the net supports pre-load inferencing.  Both the 'base_weight_file' and 'base_tokenizer_file' must exist to support pre-load inferencing.")]
+        public bool supports_inferencing
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(base_weight_file))
+                    return false;
+
+                if (string.IsNullOrEmpty(base_tokenizer_file))
+                    return false;
+
+                if (!File.Exists(base_weight_file))
+                    return false;
+
+                if (!File.Exists(base_tokenizer_file))
+                    return false;
+
+                return true;
+            }
+        }
+
+        private static string parseParameter(string strDesc, string strParam)
+        {
+            string strParamVal = strParam + ":";
+            int nPos = strDesc.IndexOf(strParamVal);
+
+            if (nPos < 0)
+                return null;
+
+            // Find the end of the parameter value.
+            nPos += strParamVal.Length;
+            int nEnd = strDesc.IndexOf(' ' , nPos);
+            if (nEnd < 0)
+                nEnd = strDesc.IndexOf('\n', nPos);
+
+            if (nEnd < 0)
+                return null;
+
+            return strDesc.Substring(nPos, nEnd - nPos).Trim();
+        }
+
+        /// <summary>
+        /// Specifies whether or not the net supports pre-load inferencing.  Both the 'base_weight_file' and 'base_tokenizer_file' must exist to support pre-load inferencing.
+        /// </summary>
+        public static bool SupportsInferencing(string strModelDesc)
+        {
+            string strBaseModelFile = parseParameter(strModelDesc, "base_weight_file");
+            string strBaseTokenizerFile = parseParameter(strModelDesc, "base_tokenizer_file");
+
+            if (string.IsNullOrEmpty(strBaseModelFile))
+                return false;
+
+            if (string.IsNullOrEmpty(strBaseTokenizerFile))
+                return false;
+
+            if (!File.Exists(strBaseModelFile))
+                return false;
+
+            if (!File.Exists(strBaseTokenizerFile))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Specifies the model type (if any).
         /// </summary>
         [Description("Specifies the model type (if any).")]
