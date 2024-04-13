@@ -60,6 +60,7 @@
     <Compile Include="ChangePointDetectorCumulativeSUM.cs" />
     <Compile Include="ChangePointDetectorContrastiveNN.cs" />
     <Compile Include="DeepDraw.cs" />
+    <Compile Include="LlmInference.cs" />
     <Compile Include="NeuralStyleTransfer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

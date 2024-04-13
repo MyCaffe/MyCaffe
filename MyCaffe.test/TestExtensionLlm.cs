@@ -16,6 +16,7 @@ using System.Threading;
 using System.Reflection;
 using System.IO;
 using MyCaffe.common;
+using MyCaffe.extras;
 
 namespace MyCaffe.test
 {
@@ -63,12 +64,34 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGenerateAsync()
+        {
+            ExtenionTestLlm test = new ExtenionTestLlm();
+
+            try
+            {
+                foreach (IExtensionTestLlm t in test.Tests)
+                {
+                    // Llama tests only support float.
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+                    t.TestGenerateAsync();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IExtensionTestLlm : ITest
     {
         void TestLoad();
         void TestGenerate();
+        void TestGenerateAsync();
     }
 
     class ExtenionTestLlm : TestBase
@@ -89,6 +112,11 @@ namespace MyCaffe.test
 
     class ExtenionTestLlm<T> : TestEx<T>, IExtensionTestLlm
     {
+        AutoResetEvent m_evtLoaded = new AutoResetEvent(false);
+        AutoResetEvent m_evtGenerated = new AutoResetEvent(false);
+        Exception m_errLoaded = null;
+        Exception m_errGenerate = null;
+
         public ExtenionTestLlm(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 1000, 1, 1, 1 }, nDeviceID)
         {
@@ -257,6 +285,50 @@ namespace MyCaffe.test
                 if (hExtension != 0)
                     m_cuda.FreeExtension(hExtension);
             }
+        }
+
+        public void TestGenerateAsync()
+        {
+            LlmInference<T> llm = null;
+
+            try
+            {
+                llm = new LlmInference<T>(m_cuda, m_log);
+                llm.OnStatus += Llm_OnStatus;
+                llm.OnResults += Llm_OnResults;
+
+                llm.Initialize(DllPath, 1.0f, 0.9f, 0);
+
+                string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+                llm.LoadAsync(strModelFile, strTokenizerFile);
+                m_evtLoaded.WaitOne();
+
+                llm.GenerateAsync("", "What is your name?");
+                m_evtGenerated.WaitOne();
+
+                llm.CleanUp();
+            }
+            finally
+            {
+                if (llm != null)
+                    llm.Dispose();
+            }
+        }
+
+        private void Llm_OnResults(object sender, LlmInferenceResultsArgs e)
+        {
+            m_errGenerate = e.Error;
+            Trace.Write(e.Results);
+            if (e.End)
+                m_evtGenerated.Set();
+        }
+
+        private void Llm_OnStatus(object sender, LlmInferenceStatusArgs e)
+        {
+            m_errLoaded = e.Error;
+            if (e.Loaded)
+                m_evtLoaded.Set();
         }
     }
 }
