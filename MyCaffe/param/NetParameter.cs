@@ -18,6 +18,7 @@ namespace MyCaffe.param
     {
         string m_strName = "";
         string m_strBaseWeightFile = "";
+        string m_strBaseTokenizerFile = "";
         List<string> m_rgstrInput = new List<string>();
         List<BlobShape> m_rgInputShape = new List<BlobShape>();
         List<int> m_rgInputDim = new List<int>();
@@ -121,11 +122,21 @@ namespace MyCaffe.param
         /// to fine-tune the base weights using the LoRA model.  The 'enable_lora_only_load' setting can be used to load only the LoRA model,
         /// and not use any GPU memory for the base model learnable parameters.
         /// </remarks>
-        [Description]
+        [Description("Specifies the base weight file used when loading a pre-trained network.")]
         public string base_weight_file
         {
             get { return m_strBaseWeightFile; }
             set { m_strBaseWeightFile = value; }
+        }
+
+        /// <summary>
+        /// Specifies the base tokenizer file to use when loading the network (if any).
+        /// </summary>
+        [Description("Specifies the base tokenizer file to use when loading the network (if any).")]
+        public string base_tokenizer_file
+        {
+            get { return m_strBaseTokenizerFile; }
+            set { m_strBaseTokenizerFile = value; }
         }
 
         /// <summary>
@@ -312,6 +323,7 @@ namespace MyCaffe.param
             rgChildren.Add("enable_lora_only", enable_lora_only.ToString());
             rgChildren.Add("model_type", model_type.ToString());    
             rgChildren.Add("base_weight_file", base_weight_file);
+            rgChildren.Add("base_tokenizer_file", base_tokenizer_file);
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -374,6 +386,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("base_weight_file")) != null)
                 p.base_weight_file = strVal;
+
+            if ((strVal = rp.FindValue("base_tokenizer_file")) != null)
+                p.base_tokenizer_file = strVal;
 
             return p;
         }
@@ -442,6 +457,7 @@ namespace MyCaffe.param
             p.m_bEnableLora = m_bEnableLora;
             p.m_bEnableLoraOnly = m_bEnableLoraOnly;
             p.m_strBaseWeightFile = m_strBaseWeightFile;
+            p.m_strBaseTokenizerFile = m_strBaseTokenizerFile;
 
             return p;
         }
