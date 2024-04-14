@@ -43,7 +43,11 @@ namespace MyCaffe.common
         /// <summary>
         /// Specifies to query the generated response of an LLM inference engine.
         /// </summary>
-        QUERY_RESPONSE = 6
+        QUERY_RESPONSE = 6,
+        /// <summary>
+        /// Specifies to abort generating a response.
+        /// </summary>
+        ABORT_GENERATE = 7
     }
 
     /// <summary>
