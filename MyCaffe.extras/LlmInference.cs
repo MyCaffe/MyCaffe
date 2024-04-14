@@ -2,6 +2,7 @@
 using MyCaffe.common;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,7 @@ namespace MyCaffe.extras
         AutoResetEvent m_evtCancelQuery = new AutoResetEvent(false);
         string m_strModelFiles;
         string m_strPrompt;
+        long m_lUserState = 0;
 
         /// <summary>
         /// The OnStatus event fires when the status of the LlmInference Load changes.
@@ -54,17 +56,48 @@ namespace MyCaffe.extras
         }
 
         /// <summary>
+        /// Returns the CudaDnn interface used by the LlmInference.
+        /// </summary>
+        public CudaDnn<T> Cuda
+        {
+            get { return m_cuda; }
+        }
+
+        /// <summary>
+        /// Returns the user state value.
+        /// </summary>
+        public long UserState
+        {
+            get { return m_lUserState; }
+        }
+
+        /// <summary>
         /// Initialize the LlmInference with a given extension path, temperature, topp, and seed.
         /// </summary>
         /// <param name="strExtensionPath">Specifies the path to the extension dll for LLM inferencing.</param>
         /// <param name="fTemperature">Specifies the temperature where 0.0 = greedy deterministic. 1.0 = original (range = 0.0 to 1.0).</param>
         /// <param name="fTopp">Specifies the top-p in nucleus sampling. 1.0 = 0ff. 0.9 works well but slower (range = 0.0 to 1.0).</param>
         /// <param name="lSeed">Specifies the random seed, or 0 to ignore.</param>
+        /// <param name="lUserState">Optionally, specifies a user state value.</param>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
-        public void Initialize(string strExtensionPath, float fTemperature, float fTopp, long lSeed)
+        public void Initialize(string strExtensionPath, float fTemperature, float fTopp, long lSeed, long lUserState = 0)
         {
             try
             {
+                m_lUserState = lUserState;
+                FileInfo fi = new FileInfo(strExtensionPath);
+                if (fi.Extension.ToLower() != "dll")
+                {
+                    if (string.IsNullOrEmpty(m_cuda.Path))
+                        throw new Exception("The CudaDnn path must be set before initializing the LlmInference!");
+
+                    FileInfo fiCuda = new FileInfo(m_cuda.Path);
+                    string strTarget = "CudaDnnDll.";
+                    int nPos = fi.Name.IndexOf(strTarget);
+                    string strVersion = fi.Name.Substring(nPos + strTarget.Length, fi.Name.Length - nPos - strTarget.Length - 4);
+                    strExtensionPath = fiCuda.Directory + "\\" + fi.Name + "." + strVersion + ".dll";
+                }
+
                 m_strExtensionPath = strExtensionPath;
                 m_hExtension = m_cuda.CreateExtension(strExtensionPath);
 
@@ -113,7 +146,7 @@ namespace MyCaffe.extras
             Task.Factory.StartNew(new Action(load));
 
             if (OnStatus != null)
-                OnStatus(this, new LlmInferenceStatusArgs(false));
+                OnStatus(this, new LlmInferenceStatusArgs(false, m_lUserState));
 
             return true;
         }
@@ -126,12 +159,12 @@ namespace MyCaffe.extras
                 m_cuda.RunExtensionEx(m_hExtension, (int)CUDAFN_EXTENSION_LLM.LOAD, m_rgLlm, m_strModelFiles);
 
                 if (OnStatus != null)
-                    OnStatus(this, new LlmInferenceStatusArgs(true));   
+                    OnStatus(this, new LlmInferenceStatusArgs(true, m_lUserState));   
             }
             catch (Exception excpt)
             {
                 if (OnStatus != null)
-                    OnStatus(this, new LlmInferenceStatusArgs(false, excpt));
+                    OnStatus(this, new LlmInferenceStatusArgs(false, m_lUserState, excpt));
             }
             finally
             {
@@ -175,7 +208,7 @@ namespace MyCaffe.extras
             catch (Exception excpt)
             {
                 if (OnResults != null)
-                    OnResults(this, new LlmInferenceResultsArgs("ERROR", true, excpt));
+                    OnResults(this, new LlmInferenceResultsArgs("ERROR", true, m_lUserState, excpt));
             }
             finally
             {
@@ -226,7 +259,7 @@ namespace MyCaffe.extras
                     }
 
                     if (OnResults != null)
-                        OnResults(this, new LlmInferenceResultsArgs(strResult, bEnd));
+                        OnResults(this, new LlmInferenceResultsArgs(strResult, bEnd, m_lUserState));
                 }
             }
         }
@@ -238,17 +271,28 @@ namespace MyCaffe.extras
     public class  LlmInferenceStatusArgs : EventArgs
     {
         bool m_bLoaded = false;
+        long m_lUserState = 0;
         Exception m_err;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="bLoaded">Specifies 0 for loading or 1 for loaded.</param>
+        /// <param name="lUserState">Specifies a user state value.</param>
         /// <param name="err">Optionally, specifies an error if one occurs.</param>
-        public LlmInferenceStatusArgs(bool bLoaded, Exception err = null)
+        public LlmInferenceStatusArgs(bool bLoaded, long lUserState, Exception err = null)
         {
+            m_lUserState = lUserState;
             m_bLoaded = bLoaded;
             m_err = err;
+        }
+
+        /// <summary>
+        /// Specifies the user state value.
+        /// </summary>
+        public long UserState
+        {
+            get { return m_lUserState; }
         }
 
         /// <summary>
@@ -275,6 +319,7 @@ namespace MyCaffe.extras
     {
         string m_strResults = "";
         bool m_bEnd = false;
+        long m_lUserState = 0;
         Exception m_err;
 
         /// <summary>
@@ -282,12 +327,22 @@ namespace MyCaffe.extras
         /// </summary>
         /// <param name="strResults">Specifies the current result part.</param>
         /// <param name="bEnd">Specifies whether or not this is the end result.</param>
+        /// <param name="lUserState">Specifies the user state value.</param>
         /// <param name="err">If an error occurs it is returned here.</param>
-        public LlmInferenceResultsArgs(string strResults, bool bEnd, Exception err = null)
+        public LlmInferenceResultsArgs(string strResults, bool bEnd, long lUserState, Exception err = null)
         {
+            m_lUserState = lUserState;
             m_strResults = strResults;
             m_bEnd = bEnd;
             m_err = err;
+        }
+
+        /// <summary>
+        /// Specifies the user state value.
+        /// </summary>
+        public long UserState
+        {
+            get { return m_lUserState; }
         }
 
         /// <summary>
