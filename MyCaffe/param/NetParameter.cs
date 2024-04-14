@@ -165,6 +165,9 @@ namespace MyCaffe.param
 
         private static string parseParameter(string strDesc, string strParam)
         {
+            if (string.IsNullOrEmpty(strDesc))
+                return null;
+
             string strParamVal = strParam + ":";
             int nPos = strDesc.IndexOf(strParamVal);
 
@@ -173,10 +176,17 @@ namespace MyCaffe.param
 
             // Find the end of the parameter value.
             nPos += strParamVal.Length;
-            int nEnd = strDesc.IndexOf(' ' , nPos);
+
+            if (nPos >= strDesc.Length)
+                return null;
+
+            if (strDesc[nPos] == ' ')
+                nPos++;
+
+            int nEnd = strDesc.IndexOf('\r' , nPos);
             if (nEnd < 0)
                 nEnd = strDesc.IndexOf('\n', nPos);
-
+            
             if (nEnd < 0)
                 return null;
 
@@ -188,6 +198,9 @@ namespace MyCaffe.param
         /// </summary>
         public static bool SupportsInferencing(string strModelDesc)
         {
+            if (string.IsNullOrEmpty(strModelDesc))
+                return false;
+
             string strBaseModelFile = parseParameter(strModelDesc, "base_weight_file");
             string strBaseTokenizerFile = parseParameter(strModelDesc, "base_tokenizer_file");
 
@@ -196,6 +209,12 @@ namespace MyCaffe.param
 
             if (string.IsNullOrEmpty(strBaseTokenizerFile))
                 return false;
+
+            string strTarget = "$ProgramData$";
+            string strProgramData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+            strBaseModelFile = strBaseModelFile.Replace(strTarget, strProgramData);
+            strBaseTokenizerFile = strBaseTokenizerFile.Replace(strTarget, strProgramData);
 
             if (!File.Exists(strBaseModelFile))
                 return false;
