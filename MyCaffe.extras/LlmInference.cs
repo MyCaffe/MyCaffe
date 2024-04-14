@@ -93,8 +93,8 @@ namespace MyCaffe.extras
 
                     FileInfo fiCuda = new FileInfo(m_cuda.Path);
                     string strTarget = "CudaDnnDll.";
-                    int nPos = fi.Name.IndexOf(strTarget);
-                    string strVersion = fi.Name.Substring(nPos + strTarget.Length, fi.Name.Length - nPos - strTarget.Length - 4);
+                    int nPos = fiCuda.Name.IndexOf(strTarget);
+                    string strVersion = fiCuda.Name.Substring(nPos + strTarget.Length, fiCuda.Name.Length - nPos - strTarget.Length - 4);
                     strExtensionPath = fiCuda.Directory + "\\" + fi.Name + "." + strVersion + ".dll";
                 }
 
@@ -119,6 +119,8 @@ namespace MyCaffe.extras
         /// </summary>
         public void CleanUp()
         {
+            m_evtCancelQuery.Set();
+            
             if (m_hExtension != 0)
             {
                 m_cuda.RunExtension(m_hExtension, (int)CUDAFN_EXTENSION_LLM.DESTROY, m_rgLlm);
@@ -141,6 +143,16 @@ namespace MyCaffe.extras
 
             if (m_evtLoading.WaitOne(0))
                 return false;
+
+            string strProgramData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strModelFile = strModelFile.Replace("$ProgramData$", strProgramData);
+            strTokenizerFile = strTokenizerFile.Replace("$ProgramData$", strProgramData);
+
+            if (!File.Exists(strModelFile))
+                throw new Exception("The model file '" + strModelFile + "' does not exist!");
+
+            if (!File.Exists(strTokenizerFile))
+                throw new Exception("The tokenizer file '" + strTokenizerFile + "' does not exist!");
 
             m_strModelFiles = strModelFile + ";" + strTokenizerFile;
             Task.Factory.StartNew(new Action(load));
@@ -170,6 +182,16 @@ namespace MyCaffe.extras
             {
                 m_evtLoading.Reset();
             }
+        }
+
+        /// <summary>
+        /// Abort generating a response to a sys/user prompt.
+        /// </summary>
+        public void CancelGenerate()
+        {
+            if (m_hExtension != 0)
+                m_cuda.RunExtension(m_hExtension, (int)CUDAFN_EXTENSION_LLM.ABORT_GENERATE, m_rgLlm);
+            m_evtCancelQuery.Set();
         }
 
         /// <summary>
@@ -223,7 +245,7 @@ namespace MyCaffe.extras
             try
             {
                 m_cuda.RunExtensionEx(m_hExtension, (int)CUDAFN_EXTENSION_LLM.GENERATE, m_rgLlm, m_strPrompt);
-                m_evtCancelQuery.Set();
+                m_evtCancelQuery.Reset();
                 query();
             }
             finally
