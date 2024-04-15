@@ -59,9 +59,6 @@ public:
 
 	~LLMData()
 	{
-		free_sampler(&m_sampler);
-		free_tokenizer(&m_tokenizer);
-
 		if (m_transformer != NULL)
 		{
 			delete m_transformer;
@@ -73,6 +70,9 @@ public:
 			free(m_pnPromptTokens);
 			m_pnPromptTokens = NULL;
 		}
+
+		free_sampler(&m_sampler);
+		free_tokenizer(&m_tokenizer);
 	}
 
 	void split(LPTSTR szInput, std::string& strModelPath, std::string& strTokenizerPath)

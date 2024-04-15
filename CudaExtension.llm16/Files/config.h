@@ -23,6 +23,10 @@ public:
     {
 	}
 
+    virtual ~Transformer() 
+    {
+    }
+
     virtual long build(const char* checkpoint_path) = 0;
     virtual float* forward(int token, int pos) = 0;
     virtual void cleanup() = 0;

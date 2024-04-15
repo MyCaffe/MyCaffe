@@ -51,8 +51,13 @@ void build_tokenizer(Tokenizer* t, char* tokenizer_path, int vocab_size) {
     fclose(file);
 }
 
-void free_tokenizer(Tokenizer* t) {
-    for (int i = 0; i < t->m_vocab_size; i++) { free(t->m_vocab[i]); }
+void free_tokenizer(Tokenizer* t) 
+{
+    for (int i = 0; i < t->m_vocab_size; i++) 
+    { 
+        if (t->m_vocab[i] != NULL)
+            free(t->m_vocab[i]); 
+    }
     free(t->m_vocab);
     free(t->m_vocab_scores);
     free(t->m_sorted_vocab);
