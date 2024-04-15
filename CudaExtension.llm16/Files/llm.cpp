@@ -193,6 +193,7 @@ long LLMData<T>::Generate(LPTSTR szRenderedPrompt)
 			return ERROR_LLM_RENDERED_PROMPT_TO_LONG;
 
 		std::string strRenderedPrompt = T2A(szRenderedPrompt);
+		m_pbCancel->store(false);
 
 		while (pos < m_nSteps)
 		{
@@ -235,6 +236,9 @@ long LLMData<T>::Generate(LPTSTR szRenderedPrompt)
 			if (token == 2 || next == 2 || m_pbCancel->load())
 				break;
 		}
+
+		if (m_pbCancel->load())
+			m_strResponse.clear();
 	}
 	catch (std::exception& e)
 	{
