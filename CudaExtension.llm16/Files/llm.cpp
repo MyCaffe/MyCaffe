@@ -39,10 +39,11 @@ class LLMData
 	std::string m_strResponse;
 	std::atomic<bool>* m_pbCancel;
 	std::atomic<bool> m_bLoaded;
+	std::atomic<bool> m_bEnd;
 	std::mutex m_mtxResponse;
 
 public:
-	LLMData(T fTemperature, T fTopp, long lSeed, std::atomic<bool>* pbCancel) : m_tokenizer(), m_sampler(), m_strResponse(), m_mtxResponse(), m_bLoaded(false)
+	LLMData(T fTemperature, T fTopp, long lSeed, std::atomic<bool>* pbCancel) : m_tokenizer(), m_sampler(), m_strResponse(), m_mtxResponse(), m_bLoaded(false), m_bEnd(false)
 	{
 		m_fTemperature = fTemperature;
 		m_fTopp = fTopp;
@@ -184,6 +185,8 @@ long LLMData<T>::Generate(LPTSTR szRenderedPrompt)
 	int prev_token = 0;	// previous token
 	int pos = 0;		// position in sequence
 
+	m_bEnd.store(false);
+
 	try
 	{
 		if (_tcslen(szRenderedPrompt) > m_nMaxRenderedPrompt)
@@ -242,6 +245,8 @@ long LLMData<T>::Generate(LPTSTR szRenderedPrompt)
 		lErr = ERROR_LLM_GENERATE;
 	}
 
+	m_bEnd.store(true);
+
 	return lErr;
 }
 
@@ -261,15 +266,16 @@ long LLMData<T>::QueryResults(LPTSTR szOutput, LONG lMax, LONG* lEnd)
 	if (m_strResponse.length() < lMax)
 	{
 		_tcscpy(szOutput, A2T(m_strResponse.c_str()));
-		*lEnd = 1;
 		m_strResponse.clear();
 	}
 	else
 	{
 		_tcscpy(szOutput, A2T(m_strResponse.substr(0, lMax).c_str()));
-		*lEnd = 0;
 		m_strResponse = m_strResponse.substr(lMax);
 	}
+
+	*lEnd = (m_bEnd.load() == true) ? 1 : 0;
+	m_bEnd.store(false);
 
 	return 0;
 }
