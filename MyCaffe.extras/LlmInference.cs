@@ -2,6 +2,7 @@
 using MyCaffe.common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace MyCaffe.extras
         T[] m_rgLlm = null;
         ManualResetEvent m_evtLoading = new ManualResetEvent(false);
         ManualResetEvent m_evtGenerating = new ManualResetEvent(false);
+        ManualResetEvent m_evtQueryRunning = new ManualResetEvent(false);
         AutoResetEvent m_evtCancelQuery = new AutoResetEvent(false);
         string m_strModelFiles;
         string m_strPrompt;
@@ -69,6 +71,14 @@ namespace MyCaffe.extras
         public long UserState
         {
             get { return m_lUserState; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the LlmInference is currently generating a response.
+        /// </summary>
+        public bool IsGenerating
+        {
+            get { return m_evtGenerating.WaitOne(0); }
         }
 
         /// <summary>
@@ -224,16 +234,17 @@ namespace MyCaffe.extras
                 m_strPrompt += "[/INST]";
 
                 Task.Factory.StartNew(new Action(generate));
-                Thread.Sleep(250);
-                Task.Factory.StartNew(new Action(query));
+
+                if (!m_evtQueryRunning.WaitOne(0))
+                {
+                    Thread.Sleep(250);
+                    Task.Factory.StartNew(new Action(query));
+                }
             }
             catch (Exception excpt)
             {
                 if (OnResults != null)
                     OnResults(this, new LlmInferenceResultsArgs("ERROR", true, m_lUserState, excpt));
-            }
-            finally
-            {
                 m_evtGenerating.Reset();
             }
 
@@ -245,8 +256,6 @@ namespace MyCaffe.extras
             try
             {
                 m_cuda.RunExtensionEx(m_hExtension, (int)CUDAFN_EXTENSION_LLM.GENERATE, m_rgLlm, m_strPrompt);
-                m_evtCancelQuery.Reset();
-                query();
             }
             finally
             {
@@ -258,31 +267,42 @@ namespace MyCaffe.extras
         {
             string strEnd = "\n[END]";
 
-            while (!m_evtCancelQuery.WaitOne(1000))
+            try
             {
-                int[] rgLlm1 = new int[1];
-                rgLlm1[0] = (int)Utility.ConvertValF(m_rgLlm[0]);
-                string[] rgText = m_cuda.QueryExtensionStrings(m_hExtension, (int)CUDAFN_EXTENSION_LLM.QUERY_RESPONSE, rgLlm1);
-
-                if (rgText != null && rgText.Length > 0)
+                m_evtQueryRunning.Set();
+                while (!m_evtCancelQuery.WaitOne(1000))
                 {
-                    string strResult = "";
-                    int nPos = rgText[0].LastIndexOf(strEnd);
-                    bool bEnd = false;
+                    int[] rgLlm1 = new int[1];
+                    rgLlm1[0] = (int)Utility.ConvertValF(m_rgLlm[0]);
+                    string[] rgText = m_cuda.QueryExtensionStrings(m_hExtension, (int)CUDAFN_EXTENSION_LLM.QUERY_RESPONSE, rgLlm1);
 
-                    if (nPos >= 0)
+                    if (rgText != null && rgText.Length > 0)
                     {
-                        strResult = rgText[0].Substring(0, nPos);
-                        bEnd = true;
-                    }
-                    else
-                    {
-                        strResult = rgText[0];
-                    }
+                        if (!string.IsNullOrEmpty(rgText[0]))
+                            Trace.WriteLine(rgText[0]);
 
-                    if (OnResults != null)
-                        OnResults(this, new LlmInferenceResultsArgs(strResult, bEnd, m_lUserState));
+                        string strResult = "";
+                        int nPos = rgText[0].LastIndexOf(strEnd);
+                        bool bEnd = false;
+
+                        if (nPos >= 0)
+                        {
+                            strResult = rgText[0].Substring(0, nPos);
+                            bEnd = true;
+                        }
+                        else
+                        {
+                            strResult = rgText[0];
+                        }
+
+                        if (OnResults != null && strResult.Length > 0)
+                            OnResults(this, new LlmInferenceResultsArgs(strResult, bEnd, m_lUserState));
+                    }
                 }
+            }
+            finally
+            {
+                m_evtQueryRunning.Reset();
             }
         }
     }
