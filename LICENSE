@@ -1287,14 +1287,15 @@ license and copyright terms herein.
   ** end cccntu/minLoRA license **
 
   The MyCaffe LlaMA2 supported uses or was inspired by portions of the open-source project
-  llama2.c by Andrej Karpathy located at: https://github.com/karpathy/llama2.c and distributed
-  under the MIT License: https://github.com/karpathy/llama2.c/blob/master/LICENSE
+  llama2.c by Andrej Karpathy and contributor Roger Allen (llama2.cu)
+  located at: https://github.com/karpathy/llama2.c and distributed under the 
+  MIT License: https://github.com/karpathy/llama2.c/blob/master/LICENSE
 
   ** begin karpathy/llama2.c license **
 
 	MIT License
 
-    Copyright (c) 2023 Andrej
+    Copyright (c) 2023 Andrej (and contributors including Roger Allen @rogerallen)
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
