@@ -125,7 +125,7 @@ namespace MyCaffe.db.temporal
         /// <returns>Returns the master time sync list.</returns>
         public List<DateTime> SynchronizeItemSetsInTime()
         {
-            List<DateTime> rgDateIdx = new List<DateTime>();
+            Dictionary<int, DateTime> rgDateIdx1 = new Dictionary<int, DateTime>();
             int nDateIdx = -1;
             int nMax = 0;
             Stopwatch sw = new Stopwatch();
@@ -142,9 +142,10 @@ namespace MyCaffe.db.temporal
                 }
 
                 foreach (DateTime dt in item.DataDates)
-                {
-                    if (!rgDateIdx.Contains(dt))
-                        rgDateIdx.Add(dt);
+                { 
+                    int nHash = dt.GetHashCode();
+                    if (!rgDateIdx1.ContainsKey(nHash))
+                        rgDateIdx1.Add(nHash, dt);
                 }
 
                 if (sw.Elapsed.TotalMilliseconds > 1000)
@@ -155,8 +156,7 @@ namespace MyCaffe.db.temporal
                 }
             }
 
-            rgDateIdx = rgDateIdx.OrderBy(p => p).ToList();
-
+            List<DateTime> rgDateIdx = rgDateIdx1.Select(p => p.Value).OrderBy(p => p).ToList();
             for (int i = 0; i < m_rgItems.Count; i++)
             {
                 ItemSet item = m_rgItems[i];
