@@ -694,7 +694,12 @@ namespace MyCaffe.layers.gpt
             if (m_param.multihead_attention_param.enable_cuda_scaled_dot_product_attention)
             {
                 m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
-                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hCudaAttention, colBottom[0].channels, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, blobMask.gpu_data, m_blobWork.mutable_gpu_data);
+
+                bool bBatchMask = true;
+                if (blobMask.num_axes == 4 && blobMask.num == 1 && blobMask.channels == 1 && blobMask.height == m_nT && blobMask.width == m_nT)
+                    bBatchMask = false;
+
+                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hCudaAttention, colBottom[0].channels, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, blobMask.gpu_data, m_blobWork.mutable_gpu_data, bBatchMask);
             }
             else
             {
@@ -730,8 +735,10 @@ namespace MyCaffe.layers.gpt
 
                     // Apply mask to attention matrix
                     // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -1e+29)
-                    //m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.             
-                    m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                    if (blobMask.num_axes == 4 && blobMask.num == 1 && blobMask.channels == 1 && blobMask.height == m_nT && blobMask.width == m_nT)
+                        m_cuda.mask(m_blobAttA.count(), blobMask.count(), convert(0.0), convert(-1e+29), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                    else
+                        m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
                 }
 
                 // Take softmax of attention along the last axis.
