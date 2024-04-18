@@ -298,6 +298,22 @@ LONG blob<T>::apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc
 template LONG blob<double>::apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 template LONG blob<float>::apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 
+template <class T>
+LONG blob<T>::apply_mask_batch(blob<T>& blobMask)
+{
+	if (blobMask.n() != n() || blobMask.c() != m_nH || blobMask.h() != 1 || blobMask.w() != 1)
+		return ERROR_ATTN_INCOMPATIBLE_BLOB_SIZE;
+
+	float fInf = -1e+29f;
+	int nBatch = n();
+	int nMaskDim = blobMask.count();
+	return m_pMath->mask_batch(count(), nBatch, nMaskDim, T(0.0), T(fInf), m_data, blobMask.data(), m_data);
+}
+
+template LONG blob<double>::apply_mask_batch(blob<double>& blobMask);
+template LONG blob<float>::apply_mask_batch(blob<float>& blobMask);
+
+
 
 template <class T>
 LONG blob<T>::apply_mask(blob<T>& blobMask)
@@ -502,7 +518,7 @@ template long attnHandle<double>::CleanUp();
 template long attnHandle<float>::CleanUp();
 
 template <class T>
-long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY)
+long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask)
 {
 	LONG lErr;
 	blob<T> blobQ(m_pMem, m_pMath, m_nGpuID);
@@ -528,8 +544,19 @@ long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long h
 	if (lErr = blobV.set(hV, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
 
-	if (lErr = blobMask.set(hMask, NULL, 1, 1, nBlockSize, nBlockSize))
-		return lErr;
+	if (hMask != 0)
+	{
+		if (bBatchMask)
+		{
+			if (lErr = blobMask.set(hMask, NULL, m_nBatch, m_nBlockSize, 1, 1))
+				return lErr;
+		}
+		else
+		{
+			if (lErr = blobMask.set(hMask, NULL, 1, 1, m_nBlockSize, m_nBlockSize))
+				return lErr;
+		}
+	}
 
 	if (lErr = blobY.set(hY, NULL, m_nBatch, m_nHeads, nBlockSize, m_nSize))
 		return lErr;
@@ -546,8 +573,16 @@ long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long h
 	// Apply mask to atention matrix.
 	if (blobMask.data() != 0)
 	{
-		if (lErr = m_blobAttA.apply_mask(blobMask))
-			return lErr;
+		if (bBatchMask)
+		{
+			if (lErr = m_blobAttA.apply_mask_batch(blobMask))
+				return lErr;
+		}
+		else
+		{
+			if (lErr = m_blobAttA.apply_mask(blobMask))
+				return lErr;
+		}
 	}
 
 	// Softmax along the last dimension of AttA -> AttB
@@ -569,8 +604,8 @@ long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long h
 	return cudaStreamSynchronize(0);
 }
 
-template long attnHandle<double>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
-template long attnHandle<float>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
+template long attnHandle<double>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask);
+template long attnHandle<float>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask);
 
 template <class T>
 long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY)
@@ -606,9 +641,6 @@ long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, l
 	if (lErr = blobY.matmulgrad(m_blobAttB, blobV, m_blobWork))
 		return lErr;
 
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\1.mycaffe.attb.grad.npy", m_blobAttB.hdiff(), m_blobAttB.n(), m_blobAttB.c(), m_blobAttB.h(), m_blobAttB.w());
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\1.mycaffe.v.grad.npy", blobV.hdiff(), blobV.n(), blobV.c(), blobV.h(), blobV.w());
-
 	// Apply dropout to dAttB
 	if (m_bTraining && m_dfDropout > 0)
 	{
@@ -620,20 +652,13 @@ long attnHandle<T>::Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, l
 	if (lErr = m_blobAttB.softmax_bwd(hCuda, m_blobAttA))
 		return lErr;
 
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\2.mycaffe.atta.grad.npy", m_blobAttA.hdiff(), m_blobAttA.n(), m_blobAttA.c(), m_blobAttA.h(), m_blobAttA.w());
-
 	// Matmul Qt @ dKt1 <- dAttA
 	if (lErr = m_blobAttA.matmulgrad(blobQ, m_blobKt, m_blobWork, T(m_dfScale)))
 		return lErr;
 
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\3.mycaffe.q.grad.npy", blobQ.hdiff(), blobQ.n(), blobQ.c(), blobQ.h(), blobQ.w());
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\3.mycaffe.kt.grad.npy", m_blobKt.hdiff(), m_blobKt.n(), m_blobKt.c(), m_blobKt.h(), m_blobKt.w());
-
 	// Transpose dK <- dKt
 	if (lErr = blobK.transpose_hw(m_blobKt, true))
 		return lErr;
-
-//	m_pMem->SaveToNumpy("C:\\temp\\projects\\llama2\\llama2\\llama2\\test\\4.mycaffe.q.grad.npy", blobK.hdiff(), blobK.n(), blobK.c(), blobK.h(), blobK.w());
 
 	return cudaStreamSynchronize(0);
 }

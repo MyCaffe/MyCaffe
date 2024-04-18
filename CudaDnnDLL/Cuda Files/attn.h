@@ -226,6 +226,7 @@ public:
 	LONG apply_dropout_fwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 	LONG apply_dropout_bwd(long hCuda, cudnnDropoutDescriptor_t dropoutDesc, void* states, size_t statesize);
 	LONG apply_mask(blob<T>& blobMask);
+	LONG apply_mask_batch(blob<T>& blobMask);
 	LONG matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
 	LONG matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, double dfScale = 1.0);
 
@@ -323,7 +324,7 @@ public:
 
 	long Set(long hCuda, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, unsigned long long lSeed);
 
-	long Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
+	long Forward(long hCuda, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask);
 
 	long Backward(long hCuda, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY);
 

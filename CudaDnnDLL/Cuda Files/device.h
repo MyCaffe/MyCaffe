@@ -2484,7 +2484,7 @@ inline long Device<T>::AttnForward(long lInput, T* pfInput, long llInput, LONGLO
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
 		return lErr;
 
 	long hCuda = (long)plInput[0];
@@ -2495,8 +2495,9 @@ inline long Device<T>::AttnForward(long lInput, T* pfInput, long llInput, LONGLO
 	long hV = (long)plInput[5];
 	long hMask = (long)plInput[6];
 	long hY = (long)plInput[7];
+	bool bBatchMask = (plInput[8] != 0) ? true : false;
 
-	return m_memory.ForwardAttn(hCuda, hAttn, nBlockSize, hQ, hK, hV, hMask, hY);
+	return m_memory.ForwardAttn(hCuda, hAttn, nBlockSize, hQ, hK, hV, hMask, hY, bBatchMask);
 }
 
 template <class T>

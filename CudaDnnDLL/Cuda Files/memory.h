@@ -464,7 +464,7 @@ class Memory
 		long FreeAttn(long hAttn);
 		attnHandle<T>* GetAttn(long hAttn);
 		long SetAttn(long hCuda, long hAttn, int nGpuID, bool bTraining, int nBatch, int nBlockSize, int nHeads, int nSize, float fDropout, size_t lSeed);
-		long ForwardAttn(long hCuda, long hAttn, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY);
+		long ForwardAttn(long hCuda, long hAttn, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask);
 		long BackwardAttn(long hCuda, long hAttn, long hQ, long hdQ, long hK, long hdK, long hV, long hdV, long hMask, long hY, long hdY);
 
 		long CreateCpd(long* phHandle, Math<T>* pMath);
@@ -1559,12 +1559,12 @@ inline long Memory<T>::SetAttn(long hCuda, long hAttn, int nGpuID, bool bTrainin
 }
 
 template <class T>
-inline long Memory<T>::ForwardAttn(long hCuda, long hAttn, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY)
+inline long Memory<T>::ForwardAttn(long hCuda, long hAttn, int nBlockSize, long hQ, long hK, long hV, long hMask, long hY, bool bBatchMask)
 {
 	attnHandle<T>* attn = (attnHandle<T>*)m_attn.GetData(hAttn);
 	if (attn == NULL)
 		return ERROR_PARAM_NULL;
-	return attn->Forward(hCuda, nBlockSize, hQ, hK, hV, hMask, hY);
+	return attn->Forward(hCuda, nBlockSize, hQ, hK, hV, hMask, hY, bBatchMask);
 }
 
 template <class T>
