@@ -560,7 +560,7 @@ namespace MyCaffe.layers.gpt
             if (m_param.causal_self_attention_param.enable_cuda_scaled_dot_product_attention)
             {
                 m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
-                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, blobX.channels, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, m_blobMask.gpu_data, m_blobWork.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(m_hCudnn, m_hFlashAttention, blobX.channels, m_blobQt.gpu_data, m_blobKt.gpu_data, m_blobVt.gpu_data, m_blobMask.gpu_data, m_blobWork.mutable_gpu_data, false);
             }
             else
             {
