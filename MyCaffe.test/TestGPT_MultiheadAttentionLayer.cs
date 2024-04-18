@@ -452,7 +452,7 @@ namespace MyCaffe.test
                 m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
-                
+
                 BottomVec.Clear();
                 BottomVec.Add(m_blobQ);
                 BottomVec.Add(m_blobK);
@@ -473,7 +473,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
-                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 2e-06 : 3e-06), "The blobs are different.");
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-06), "The blobs are different.");
             }
             finally
             {
@@ -811,8 +811,8 @@ namespace MyCaffe.test
 
             // Apply mask to attention matrix
             // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            float fInf = 1e+29f;
-            m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1 * fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+            float fInf = -1e+29f;
+            m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
             if (bSaveDebugFiles)
                 m_blobAttA.SaveToRawFile(strPath + "attA_masked.bin");
@@ -945,7 +945,7 @@ namespace MyCaffe.test
                 hCuDnn = m_cuda.CreateCuDNN();
                 hAttn = m_cuda.CreateAttn();
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, false, nBatch, nBlock, nHeads, nSize, fDropout);
-                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, m_blobQ.channels, m_blobQ.gpu_data, m_blobK.gpu_data, m_blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, nBlock, m_blobQ.gpu_data, m_blobK.gpu_data, m_blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
 
                 m_log.CHECK(m_blobY.Compare(blobY, m_blobWork), "The Y blob data is different.");
             }
@@ -993,7 +993,7 @@ namespace MyCaffe.test
                 hCuDnn = m_cuda.CreateCuDNN();
                 hAttn = m_cuda.CreateAttn();
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, true, nBatch, nBlock, nHeads, nSize, fDropout);
-                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.channels, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, nBlock, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
                 blobY.CopyFrom(m_blobY, true);
 
                 Trace.WriteLine("Testing backward: hY = " + blobY.gpu_data.ToString() + " hdY = " + blobY.gpu_diff.ToString());
@@ -1043,7 +1043,7 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
-                Trace.WriteLine("Starting non-flash attention forward...");
+                Trace.WriteLine("Starting non-direct attention forward...");
                 for (int i = 0; i < nIterations; i++)
                 {
                     scaled_dot_product_fwd(m_blobQ, m_blobK, m_blobV, m_blobMask, m_blobY, nSize);
@@ -1053,7 +1053,7 @@ namespace MyCaffe.test
                 m_filler.Fill(m_blobY.count(), m_blobY.mutable_gpu_diff);
 
                 sw.Restart();
-                Trace.WriteLine("Starting non-flash attention backward...");
+                Trace.WriteLine("Starting non-direct attention backward...");
                 for (int i = 0; i < nIterations; i++)
                 {
                     scaled_dot_product_bwd(m_blobQ, m_blobK, m_blobV, m_blobMask, m_blobY, nSize);
@@ -1066,10 +1066,10 @@ namespace MyCaffe.test
                 m_cuda.SetAttn(hCuDnn, hAttn, 0, true, nBatch, nBlock, nHeads, nSize, fDropout);
 
                 sw.Restart();
-                Trace.WriteLine("Starting flash attention forward...");
+                Trace.WriteLine("Starting direct attention forward...");
                 for (int i = 0; i < nIterations; i++)
                 {
-                    m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, blobQ.channels, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
+                    m_cuda.AttnScaledDotProductForward(hCuDnn, hAttn, nBlock, blobQ.gpu_data, blobK.gpu_data, blobV.gpu_data, m_blobMask.gpu_data, blobY.mutable_gpu_data);
                 }
 
                 double dfTotalForwardFlash = sw.Elapsed.TotalMilliseconds;
@@ -1077,7 +1077,7 @@ namespace MyCaffe.test
                 blobY.CopyFrom(m_blobY, true);
 
                 sw.Restart();
-                Trace.WriteLine("Starting non-flash attention backward...");
+                Trace.WriteLine("Starting non-direct attention backward...");
                 for (int i = 0; i < nIterations; i++)
                 {
                     m_cuda.AttnScaledDotProductBackward(hCuDnn, hAttn, blobQ.gpu_data, blobQ.mutable_gpu_diff, blobK.gpu_data, blobK.mutable_gpu_diff, blobV.gpu_data, blobV.mutable_gpu_diff, m_blobMask.gpu_data, blobY.gpu_data, blobY.gpu_diff);
@@ -1092,8 +1092,8 @@ namespace MyCaffe.test
 
                 Trace.WriteLine("Average Forward Normal: " + dfAverageForwardNormal.ToString("N4") + " ms");
                 Trace.WriteLine("Average Backward Normal: " + dfAverageBackwardNormal.ToString("N4") + " ms");
-                Trace.WriteLine("Average Forward Flash: " + dfAverageForwardFlash.ToString("N4") + " ms");
-                Trace.WriteLine("Average Backward Flash: " + dfAverageBackwardFlash.ToString("N4") + " ms");               
+                Trace.WriteLine("Average Forward Direct: " + dfAverageForwardFlash.ToString("N4") + " ms");
+                Trace.WriteLine("Average Backward Direct: " + dfAverageBackwardFlash.ToString("N4") + " ms");               
             }
             finally
             {
