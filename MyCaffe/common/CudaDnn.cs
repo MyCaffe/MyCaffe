@@ -5644,12 +5644,13 @@ namespace MyCaffe.common
         /// <param name="hVdata">Specifies a handle to the GPU memory containing the V inputs.</param>
         /// <param name="hMaskdata">Specifies a handle to the GPU memory containing the Mask inputs, or 0 to ignore.</param>
         /// <param name="hYdata">Specifies a handle to the GPU memory containing the Y outputs.</param>
-        public void AttnScaledDotProductForward(long hCuDnn, long hAttn, int nBlockSize, long hQdata, long hKdata, long hVdata, long hMaskdata, long hYdata)
+        /// <param name="bBatchMask">Specifies to use the batch mask mode (default = true).</param>
+        public void AttnScaledDotProductForward(long hCuDnn, long hAttn, int nBlockSize, long hQdata, long hKdata, long hVdata, long hMaskdata, long hYdata, bool bBatchMask = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata, (bBatchMask) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.ATTN_SCALED_DOT_PRODUCT_FWD, null, m_param.AsLong(hCuDnn, hAttn, nBlockSize, hQdata, hKdata, hVdata, hMaskdata, hYdata, (bBatchMask) ? 1 : 0));
         }
 
         /// <summary>
