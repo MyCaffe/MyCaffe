@@ -548,12 +548,12 @@ long attnHandle<T>::Forward(long hCuda, int nBlockSize, long hQ, long hK, long h
 	{
 		if (bBatchMask)
 		{
-			if (lErr = blobMask.set(hMask, NULL, m_nBatch, m_nBlockSize, 1, 1))
+			if (lErr = blobMask.set(hMask, NULL, m_nBatch, nBlockSize, 1, 1))
 				return lErr;
 		}
 		else
 		{
-			if (lErr = blobMask.set(hMask, NULL, 1, 1, m_nBlockSize, m_nBlockSize))
+			if (lErr = blobMask.set(hMask, NULL, 1, 1, nBlockSize, nBlockSize))
 				return lErr;
 		}
 	}
