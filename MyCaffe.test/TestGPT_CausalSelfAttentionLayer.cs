@@ -168,6 +168,14 @@ namespace MyCaffe.test
             layer.blobs[3].LoadFromNumpy(strPath + "blk0.attn.c_proj.bias.npy");
         }
 
+        /// <summary>
+        /// Test the CausalSelfAttentionLayer forward pass.
+        /// </summary>
+        /// <remarks>
+        /// Generate Data:
+        /// File - C:\Data\Data\SS_Projects\Intelligence\GitHub\MyCaffe\MyCaffe.test\test_data\projects\minGPT\minGPT\test_causalselfattention.py 
+        /// Comment out lines 202 - 221.
+        /// </remarks>
         public void TestForward()
         {
             string strPath = loadTestData1();
@@ -208,6 +216,14 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test the CausalSelfAttentionLayer backward pass.
+        /// </summary>
+        /// <remarks>
+        /// Generate Data:
+        /// File - C:\Data\Data\SS_Projects\Intelligence\GitHub\MyCaffe\MyCaffe.test\test_data\projects\minGPT\minGPT\test_causalselfattention.py 
+        /// Comment out lines 202 - 221.
+        /// </remarks>
         public void TestBackward()
         {
             string strPath = loadTestData1();
