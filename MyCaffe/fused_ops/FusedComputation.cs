@@ -140,7 +140,7 @@ namespace MyCaffe.fused_ops
             int nHa = (A.num_axes == 2) ? A.num : A.height;
             int nWa = (A.num_axes == 2) ? A.channels : A.width;
             int nHb = (B.num_axes == 2) ? B.num : B.height;
-            int nWb = (B.num_axes == 2) ? B.channels : B.width;
+            int nWb = (B.num_axes == 2) ? (bTransB) ? B.num : B.channels : (bTransB) ? B.height : B.width;
 
             if (bTransA && nHa != nHb)
                 throw new Exception("The 'height' in A must be the same as the 'height' in B.");
@@ -239,7 +239,7 @@ namespace MyCaffe.fused_ops
             int nHa = (A.num_axes == 2) ? A.num : A.height;
             int nWa = (A.num_axes == 2) ? A.channels : A.width;
             int nHb = (B.num_axes == 2) ? B.num : B.height;
-            int nWb = (B.num_axes == 2) ? B.channels : B.width;
+            int nWb = (B.num_axes == 2) ? (bTransB) ? B.num : B.channels : (bTransB) ? B.height : B.width;
 
             if (bTransA && nHa != nHb)
                 throw new Exception("The 'height' in A must be the same as the 'height' in B.");
