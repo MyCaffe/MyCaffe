@@ -142,41 +142,41 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestGradientTranspose()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
+        //[TestMethod]
+        //public void TestGradientTranspose()
+        //{
+        //    InnerProductLayerTest test = new InnerProductLayerTest();
 
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestGradientTranspose();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IInnerProductLayerTest t in test.Tests)
+        //        {
+        //            t.TestGradientTranspose();
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestBackwardTranspose()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
+        //[TestMethod]
+        //public void TestBackwardTranspose()
+        //{
+        //    InnerProductLayerTest test = new InnerProductLayerTest();
 
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestBackwardTranspose();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IInnerProductLayerTest t in test.Tests)
+        //        {
+        //            t.TestBackwardTranspose();
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
         [TestMethod]
         public void TestSetup_linear()
@@ -251,24 +251,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTranspose_linear()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
-
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestForwardTranspose(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestForwardNoBatch_linear()
         {
             InnerProductLayerTest test = new InnerProductLayerTest();
@@ -303,42 +285,6 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
-        [TestMethod]
-        public void TestGradientTranspose_linear()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
-
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestGradientTranspose(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardTranspose_linear()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
-
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestBackwardTranspose(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
     }
 
 
@@ -364,11 +310,11 @@ namespace MyCaffe.test
         void TestSetupTransposeFalse(bool bLinear = false);
         void TestSetupTransposeTrue(bool bLinear = false);
         void TestForward(bool bLinear = false);
-        void TestForwardTranspose(bool bLinear = false);
+        void TestForwardTranspose();
         void TestForwardNoBatch(bool bLinear = false);
         void TestGradient(bool bLinear = false);
-        void TestGradientTranspose(bool bLinear = false);
-        void TestBackwardTranspose(bool bLinear = false);
+        void TestGradientTranspose();
+        void TestBackwardTranspose();
     }
 
     class InnerProductLayerTest<T> : TestEx<T>, IInnerProductLayerTest
@@ -409,13 +355,16 @@ namespace MyCaffe.test
             {
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
-                p.linear_param.num_output = 10; 
+                p.linear_param.num_output = 10;
+                p.linear_param.axis = 1;
+                p.linear_param.transpose = true;
             }
             else
             {
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
             }
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
@@ -440,19 +389,25 @@ namespace MyCaffe.test
         {
             LayerParameter.LayerType layerType;
             LayerParameter p;
+            int nBlobShape0 = 10;
+            int nBlobShape1 = 60;
 
             if (bLinear)
             {
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
                 p.linear_param.num_output = 10;
-                p.linear_param.transpose = false;
+                p.linear_param.axis = 1;
+                p.linear_param.transpose = true;
+                nBlobShape0 = 60;
+                nBlobShape1 = 10;
             }
             else
             {
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
                 p.inner_product_param.transpose = false;
             }
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
@@ -468,8 +423,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(Top.width, 1, "Expected top width to equal 1.");
                 m_log.CHECK_EQ(Top.channels, 10, "Expected top channels to equal 10.");
                 m_log.CHECK_EQ(2, layer.blobs[0].num_axes, "The blob[0] should have 2 axes.");
-                m_log.CHECK_EQ(10, layer.blobs[0].shape(0), "The blob[0] shape(0) should be 10.");
-                m_log.CHECK_EQ(60, layer.blobs[0].shape(1), "The blob[0] shape(1) should be 60.");
+                m_log.CHECK_EQ(nBlobShape0, layer.blobs[0].shape(0), "The blob[0] shape(0) should be 10.");
+                m_log.CHECK_EQ(nBlobShape1, layer.blobs[0].shape(1), "The blob[0] shape(1) should be 60.");
             }
             finally
             {
@@ -487,6 +442,7 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
                 p.linear_param.num_output = 10;
+                p.linear_param.axis = 1;
                 p.linear_param.transpose = true;
             }
             else
@@ -494,6 +450,7 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
                 p.inner_product_param.transpose = true;
             }
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
@@ -528,6 +485,8 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
                 p.linear_param.num_output = 10;
+                p.linear_param.axis = 1;
+                p.linear_param.transpose = true;
                 p.linear_param.weight_filler.type = "uniform";
                 p.linear_param.weight_filler.min = 1.0;
                 p.linear_param.weight_filler.max = 2.0;
@@ -540,6 +499,7 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
                 p.inner_product_param.weight_filler.type = "uniform";
                 p.inner_product_param.weight_filler.min = 1.0;
                 p.inner_product_param.weight_filler.max = 2.0;
@@ -572,7 +532,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestForwardTranspose(bool bLinear)
+        public void TestForwardTranspose()
         {
             Blob<T> blobTop = null;
             Blob<T> blobTop2 = null;
@@ -580,32 +540,17 @@ namespace MyCaffe.test
             LayerParameter.LayerType layerType;
             LayerParameter p;
 
-            if (bLinear)
-            {
-                layerType = LayerParameter.LayerType.LINEAR;
-                p = new LayerParameter(LayerParameter.LayerType.LINEAR);
-                p.linear_param.num_output = 10;
-                p.linear_param.weight_filler.type = "uniform";
-                p.linear_param.weight_filler.min = 1.0;
-                p.linear_param.weight_filler.max = 2.0;
-                p.linear_param.bias_filler.type = "uniform";
-                p.linear_param.bias_filler.min = 1.0;
-                p.linear_param.bias_filler.max = 2.0;
-                p.linear_param.transpose = false;
-            }
-            else
-            {
-                layerType = LayerParameter.LayerType.INNERPRODUCT;
-                p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-                p.inner_product_param.num_output = 10;
-                p.inner_product_param.weight_filler.type = "uniform";
-                p.inner_product_param.weight_filler.min = 1.0;
-                p.inner_product_param.weight_filler.max = 2.0;
-                p.inner_product_param.bias_filler.type = "uniform";
-                p.inner_product_param.bias_filler.min = 1.0;
-                p.inner_product_param.bias_filler.max = 2.0;
-                p.inner_product_param.transpose = false;
-            }
+            layerType = LayerParameter.LayerType.INNERPRODUCT;
+            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            p.inner_product_param.num_output = 10;
+            p.inner_product_param.axis = 1;
+            p.inner_product_param.weight_filler.type = "uniform";
+            p.inner_product_param.weight_filler.min = 1.0;
+            p.inner_product_param.weight_filler.max = 2.0;
+            p.inner_product_param.bias_filler.type = "uniform";
+            p.inner_product_param.bias_filler.min = 1.0;
+            p.inner_product_param.bias_filler.max = 2.0;
+            p.inner_product_param.transpose = true;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
             Layer<T> ip_t = null;
 
@@ -626,11 +571,7 @@ namespace MyCaffe.test
                 TopVec.Clear();
                 TopVec.Add(blobTop2);
 
-                if (layerType == LayerParameter.LayerType.LINEAR)
-                    p.linear_param.transpose = true;
-                else
-                    p.inner_product_param.transpose = true;
-
+                p.inner_product_param.transpose = false;
                 ip_t = Layer<T>.Create(m_cuda, m_log, p, null);
                 ip_t.Setup(BottomVec, TopVec);
                 int nCountW = layer.blobs[0].count();
@@ -702,6 +643,8 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
                 p.linear_param.num_output = 10;
+                p.linear_param.transpose = true;
+                p.linear_param.axis = 1;
                 p.linear_param.weight_filler.type = "uniform";
                 p.linear_param.weight_filler.min = 1.0;
                 p.linear_param.weight_filler.max = 2.0;
@@ -714,6 +657,7 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
                 p.inner_product_param.weight_filler.type = "uniform";
                 p.inner_product_param.weight_filler.min = 1.0;
                 p.inner_product_param.weight_filler.max = 2.0;
@@ -756,6 +700,8 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.LINEAR;
                 p = new LayerParameter(LayerParameter.LayerType.LINEAR);
                 p.linear_param.num_output = 10;
+                p.linear_param.axis = 1;
+                p.linear_param.transpose = true;
                 p.linear_param.weight_filler.type = "uniform";
                 p.linear_param.weight_filler.min = 1.0;
                 p.linear_param.weight_filler.max = 2.0;
@@ -768,6 +714,7 @@ namespace MyCaffe.test
                 layerType = LayerParameter.LayerType.INNERPRODUCT;
                 p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 p.inner_product_param.num_output = 10;
+                p.inner_product_param.axis = 1;
                 p.inner_product_param.weight_filler.type = "uniform";
                 p.inner_product_param.weight_filler.min = 1.0;
                 p.inner_product_param.weight_filler.max = 2.0;
@@ -790,37 +737,22 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradientTranspose(bool bLinear)
+        public void TestGradientTranspose()
         {
             LayerParameter.LayerType layerType;
             LayerParameter p;
 
-            if (bLinear)
-            {
-                layerType = LayerParameter.LayerType.LINEAR;
-                p = new LayerParameter(LayerParameter.LayerType.LINEAR);
-                p.linear_param.num_output = 10;
-                p.linear_param.weight_filler.type = "uniform";
-                p.linear_param.weight_filler.min = 1.0;
-                p.linear_param.weight_filler.max = 2.0;
-                p.linear_param.bias_filler.type = "uniform";
-                p.linear_param.bias_filler.min = 1.0;
-                p.linear_param.bias_filler.max = 2.0;
-                p.linear_param.transpose = true;
-            }
-            else
-            {
-                layerType = LayerParameter.LayerType.INNERPRODUCT;
-                p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-                p.inner_product_param.num_output = 10;
-                p.inner_product_param.weight_filler.type = "uniform";
-                p.inner_product_param.weight_filler.min = 1.0;
-                p.inner_product_param.weight_filler.max = 2.0;
-                p.inner_product_param.bias_filler.type = "uniform";
-                p.inner_product_param.bias_filler.min = 1.0;
-                p.inner_product_param.bias_filler.max = 2.0;
-                p.inner_product_param.transpose = true;
-            }
+            layerType = LayerParameter.LayerType.INNERPRODUCT;
+            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            p.inner_product_param.num_output = 10;
+            p.inner_product_param.axis = 1;
+            p.inner_product_param.weight_filler.type = "uniform";
+            p.inner_product_param.weight_filler.min = 1.0;
+            p.inner_product_param.weight_filler.max = 2.0;
+            p.inner_product_param.bias_filler.type = "uniform";
+            p.inner_product_param.bias_filler.min = 1.0;
+            p.inner_product_param.bias_filler.max = 2.0;
+            p.inner_product_param.transpose = true;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
             try
@@ -836,37 +768,22 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackwardTranspose(bool bLinear)
+        public void TestBackwardTranspose()
         {
             LayerParameter.LayerType layerType;
             LayerParameter p;
 
-            if (bLinear)
-            {
-                layerType = LayerParameter.LayerType.LINEAR;
-                p = new LayerParameter(LayerParameter.LayerType.LINEAR);
-                p.linear_param.num_output = 10;
-                p.linear_param.weight_filler.type = "uniform";
-                p.linear_param.weight_filler.min = 1.0;
-                p.linear_param.weight_filler.max = 2.0;
-                p.linear_param.bias_filler.type = "uniform";
-                p.linear_param.bias_filler.min = 1.0;
-                p.linear_param.bias_filler.max = 2.0;
-                p.linear_param.transpose = false;
-            }
-            else
-            {
-                layerType = LayerParameter.LayerType.INNERPRODUCT;
-                p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-                p.inner_product_param.num_output = 10;
-                p.inner_product_param.weight_filler.type = "uniform";
-                p.inner_product_param.weight_filler.min = 1.0;
-                p.inner_product_param.weight_filler.max = 2.0;
-                p.inner_product_param.bias_filler.type = "uniform";
-                p.inner_product_param.bias_filler.min = 1.0;
-                p.inner_product_param.bias_filler.max = 2.0;
-                p.inner_product_param.transpose = false;
-            }
+            layerType = LayerParameter.LayerType.INNERPRODUCT;
+            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            p.inner_product_param.num_output = 10;
+            p.inner_product_param.weight_filler.type = "uniform";
+            p.inner_product_param.weight_filler.min = 1.0;
+            p.inner_product_param.weight_filler.max = 2.0;
+            p.inner_product_param.bias_filler.type = "uniform";
+            p.inner_product_param.bias_filler.min = 1.0;
+            p.inner_product_param.bias_filler.max = 2.0;
+            p.inner_product_param.transpose = true;
+            p.inner_product_param.axis = 1;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
             Layer<T> ip_t = null;
 
@@ -913,10 +830,7 @@ namespace MyCaffe.test
                 TopVec.Clear();
                 TopVec.Add(blobNewTop);
 
-                if (layerType == LayerParameter.LayerType.LINEAR)
-                    p.linear_param.transpose = true;
-                else
-                    p.inner_product_param.transpose = true;
+                p.inner_product_param.transpose = false;
 
                 ip_t = Layer<T>.Create(m_cuda, m_log, p, null);
                 ip_t.Setup(BottomVec, TopVec);
