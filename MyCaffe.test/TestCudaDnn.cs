@@ -3842,25 +3842,28 @@ namespace MyCaffe.test
                         int nCount = nNum * nDim;
 
                         // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
-                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
+                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 
+                                                                         2.0, 2.1, 2.2, 
+                                                                         3.0, 3.1, 3.2, 
+                                                                         4.0, 4.1, 4.2 };
                         hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
-                        hDstVector = t.Cuda.AllocMemory(nNum);
+                        hDstVector = t.Cuda.AllocMemory(nDim);
 
                         t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
 
-                        double[] rgExpected = new double[nNum];
+                        double[] rgExpected = new double[nDim];
                         for (int i = 0; i < nDim; i++)
                         {
                             for (int j = 0; j < nNum; j++)
                             {
                                 int nIdxData = j * nDim + i;
-                                rgExpected[j] += rgDataMatrix[nIdxData];
+                                rgExpected[i] += rgDataMatrix[nIdxData];
                             }
                         }
 
-                        for (int i = 0; i < nNum; i++)
+                        for (int i = 0; i < nDim; i++)
                         {
                             double dfExpected = rgExpected[i];
                             double dfActual = rgDst[i];
