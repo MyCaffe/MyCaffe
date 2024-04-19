@@ -32,6 +32,7 @@ namespace MyCaffe.layers
         List<int> m_rgOriginalShape;
         List<int> m_rgBtmShape = new List<int>(4);
         List<int> m_rgTopShape = new List<int>(4);
+        List<int> m_rgShape = new List<int>() { 1, 1 };
 
         /// <summary>
         /// The LinearLayer constructor.
@@ -230,9 +231,20 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 m_weightAdapter.Setup(layer_param, m_colBlobs[0]);
 
+            copyShape(colBottom[0], m_rgBtmShape);
+
+            // The first 'axis' dimensions are independent of inner products; the total
+            // number of these is M_, the product over these dimensions.
+            m_nM = colBottom[0].count(0, nAxis);
+
+            m_rgShape[0] = m_nM;
+            m_rgShape[1] = m_nK;
+            colBottom[0].Reshape(m_rgShape);
+
             m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, m_param.linear_param.enable_fused_comp);
             m_matmul.Create(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
 
+            colBottom[0].Reshape(m_rgBtmShape);
             Reshape(colBottom, colTop);
 
             m_rgOriginalShape = Utility.Clone<int>(colBottom[0].shape());
@@ -257,6 +269,11 @@ namespace MyCaffe.layers
             if (colBottom[0].CompareShape(m_rgOriginalShape))
                 return;
 
+            // The first 'axis' dimensions are independent of inner products; the total
+            // number of these is M_, the product over these dimensions.
+            int nAxis = colBottom[0].CanonicalAxisIndex(m_param.linear_param.axis);
+            m_nM = colBottom[0].count(0, nAxis);
+
             List<int> rgShape = new List<int>(colBottom[0].shape());
 
             // Figure out the dimensions
@@ -267,14 +284,9 @@ namespace MyCaffe.layers
 
             colBottom[0].Reshape(rgShape);
 
-            int nAxis = colBottom[0].CanonicalAxisIndex(m_param.linear_param.axis);
             int nNewK = colBottom[0].count(nAxis);
 
             m_log.CHECK_EQ(m_nK, nNewK, "Input size incompatible with inner product parameters.");
-
-            // The first 'axis' dimensions are independent of inner products; the total
-            // number of these is M_, the product over these dimensions.
-            m_nM = colBottom[0].count(0, nAxis);
 
             // The top shape will be the bottom shape with the flattened axes dropped,
             // and replaced by a single axis with dimensions num_output (N_).
@@ -296,7 +308,13 @@ namespace MyCaffe.layers
             if (m_weightAdapter != null)
                 m_weightAdapter.Reshape(m_colBlobs[0]);
 
+            m_rgShape[0] = m_nM;
+            m_rgShape[1] = m_nK;
+            colBottom[0].Reshape(m_rgShape);
+
             m_matmul.Reshape(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
+
+            colBottom[0].Reshape(m_rgBtmShape);
         }
 
         /// <summary>
