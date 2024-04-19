@@ -207,7 +207,7 @@ namespace MyCaffe.layers.gpt
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax", m_phase, p.freeze_learning);
             softmax.softmax_param.axis = -1;
-            softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
+            softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             m_blobX0 = createIntraLayerBlob("mth_x0");
