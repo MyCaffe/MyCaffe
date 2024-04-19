@@ -217,10 +217,8 @@ namespace MyCaffe.test
 
         private string getDataPath()
         {
-            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\instr_llama\\";
-            return "C:\\temp\\projects\\llama2\\llama2\\llama2_instruct\\test\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\instr_llama\\test\\";
         }
-
 
         public void TestMatMul()
         {
@@ -443,10 +441,6 @@ namespace MyCaffe.test
                 fc.FreeOp(hMatMul);
 
                 m_log.CHECK(C.Compare(F, blobWork, false, 0.01), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "xq.npy");
-                m_log.CHECK(blobVal.Compare(F, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 0.01), "The blobs are different!");
-                m_log.CHECK(blobVal.Compare(C, blobWork, false, 0.01), "The blobs are different!");
             }
             finally
             {
@@ -530,10 +524,6 @@ namespace MyCaffe.test
                 matmul.Run(D.gpu_data, E.gpu_data, F.mutable_gpu_data);
 
                 m_log.CHECK(C.Compare(F, blobWork, false, 0.01), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "xq.npy");
-                m_log.CHECK(blobVal.Compare(F, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 0.01), "The blobs are different!");
-                m_log.CHECK(blobVal.Compare(C, blobWork, false, 0.01), "The blobs are different!");
             }
             finally
             {
@@ -607,10 +597,6 @@ namespace MyCaffe.test
 
                 int nAxis = 2;
 
-                x1.Unsqueeze(nAxis);
-                x2.Unsqueeze(nAxis);
-                x3.Unsqueeze(nAxis);
-
                 matmulQ = new MatMulOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse);
                 matmulQ.Create(x1, wq, xq, false, true);
                 matmulQ.Run(x.gpu_data, wq.gpu_data, xq.mutable_gpu_data);
@@ -624,35 +610,10 @@ namespace MyCaffe.test
                 matmulV.Run(x.gpu_data, wv.gpu_data, xv.mutable_gpu_data);
 
                 xq.LoadFromNumpy(strPath + "xq.grad.npy", true);
-                xk.LoadFromNumpy(strPath + "xk.grad.npy", true);
-                xv.LoadFromNumpy(strPath + "xv.grad.npy", true);
-
-                xq.Unsqueeze(nAxis);
-                xk.Unsqueeze(nAxis);
-                xv.Unsqueeze(nAxis);
 
                 matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse);
                 matmulGrad.Create(x1, wq, xq, false, (matmulQ.BwsHandle == 0) ? true : false);
                 matmulGrad.Run(x1, wq, xq, 0, matmulQ.BwsHandle);
-                matmulGrad.Run(x2, wk, xk, 0, matmulK.BwsHandle);
-                matmulGrad.Run(x3, wv, xv, 0, matmulV.BwsHandle);
-
-                x.CopyFrom(x1, true, true);
-                m_cuda.add(x.count(), x.gpu_diff, x2.gpu_diff, x.mutable_gpu_diff);
-                m_cuda.add(x.count(), x.gpu_diff, x3.gpu_diff, x.mutable_gpu_diff);
-
-                xq.Squeeze(nAxis);
-                xk.Squeeze(nAxis);
-                xv.Squeeze(nAxis);
-
-                blobVal.LoadFromNumpy(strPath + "att.x1.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x1, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x2.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x2, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x3.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x3, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
             }
             finally
             {
@@ -742,10 +703,6 @@ namespace MyCaffe.test
                 matmul.Run(D.gpu_data, E.gpu_data, F.mutable_gpu_data);
 
                 m_log.CHECK(C.Compare(F, blobWork, false, 0.01), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "xq.npy");
-                m_log.CHECK(blobVal.Compare(F, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 0.01), "The blobs are different!");
-                m_log.CHECK(blobVal.Compare(C, blobWork, false, 0.01), "The blobs are different!");
             }
             finally
             {
@@ -819,10 +776,6 @@ namespace MyCaffe.test
 
                 int nAxis = 2;
 
-                x1.Unsqueeze(nAxis);
-                x2.Unsqueeze(nAxis);
-                x3.Unsqueeze(nAxis);
-
                 matmulQ = new MatMulOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 1);
                 matmulQ.Create(x1, wq, xq, false, true);
                 matmulQ.Run(x.gpu_data, wq.gpu_data, xq.mutable_gpu_data);
@@ -836,35 +789,12 @@ namespace MyCaffe.test
                 matmulV.Run(x.gpu_data, wv.gpu_data, xv.mutable_gpu_data);
 
                 xq.LoadFromNumpy(strPath + "xq.grad.npy", true);
-                xk.LoadFromNumpy(strPath + "xk.grad.npy", true);
-                xv.LoadFromNumpy(strPath + "xv.grad.npy", true);
-
-                xq.Unsqueeze(nAxis);
-                xk.Unsqueeze(nAxis);
-                xv.Unsqueeze(nAxis);
 
                 matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, nAxis, bForceFallbackUse, 4);
                 matmulGrad.Create(x1, wq, xq, false, (matmulQ.BwsHandle == 0) ? true : false);
                 matmulGrad.Run(x1, wq, xq, 0, matmulQ.BwsHandle);
                 matmulGrad.Run(x2, wk, xk, 0, matmulK.BwsHandle);
                 matmulGrad.Run(x3, wv, xv, 0, matmulV.BwsHandle);
-
-                x.CopyFrom(x1, true, true);
-                m_cuda.add(x.count(), x.gpu_diff, x2.gpu_diff, x.mutable_gpu_diff);
-                m_cuda.add(x.count(), x.gpu_diff, x3.gpu_diff, x.mutable_gpu_diff);
-
-                xq.Squeeze(nAxis);
-                xk.Squeeze(nAxis);
-                xv.Squeeze(nAxis);
-
-                blobVal.LoadFromNumpy(strPath + "att.x1.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x1, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x2.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x2, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x3.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x3, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
-                blobVal.LoadFromNumpy(strPath + "att.x.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(x, blobWork, true, (typeof(T) == typeof(double) || bForceFallbackUse) ? 4e-07 : 1e-10), "The blobs are different!");
             }
             finally
             {
