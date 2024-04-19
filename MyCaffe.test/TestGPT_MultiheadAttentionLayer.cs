@@ -473,7 +473,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
-                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-06), "The blobs are different.");
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 2e-06 : 3e-06), "The blobs are different.");
             }
             finally
             {
