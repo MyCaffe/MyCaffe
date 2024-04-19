@@ -96,7 +96,8 @@ namespace MyCaffe.extras
             {
                 m_lUserState = lUserState;
                 FileInfo fi = new FileInfo(strExtensionPath);
-                if (fi.Extension.ToLower() != "dll")
+                string strExt = fi.Extension.ToLower();
+                if (!strExt.EndsWith("dll"))
                 {
                     if (string.IsNullOrEmpty(m_cuda.Path))
                         throw new Exception("The CudaDnn path must be set before initializing the LlmInference!");
