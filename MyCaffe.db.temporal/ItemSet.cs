@@ -249,8 +249,9 @@ namespace MyCaffe.db.temporal
             }
             else if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE)
             {
-                if (m_nValIdx + nTotalSteps > nColCount)
+                if (m_nValIdx + nTotalSteps >= nColCount)
                 {
+                    nValueIdx = 0;
                     m_nValIdx = 0;
                     return null;
                 }
