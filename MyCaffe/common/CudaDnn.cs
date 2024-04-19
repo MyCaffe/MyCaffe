@@ -9097,9 +9097,9 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory (with expected size nOuterNum, nChannels, nInnerNum).</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory (with expected size nOuterNum, nChannels, 1).</param>
-        /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false), default = true.</param>
+        /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false), default = false.</param>
         /// <param name="dir">Optionally, specifies the direction (default = DIR.FWD).  When DIR.BWD is used, data flows from Y to X where Y data 
-        /// is copied to X and duplicated across the channels of Y.  When using bSumAcrossChannels = true, ordering is based on Y ordering Y(c1,c2,c3,c1,c2,c3,c1,c2,c3),
+        /// is copied to X and summed across the channels of Y.  When using bSumAcrossChannels = true, ordering is based on Y ordering Y(c1,c2,c3,c1,c2,c3,c1,c2,c3),
         /// and when using bSumAcrossChannels = false, ordering is based on X ordering Y(c1,c1,c1,c2,c2,c2,c3,c3,c3).
         /// </param>
         /// <param name="nChannelsY">Optionally, specifies the channels of Y (used in special case where Y channels = 1)</param>
