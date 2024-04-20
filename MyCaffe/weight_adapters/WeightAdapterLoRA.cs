@@ -28,9 +28,6 @@ namespace MyCaffe.weight_adapters
         Blob<T> m_blobC;
         double m_dfScale = 1.0;
         List<bool> m_rgbProp = new List<bool>() { true };
-        List<int> m_rgShape = new List<int>() { 1, 1, 1, 1, };
-        MatMulOp<T> m_matmul = null;
-        MatMulGradOp<T> m_matmulGrad = null;
 
         /// <summary>
         /// Constructor.
@@ -41,10 +38,6 @@ namespace MyCaffe.weight_adapters
         /// <param name="phase">Specifies the phase over which the weight adapter will run.</param>
         public WeightAdapterLoRA(CudaDnn<T> cuda, Log log, WeightAdapterParameter p, Phase phase) : base(cuda, log, p)
         {            
-            // Force using backup until fused matmul caching is implemented.
-            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, true);
-            if (phase == Phase.TRAIN)
-                m_matmulGrad = new MatMulGradOp<T>(m_cuda, m_log, 2, true);
         }
 
         /// <summary>
@@ -60,18 +53,6 @@ namespace MyCaffe.weight_adapters
 
             dispose(ref m_blobDrop);
             dispose(ref m_blobC);
-
-            if (m_matmul != null)
-            {
-                m_matmul.Dispose();
-                m_matmul = null;
-            }
-
-            if (m_matmulGrad != null)
-            {
-                m_matmulGrad.Dispose();
-                m_matmulGrad = null;
-            }
 
             base.dispose();
         }
@@ -143,14 +124,6 @@ namespace MyCaffe.weight_adapters
             //m_blobC.Name = p.name + ".LoRA.C";
 
             m_dfScale = m_param.alpha / m_param.rank;
-
-            // Create the fused compute for matmul
-            Blob<T> blobA = m_colBlobs[0];
-            Blob<T> blobB = m_colBlobs[1];
-
-            m_matmul.Create(blobB, blobA, m_blobC, false, false);
-            if (m_matmulGrad != null && p.phase == Phase.TRAIN)
-                m_matmulGrad.Create(blobB, blobA, m_blobC, false, false);
         }
 
         /// <summary>
@@ -191,10 +164,19 @@ namespace MyCaffe.weight_adapters
                 blobA = m_blobDrop;
             }
 
-            //m_blobC.MatMul(blobB, blobA, true);
-            m_matmul.Run(blobB.gpu_data, blobA.gpu_data, m_blobC.mutable_gpu_data);
+            blobA.Unsqueeze(0);
+            blobB.Unsqueeze(0);
+            blobA.Unsqueeze(0);
+            blobB.Unsqueeze(0);
+
+            m_blobC.MatMul(blobB, blobA, true);
             m_blobC.scale_data(m_dfScale);
             m_cuda.add(wt.count(), wt.gpu_data, m_blobC.gpu_data, m_blobC.mutable_gpu_data);
+
+            blobA.Squeeze(0);
+            blobB.Squeeze(0);
+            blobA.Squeeze(0);
+            blobB.Squeeze(0);
 
             return m_blobC.gpu_data;
         }
@@ -221,8 +203,18 @@ namespace MyCaffe.weight_adapters
             Blob<T> blobA = m_colBlobs[0];
             Blob<T> blobB = m_colBlobs[1];
 
+            blobA.Unsqueeze(0);
+            blobB.Unsqueeze(0);
+            blobA.Unsqueeze(0);
+            blobB.Unsqueeze(0);
+
             m_cuda.scale(wt.count(), m_dfScale, wt.gpu_diff, m_blobC.mutable_gpu_diff);
-            m_matmulGrad.Run(blobB, blobA, m_blobC);
+            m_blobC.MatMulGrad(blobB, blobA);
+
+            blobA.Squeeze(0);
+            blobB.Squeeze(0);
+            blobA.Squeeze(0);
+            blobB.Squeeze(0);
 
             if (m_dropout != null)
             {

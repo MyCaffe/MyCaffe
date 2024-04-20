@@ -366,15 +366,11 @@ namespace MyCaffe.layers
 
             colBottom[0].Reshape(1, 1, m_nM, m_nK);
             colTop[0].Reshape(1, 1, m_nM, m_nN);
-            blobWeight.Unsqueeze(0);
-            blobWeight.Unsqueeze(0);
 
             colTop[0].MatMulGrad(colBottom[0], blobWeight);
 
             colBottom[0].Reshape(m_rgBtmShape);
             colTop[0].Reshape(m_rgTopShape);
-            blobWeight.Squeeze(0);
-            blobWeight.Squeeze(0);
 
             if (m_bTranspose)
             {
