@@ -704,6 +704,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_CHANNEL_SUM:
 			return m_device.cuda_channel_sum(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_SUM2:
+			return m_device.cuda_channel_sum2(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_SUM_ALL:
 			return m_device.cuda_channel_sum_all(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1935,6 +1938,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_SUM:
 		return "CUDA_FN_CHANNEL_SUM";
+
+	case CUDA_FN_CHANNEL_SUM2:
+		return "CUDA_FN_CHANNEL_SUM2";
 
 	case CUDA_FN_CHANNEL_SUM_ALL:
 		return "CUDA_FN_CHANNEL_SUM_ALL";

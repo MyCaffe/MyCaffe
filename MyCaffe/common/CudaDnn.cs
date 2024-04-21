@@ -1420,6 +1420,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_OP_FWD = 306,
             CUDA_CHANNEL_OP_BWD = 307,
             CUDA_CHANNEL_SUM_ALL = 308,
+            CUDA_CHANNEL_SUM2 = 309,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -9089,6 +9090,23 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Calculates the original sum the the values either across each channel of X and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory (with expected size nOuterNum, nChannels, nInnerNum).</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory (with expected size nOuterNum, nChannels, 1).</param>
+        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
         /// Calculates the sum the the values either across or within each channel (depending on bSumAcrossChannels setting) of X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
@@ -9097,18 +9115,18 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory (with expected size nOuterNum, nChannels, nInnerNum).</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory (with expected size nOuterNum, nChannels, 1).</param>
-        /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false), default = false.</param>
-        /// <param name="dir">Optionally, specifies the direction (default = DIR.FWD).  When DIR.BWD is used, data flows from Y to X where Y data 
+        /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false).</param>
+        /// <param name="dir">Optionally, specifies the direction.  When DIR.BWD is used, data flows from Y to X where Y data 
         /// is copied to X and summed across the channels of Y.  When using bSumAcrossChannels = true, ordering is based on Y ordering Y(c1,c2,c3,c1,c2,c3,c1,c2,c3),
         /// and when using bSumAcrossChannels = false, ordering is based on X ordering Y(c1,c1,c1,c2,c2,c2,c3,c3,c3).
         /// </param>
         /// <param name="nChannelsY">Optionally, specifies the channels of Y (used in special case where Y channels = 1)</param>
-        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChannelsY = -1)
+        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels, DIR dir, int nChannelsY = -1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM2, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM2, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
         }
 
         /// <summary>
