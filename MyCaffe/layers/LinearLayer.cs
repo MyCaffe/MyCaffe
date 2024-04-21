@@ -367,7 +367,19 @@ namespace MyCaffe.layers
             colBottom[0].Reshape(1, 1, m_nM, m_nK);
             colTop[0].Reshape(1, 1, m_nM, m_nN);
 
+            if (blobWeight.num_axes == 2)
+            {
+                blobWeight.Unsqueeze(0);
+                blobWeight.Unsqueeze(0);
+            }
+
             colTop[0].MatMulGrad(colBottom[0], blobWeight);
+
+            if (blobWeight.num_axes == 4)
+            {
+                blobWeight.Squeeze(0);
+                blobWeight.Squeeze(0);
+            }
 
             colBottom[0].Reshape(m_rgBtmShape);
             colTop[0].Reshape(m_rgTopShape);
