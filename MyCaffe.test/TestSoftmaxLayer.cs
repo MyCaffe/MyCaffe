@@ -32,6 +32,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForward2()
+        {
+            SoftmaxLayerTest test = new SoftmaxLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ISoftmaxLayerTest t in test.Tests)
+                {
+                    t.TestForward2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             SoftmaxLayerTest test = new SoftmaxLayerTest(EngineParameter.Engine.CAFFE);
@@ -163,6 +181,7 @@ namespace MyCaffe.test
     {
         void TestForward(SOFTMAX_ALGORITHM alg);
         void TestGradient(SOFTMAX_ALGORITHM alg);
+        void TestForward2();
     }
 
     class SoftmaxLayerTest : TestBase
@@ -198,6 +217,90 @@ namespace MyCaffe.test
         {
             FillerParameter p = new FillerParameter("uniform");
             return p;
+        }
+
+        public void TestForward2()
+        {
+            LayerParameter p1 = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            p1.softmax_param.engine = EngineParameter.Engine.CAFFE;
+            p1.softmax_param.axis = -1;
+            LayerParameter p2 = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            p2.softmax_param.engine = EngineParameter.Engine.CUDNN;
+            p2.softmax_param.axis = -1;
+
+            Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p1, null);
+            Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p2, null);
+
+            Blob<T> blobBtm = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobTop1 = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobTop2 = new Blob<T>(m_cuda, m_log);
+            BlobCollection<T> colBtm = new BlobCollection<T>();
+            BlobCollection<T> colTop = new BlobCollection<T>();
+
+            try
+            {
+                int nN = 2;
+                int nC = 3;
+                int nH = 4;
+                int nW = 5;
+
+                blobBtm.Reshape(nN, nC, nH, nW);
+
+                for (int n = 0; n < nN; n++)
+                {
+                    for (int c = 0; c < nC; c++)
+                    {
+                        for (int h=0; h<nH; h++)
+                        {
+                            for (int w=0; w<nW; w++)
+                            {
+                                int nIdx = blobBtm.offset(n, c, h, w);
+                                blobBtm.SetData(w, nIdx);
+                            }
+                        }
+                    }
+                }
+
+                colBtm.Add(blobBtm);
+                colTop.Clear();
+                colTop.Add(blobTop1);
+
+                layer1.Setup(colBtm, colTop);
+                layer1.Forward(colBtm, colTop);
+
+                colTop.Clear();
+                colTop.Add(blobTop2);
+
+                layer2.Setup(colBtm, colTop);
+                layer2.Forward(colBtm, colTop);
+
+                for (int n = 0; n < nN; n++)
+                {
+                    for (int c = 0; c < nC; c++)
+                    {
+                        for (int h = 0; h < nH; h++)
+                        {
+                            for (int w = 0; w < nW; w++)
+                            {
+                                int nIdx = blobTop1.offset(n, c, h, w);
+                                float fVal1 = convertF(blobTop1.GetData(nIdx));
+                                float fVal2 = convertF(blobTop2.GetData(nIdx));
+
+                                m_log.EXPECT_NEAR_FLOAT(fVal1, fVal2, 6e-08);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                blobBtm.Dispose();
+                blobTop1.Dispose();
+                blobTop2.Dispose();
+
+                layer1.Dispose();
+                layer2.Dispose();
+            }
         }
 
         public void TestForward(SOFTMAX_ALGORITHM alg)
