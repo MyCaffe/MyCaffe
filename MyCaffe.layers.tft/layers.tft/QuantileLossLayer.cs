@@ -227,7 +227,7 @@ namespace MyCaffe.layers
             m_cuda.max(m_nCount, m_blobQuantile2.gpu_data, m_blobQuantile1.gpu_data, m_blobLoss.mutable_gpu_data);
 
             // Sum losses over the quantiles
-            m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobLoss.gpu_data, m_blobLossSum.mutable_gpu_data, false);
+            m_cuda.channel_sumEx(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobLoss.gpu_data, m_blobLossSum.mutable_gpu_data, false, DIR.FWD);
 
             // Mean of Sum losses over time
             m_cuda.channel_mean(m_blobLossSum.count(), m_nOuterNum, 1, m_nChannels, m_blobLossSum.gpu_data, m_blobLossSumMean.mutable_gpu_data);
@@ -240,7 +240,7 @@ namespace MyCaffe.layers
             if (colTop.Count > 1)
             {
                 double dfTargetSum = convertD(colBottom[1].asum_data());
-                m_cuda.channel_sum(m_blobLossSum.count(), 1, m_nOuterNum, m_nChannels, m_blobLossSum.gpu_data, colTop[1].mutable_gpu_data, true);
+                m_cuda.channel_sumEx(m_blobLossSum.count(), 1, m_nOuterNum, m_nChannels, m_blobLossSum.gpu_data, colTop[1].mutable_gpu_data, true, DIR.FWD);
 
                 colTop[1].scale_data(2.0 / dfTargetSum);
             }

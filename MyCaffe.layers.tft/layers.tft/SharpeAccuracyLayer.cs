@@ -172,7 +172,7 @@ namespace MyCaffe.layers.tft
             // captured_returns = weights * y_true
             m_cuda.mul(m_blobCapturedReturns.count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
             // Add the returns of all assets in the batch.
-            m_cuda.channel_sum(m_blobCapturedReturns.count(), 1, nN, nC, m_blobCapturedReturns.gpu_data, m_blobCapturedReturnsSum.mutable_gpu_data, true);
+            m_cuda.channel_sumEx(m_blobCapturedReturns.count(), 1, nN, nC, m_blobCapturedReturns.gpu_data, m_blobCapturedReturnsSum.mutable_gpu_data, true, DIR.FWD);
 
             if (m_param.sharpe_accuracy_param.accuracy_type == param.tft.SharpeAccuracyParameter.ACCURACY_TYPE.RETURNS)
             {

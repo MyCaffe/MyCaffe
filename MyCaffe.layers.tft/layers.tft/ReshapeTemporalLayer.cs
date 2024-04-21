@@ -158,9 +158,9 @@ namespace MyCaffe.layers.tft
             int nInnerNum = bBtm.count(1);
 
             if (bTemporalRepeat)    
-                m_cuda.channel_sum(bTop.count(), m_nNumSamples, nTimeSteps, nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true, DIR.FWD);
+                m_cuda.channel_sumEx(bTop.count(), m_nNumSamples, nTimeSteps, nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true, DIR.FWD);
             else
-                m_cuda.channel_sum(bTop.count(), 1, nTimeSteps, m_nNumSamples * nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true, DIR.FWD);
+                m_cuda.channel_sumEx(bTop.count(), 1, nTimeSteps, m_nNumSamples * nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true, DIR.FWD);
 
             //m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, 0, bTop.mutable_gpu_diff, bBtm.gpu_diff, DIR.FWD);
 

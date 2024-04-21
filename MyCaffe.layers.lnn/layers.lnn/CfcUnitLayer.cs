@@ -752,7 +752,7 @@ namespace MyCaffe.layers.lnn
 
             // ts grad = t-interp grad * t_a
             m_cuda.mul(m_blobTs.count(), m_blobTInterp.gpu_diff, m_blobTimeA.gpu_data, m_blobTs.mutable_gpu_diff);
-            m_cuda.channel_sum(m_blobTs.count(), 1, m_blobTs.num, m_blobTs.channels, m_blobTs.gpu_diff, colBottom[2].mutable_gpu_diff, false);
+            m_cuda.channel_sumEx(m_blobTs.count(), 1, m_blobTs.num, m_blobTs.channels, m_blobTs.gpu_diff, colBottom[2].mutable_gpu_diff, false, DIR.FWD);
 
             Blob<T> blobX = m_rgActivationTops[m_rgActivationTops.Count-1];
             blobX.SetDiff(0);

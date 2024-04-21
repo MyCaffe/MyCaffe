@@ -985,7 +985,8 @@ namespace MyCaffe.common
         void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = false);
         void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = false);
 
-        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChanalesY = -1);
+        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_sumEx(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChanalesY = -1);
         void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nXOff = 0);
         void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps, bool bUnbiased);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
@@ -9121,7 +9122,7 @@ namespace MyCaffe.common
         /// and when using bSumAcrossChannels = false, ordering is based on X ordering Y(c1,c1,c1,c2,c2,c2,c3,c3,c3).
         /// </param>
         /// <param name="nChannelsY">Optionally, specifies the channels of Y (used in special case where Y channels = 1)</param>
-        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels, DIR dir, int nChannelsY = -1)
+        public void channel_sumEx(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels, DIR dir, int nChannelsY = -1)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM2, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));

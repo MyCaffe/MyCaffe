@@ -830,14 +830,14 @@ namespace MyCaffe.layers.lnn
                     int nNa = nN1 * nC * nSD1;
                     int nCa = nSD2 / nSD1;
                     int nSDa = 1;
-                    m_cuda.channel_sum(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true);
+                    m_cuda.channel_sumEx(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true, DIR.FWD);
                 }
                 else if (nN1 < nN2)
                 {
                     int nNa = nN1;
                     int nCa = nN2 / nN1;
                     int nSDa = nC * nSD1;
-                    m_cuda.channel_sum(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true);
+                    m_cuda.channel_sumEx(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true, DIR.FWD);
                 }
             }
 
@@ -887,14 +887,14 @@ namespace MyCaffe.layers.lnn
                     int nNb = Math.Max(nN1, nN2);
                     int nCb = nSD1 / nSD2;
                     int nSDb = 1;
-                    m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
+                    m_cuda.channel_sumEx(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true, DIR.FWD);
                 }
                 else if (nN2 < nN1)
                 {
                     int nNb = nN2;
                     int nCb = nN1 / nN2;
                     int nSDb = nC * nSD2;
-                    m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
+                    m_cuda.channel_sumEx(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true, DIR.FWD);
                 }
             }
         }
@@ -1008,8 +1008,8 @@ namespace MyCaffe.layers.lnn
             op_fwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
 
             // Reduce over dim=1 (source sensory neurons)
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_data, m_blobSensoryNumeratorW.mutable_gpu_data, true);  
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_data, m_blobSensoryDenominatorW.mutable_gpu_data, true);
+            m_cuda.channel_sumEx(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_data, m_blobSensoryNumeratorW.mutable_gpu_data, true, DIR.FWD);  
+            m_cuda.channel_sumEx(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_data, m_blobSensoryDenominatorW.mutable_gpu_data, true, DIR.FWD);
 
             // cm/t is loop invariant, so we can compute it once here.
             m_blobTs.CopyFrom(blobTs);
@@ -1034,8 +1034,8 @@ namespace MyCaffe.layers.lnn
                 op_fwd(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
 
                 // Reduce over dim=1 (source neurons)
-                m_cuda.channel_sum(nCount, m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].gpu_data, m_colNumeratorW[t].mutable_gpu_data, true);
-                m_cuda.channel_sum(nCount, m_colActivationW[t].num, m_colActivationW[t].channels, m_colActivationW[t].count(2), m_colActivationW[t].gpu_data, m_colDenominatorW[t].mutable_gpu_data, true);
+                m_cuda.channel_sumEx(nCount, m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].gpu_data, m_colNumeratorW[t].mutable_gpu_data, true, DIR.FWD);
+                m_cuda.channel_sumEx(nCount, m_colActivationW[t].num, m_colActivationW[t].channels, m_colActivationW[t].count(2), m_colActivationW[t].gpu_data, m_colDenominatorW[t].mutable_gpu_data, true, DIR.FWD);
                 // Add sensory input
                 op_fwd(OP.ADD, m_colNumeratorW[t], m_blobSensoryNumeratorW, m_colNumeratorW[t]);
                 op_fwd(OP.ADD, m_colDenominatorW[t], m_blobSensoryDenominatorW, m_colDenominatorW[t]);
@@ -1122,8 +1122,8 @@ namespace MyCaffe.layers.lnn
                 m_cuda.add(m_blobSensoryNumeratorW.count(), m_blobSensoryNumeratorW1.gpu_diff, m_blobSensoryNumeratorW.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff);
 
                 // Reduce over dim=1 (source neurons)
-                m_cuda.channel_sum(m_colActivationRev[t].count(), m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].mutable_gpu_diff, m_colNumeratorW[t].gpu_diff, true, DIR.BWD);
-                m_cuda.channel_sum(m_colActivationW1[t].count(), m_colActivationW1[t].num, m_colActivationW1[t].channels, m_colActivationW1[t].count(2), m_colActivationW1[t].mutable_gpu_diff, m_colDenominatorW[t].gpu_diff, true, DIR.BWD);
+                m_cuda.channel_sumEx(m_colActivationRev[t].count(), m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].mutable_gpu_diff, m_colNumeratorW[t].gpu_diff, true, DIR.BWD);
+                m_cuda.channel_sumEx(m_colActivationW1[t].count(), m_colActivationW1[t].num, m_colActivationW1[t].channels, m_colActivationW1[t].count(2), m_colActivationW1[t].mutable_gpu_diff, m_colDenominatorW[t].gpu_diff, true, DIR.BWD);
 
                 // Compute the Rev activation
                 op_bwd_local(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
@@ -1158,8 +1158,8 @@ namespace MyCaffe.layers.lnn
             blobTs.CopyFrom(m_blobTs, true);
 
             // Reduce over dim=1 (source sensory neurons)
-            m_cuda.channel_sum(m_blobSensoryActivationRev.count(), m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff, true, DIR.BWD, 1);
-            m_cuda.channel_sum(m_blobSensoryActivationW1.count(), m_blobSensoryActivationW1.num, m_blobSensoryActivationW1.channels, m_blobSensoryActivationW1.count(2), m_blobSensoryActivationW1.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD, 1);
+            m_cuda.channel_sumEx(m_blobSensoryActivationRev.count(), m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff, true, DIR.BWD, 1);
+            m_cuda.channel_sumEx(m_blobSensoryActivationW1.count(), m_blobSensoryActivationW1.num, m_blobSensoryActivationW1.channels, m_blobSensoryActivationW1.count(2), m_blobSensoryActivationW1.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD, 1);
 
             // Pre-compute the effect of the sensory inputs.
             op_bwd_local(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);

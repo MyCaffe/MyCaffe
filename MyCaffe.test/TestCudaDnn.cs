@@ -3295,14 +3295,14 @@ namespace MyCaffe.test
                             int nN = nN1 * nC * nSD1;
                             int nC1 = nSD2 / nSD1;
                             int nSD = 1;
-                            t.Cuda.channel_sum(nCount, nN, nC1, nSD, hWork, hDataA, false);
+                            t.Cuda.channel_sumEx(nCount, nN, nC1, nSD, hWork, hDataA, false, DIR.FWD);
                         }
                         else if (nN1 < nN2 && nSD1 == nSD2)
                         {
                             int nN = nN1;
                             int nC1 = nN2 / nN1;
                             int nSD = nC * nSD2;
-                            t.Cuda.channel_sum(nCount, nN, nC1, nSD, hWork, hDataA, false);
+                            t.Cuda.channel_sumEx(nCount, nN, nC1, nSD, hWork, hDataA, false, DIR.FWD);
                         }
 
                         double[] rgDataA = t.Cuda.GetMemoryDouble(hDataA);
@@ -3926,7 +3926,7 @@ namespace MyCaffe.test
                         hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
                         hDstVector = t.Cuda.AllocMemory(nNum * nChannels);
 
-                        t.Cuda.channel_sum(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, false);
+                        t.Cuda.channel_sumEx(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, false, DIR.FWD);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
                         double[] rgExpected = new double[nNum * nChannels];
@@ -4004,7 +4004,7 @@ namespace MyCaffe.test
                         hDstVector = t.Cuda.AllocMemory(rgExpected);
 
                         // Copies from Y channels to X along X channels.
-                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, true, DIR.BWD);
+                        t.Cuda.channel_sumEx(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, true, DIR.BWD);
                         double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
 
                         for (int i = 0; i < nCount; i++)
@@ -4068,7 +4068,7 @@ namespace MyCaffe.test
                         hDstVector = t.Cuda.AllocMemory(rgExpected);
 
                         // Copies from Y channels to X along X channels.
-                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, false, DIR.BWD);
+                        t.Cuda.channel_sumEx(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, false, DIR.BWD);
                         double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
 
                         for (int i = 0; i < nCount; i++)

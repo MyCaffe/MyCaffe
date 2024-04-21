@@ -207,7 +207,7 @@ namespace MyCaffe.layers.gpt
                 m_cuda.mul(m_nCount, m_blobOut.gpu_diff, m_blobRms1Full.gpu_data, colBottom[0].mutable_gpu_diff);
                 // x6 = x * x5 -> dx5
                 m_cuda.mul(m_nCount, m_blobOut.gpu_diff, colBottom[0].gpu_data, m_blobRms1Full.mutable_gpu_diff);
-                m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobRms1Full.gpu_diff, m_blobRms1.mutable_gpu_diff, false);
+                m_cuda.channel_sumEx(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobRms1Full.gpu_diff, m_blobRms1.mutable_gpu_diff, false, DIR.FWD);
 
                 // x5 = 1.0/x4 -> dx4
                 m_cuda.powx(m_blobRms.count(), m_blobRms.gpu_data, 2.0, m_blobRms.mutable_gpu_diff);
