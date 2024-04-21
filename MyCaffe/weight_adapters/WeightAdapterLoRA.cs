@@ -208,8 +208,22 @@ namespace MyCaffe.weight_adapters
             blobA.Unsqueeze(0);
             blobB.Unsqueeze(0);
 
+            bool bSqueeze = false;
+            if (m_blobC.num_axes == 2)
+            {
+                bSqueeze = true;
+                m_blobC.Unsqueeze(0);
+                m_blobC.Unsqueeze(0);
+            }
+
             m_cuda.scale(wt.count(), m_dfScale, wt.gpu_diff, m_blobC.mutable_gpu_diff);
             m_blobC.MatMulGrad(blobB, blobA);
+
+            if (m_blobC.num_axes == 4 && bSqueeze)
+            {
+                m_blobC.Squeeze(0);
+                m_blobC.Squeeze(0);
+            }
 
             blobA.Squeeze(0);
             blobB.Squeeze(0);
