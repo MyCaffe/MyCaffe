@@ -355,7 +355,8 @@ namespace MyCaffe.model
         /// <param name="prop">Specifies the property set containing the optional properties.</param>
         /// <param name="phase">Optionally, specifies the phase to use when creating the model (default = TRAIN).</param>
         /// <param name="bEnableLoRA">Optionally, specifies whether or not to enable LoRA (default = false).</param>
-        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false)
+        /// <param name="nLayerCountOverride">Optionally, specifies the number of layers to override the default count (default = -1).</param>
+        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false, int nLayerCountOverride = -1)
         {
             string strLabelMapFile = getFileName(m_strLabelMapFile, null);
             LayerParameter data = null;

@@ -100,7 +100,8 @@ namespace MyCaffe.model
         /// <param name="prop">Specifies optional properties.</param>
         /// <param name="phase">Specifies the phase to use when creating the model.</param>
         /// <param name="bEnableLoRA">Optionally, specifies to enable LoRA when available.</param>
-        public abstract NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false);
+        /// <param name="nLayersOverride">Optionally, specifies the number of layers (defauult = -1, ignores setting).</param>
+        public abstract NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false, int nLayersOverride = -1);
 
         /// <summary>
         /// Create the deploy model to use.

@@ -141,7 +141,8 @@ namespace MyCaffe.model
         /// <param name="prop">Specifies optional properties.</param>
         /// <param name="phase">Optionally, specifies the phase to use when creating the model (default = TRAIN).</param>
         /// <param name="bEnableLoRA">Optionally, specifies whether or not to enable LoRA (default = false).</param>
-        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false)
+        /// <param name="nLayerCountOverride">Optionally, specifies the number of transformer blocks (default = -1, value less than or equal to 0 ignores setting).</param>
+        public override NetParameter CreateModel(PropertySet prop, Phase phase = Phase.TRAIN, bool bEnableLoRA = false, int nLayerCountOverride = -1)
         {
             m_net = createNet(m_strModel);
 
@@ -177,6 +178,9 @@ namespace MyCaffe.model
                     bEnableKeyValueCache = false;
                     break;
             }
+
+            if (nLayerCountOverride > 0)
+                nLayers = (uint)nLayerCountOverride;
 
             TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
 
