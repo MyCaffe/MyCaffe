@@ -265,8 +265,6 @@ namespace MyCaffe.test
                 layer.Setup(BottomVec, TopVec);
                 load_weights(layer, strPathWts);
 
-
-
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "h_state.npy");
