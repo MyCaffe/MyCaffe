@@ -1766,6 +1766,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("trg_ret");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    m_rgLayerParameters[lt] = new SharpeLossParameter();
                     break;
 
                 case LayerType.SLICE:
@@ -2934,6 +2935,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SHARPE_LOSS
+        /// </summary>
+        public SharpeLossParameter sharpe_loss_param
+        {
+            get { return (SharpeLossParameter)m_rgLayerParameters[LayerType.SHARPE_LOSS]; }
+            set { m_rgLayerParameters[LayerType.SHARPE_LOSS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.SOFTMAX
         /// </summary>
         public SoftmaxParameter softmax_param
@@ -3861,6 +3871,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(sharpe_accuracy_param, "sharpe_accuracy_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(sharpe_loss_param, "sharpe_loss_param"));
 
             // PTST Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(revin_param, "revin_param"));
@@ -4283,6 +4294,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("sharpe_accuracy_param")) != null)
                 p.sharpe_accuracy_param = SharpeAccuracyParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("sharpe_loss_param")) != null)
+                p.sharpe_loss_param = SharpeLossParameter.FromProto(rpp);
 
             // PTST Layers
             if ((rpp = rp.FindChild("revin_param")) != null)

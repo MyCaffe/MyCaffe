@@ -178,6 +178,7 @@ namespace MyCaffe.test
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SHARPE_LOSS);
+            p.sharpe_loss_param.annualize = false;
             SharpeLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as SharpeLossLayer<T>;
 
             try
@@ -273,6 +274,7 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SHARPE_LOSS);
+            p.sharpe_loss_param.annualize = false;
             SharpeLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as SharpeLossLayer<T>;
 
             try
