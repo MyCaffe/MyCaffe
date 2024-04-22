@@ -3837,33 +3837,33 @@ namespace MyCaffe.test
                 {
                     try
                     {
-                        int nNum = 4;
-                        int nDim = 3;
-                        int nCount = nNum * nDim;
+                        int nN = 4;
+                        int nC = 3;
+                        int nCount = nN * nC;
 
-                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        // Data matrix is an nN x nC x 1 matrix.  Dst matrix is the same size.
                         List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 
                                                                          2.0, 2.1, 2.2, 
                                                                          3.0, 3.1, 3.2, 
                                                                          4.0, 4.1, 4.2 };
                         hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
-                        hDstVector = t.Cuda.AllocMemory(nDim);
+                        hDstVector = t.Cuda.AllocMemory(nC);
 
-                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector);
+                        t.Cuda.channel_sumEx(nCount, nN, nC, 1, hDataMatrix, hDstVector, true, DIR.FWD);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
 
-                        double[] rgExpected = new double[nDim];
-                        for (int i = 0; i < nDim; i++)
+                        double[] rgExpected = new double[nN];
+                        for (int i = 0; i < nN; i++)
                         {
-                            for (int j = 0; j < nNum; j++)
+                            for (int j = 0; j < nC; j++)
                             {
-                                int nIdxData = j * nDim + i;
+                                int nIdxData = i * nC + j;
                                 rgExpected[i] += rgDataMatrix[nIdxData];
                             }
                         }
 
-                        for (int i = 0; i < nDim; i++)
+                        for (int i = 0; i < nN; i++)
                         {
                             double dfExpected = rgExpected[i];
                             double dfActual = rgDst[i];
@@ -3989,27 +3989,41 @@ namespace MyCaffe.test
                 {
                     try
                     {
-                        int nNum = 4;
-                        int nDim = 3;
-                        int nCount = nNum * nDim;
+                        int nN = 4;
+                        int nC = 3;
+                        int nCount = nN * nC;
 
-                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
-                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
-                        double dfC1 = 1.0 + 2.0 + 3.0 + 4.0;
-                        double dfC2 = 1.1 + 2.1 + 3.1 + 4.1;
-                        double dfC3 = 1.2 + 2.2 + 3.2 + 4.2;
-                        List<double> rgExpectedMatrix = new List<double>() { dfC1, dfC2, dfC3, dfC1, dfC2, dfC3, dfC1, dfC2, dfC3, dfC1, dfC2, dfC3 };
-                        List<double> rgExpected = new List<double>() { dfC1, dfC2, dfC3 };
-                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
-                        hDstVector = t.Cuda.AllocMemory(rgExpected);
+                        // Data matrix is an nN x nC x 1 matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>() 
+                        { 
+                            1.0, 1.1, 1.2, 
+                            2.0, 2.1, 2.2, 
+                            3.0, 3.1, 3.2, 
+                            4.0, 4.1, 4.2 
+                        };
+                        double dfC1 = 1.0 + 1.1 + 1.2;
+                        double dfC2 = 2.0 + 2.1 + 2.2;
+                        double dfC3 = 3.0 + 3.1 + 3.2;
+                        double dfC4 = 4.0 + 4.1 + 4.2;
+                        List<double> rgExpectedMatrix = new List<double>() 
+                        { 
+                            dfC1, 
+                            dfC2, 
+                            dfC3, 
+                            dfC4 
+                        };
+
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix.Count);
+                        hDstVector = t.Cuda.AllocMemory(rgExpectedMatrix);
 
                         // Copies from Y channels to X along X channels.
-                        t.Cuda.channel_sumEx(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, true, DIR.BWD);
+                        t.Cuda.channel_sumEx(nCount, nN, nC, 1, hDataMatrix, hDstVector, true, DIR.BWD);
                         double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
 
                         for (int i = 0; i < nCount; i++)
                         {
-                            double dfExpected = rgExpected[i % nDim];
+                            int nExpectedIdx = i / nC;
+                            double dfExpected = rgExpectedMatrix[nExpectedIdx];
                             double dfActual = rgActualData[i];
 
                             log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
@@ -4041,7 +4055,7 @@ namespace MyCaffe.test
         public void TestMath_channel_sum_withinchannel_bwd()
         {
             CudaDnnTest test = new CudaDnnTest();
-            Log log = new Log("Test Channel Sum Bwd across channels");
+            Log log = new Log("Test Channel Sum Fwd within channels");
             long hDataMatrix = 0;
             long hDstVector = 0;
 
@@ -4051,32 +4065,51 @@ namespace MyCaffe.test
                 {
                     try
                     {
-                        int nNum = 4;
-                        int nDim = 3;
-                        int nCount = nNum * nDim;
+                        int nNum = 2;
+                        int nChannels = 3;
+                        int nSpatialDim = 3;
+                        int nCount = nNum * nChannels * nSpatialDim;
 
                         // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
-                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
-                        double dfN1 = 1.0 + 1.1 + 1.2;
-                        double dfN2 = 2.0 + 2.1 + 2.2;
-                        double dfN3 = 3.0 + 3.1 + 3.2;
-                        double dfN4 = 4.0 + 4.1 + 4.2;
-                        List<double> rgExpectedMatrix = new List<double>() { dfN1, dfN1, dfN1, dfN2, dfN2, dfN2, dfN3, dfN3, dfN3, dfN4, dfN4, dfN4 };
-                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
-
-                        List<double> rgExpected = new List<double>() { dfN1, dfN2, dfN3, dfN4 };
-                        hDstVector = t.Cuda.AllocMemory(rgExpected);
-
-                        // Copies from Y channels to X along X channels.
-                        t.Cuda.channel_sumEx(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, false, DIR.BWD);
-                        double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
-
-                        for (int i = 0; i < nCount; i++)
+                        List<double> rgDataMatrix = new List<double>()
                         {
-                            double dfExpected = rgExpected[i / nDim];
-                            double dfActual = rgActualData[i];
+                            1.0, 1.1, 1.2,
+                            2.0, 2.1, 2.2,
+                            3.0, 3.1, 3.2,
 
-                            log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
+                            4.0, 4.1, 4.2,
+                            5.0, 5.1, 5.2,
+                            6.0, 6.1, 6.2
+                        };
+                        List<double> rgDstMatrix = new List<double>()
+                        {
+                            1.0 + 1.1 + 1.2,
+                            2.0 + 2.1 + 2.2,
+                            3.0 + 3.1 + 3.2,
+
+                            4.0 + 4.1 + 4.2,
+                            5.0 + 5.1 + 5.2,
+                            6.0 + 6.1 + 6.2
+                        };
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix.Count);
+                        hDstVector = t.Cuda.AllocMemory(rgDstMatrix);
+
+                        t.Cuda.channel_sumEx(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, false, DIR.BWD);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
+                        double[] rgActual = t.Cuda.GetMemoryDouble(hDataMatrix);
+
+                        for (int n = 0; n < nNum; n++)
+                        {
+                            for (int c = 0; c < nChannels; c++)
+                            {
+                                for (int i = 0; i < nSpatialDim; i++)
+                                {
+                                    int nIdxData = n * nChannels * nSpatialDim + c * nSpatialDim + i;
+                                    int nIdxExp = n * nChannels + c;
+                                    rgActual[nIdxExp] += rgDataMatrix[nIdxData];
+                                }
+                            }
                         }
                     }
                     finally
