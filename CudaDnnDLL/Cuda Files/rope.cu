@@ -406,8 +406,9 @@ LONG RopeDataCpu<T>::Forward(int n, long hXdata, long hYdata, int nFreqOffset)
 	int nFullDim = nDim * m_nHeads;
 	for (int i = 0; i < n / 2; i++)
 	{
-		int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
-		int nIdx2 = (i % nDim);
+		int nIdxBase = i % (m_nSeqLen * nFullDim);
+		int nIdx1 = (nIdxBase / nFullDim) * nDim;
+		int nIdx2 = nIdxBase % nDim;
 		int nIdx = nIdx1 + nIdx2;
 
 		T fCos = pfFreqCos[nIdx];
@@ -464,8 +465,9 @@ LONG RopeDataCpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	int nFullDim = nDim * m_nHeads;
 	for (int i = 0; i < n / 2; i++)
 	{
-		int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
-		int nIdx2 = (i % nDim);
+		int nIdxBase = i % (m_nSeqLen * nFullDim);
+		int nIdx1 = (nIdxBase / nFullDim) * nDim;
+		int nIdx2 = nIdxBase % nDim;
 		int nIdx = nIdx1 + nIdx2;
 
 		T fCos = m_pfFreqCos[nIdx];
@@ -732,12 +734,13 @@ __global__ void copy_xToRI_kernel(const int n, const T* x, T* xr, T* xi)
 }
 
 template <typename T>
-__global__ void copy_computeRI_kernel(const int n, const int nDim, const int nFullDim, const T* xr, const T* xi, const T* xcos, const T* xsin, T* xro, T* xio)
+__global__ void copy_computeRI_kernel(const int n, const int nSeqLen, const int nDim, const int nFullDim, const T* xr, const T* xi, const T* xcos, const T* xsin, T* xro, T* xio)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
-		const int nIdx2 = (i % nDim);
+		const int nIdxBase = i % (nSeqLen * nFullDim);
+		const int nIdx1 = (nIdxBase / nFullDim) * nDim;
+		const int nIdx2 = nIdxBase % nDim;
 		const int nIdx = nIdx1 + nIdx2;
 
 		const T fCos = xcos[nIdx];
@@ -749,12 +752,13 @@ __global__ void copy_computeRI_kernel(const int n, const int nDim, const int nFu
 }
 
 template <typename T>
-__global__ void copy_computeRI_grad_kernel(const int n, const int nDim, const int nFullDim, const T* xr, const T* xi, const T* xcos, const T* xsin, T* xro, T* xio)
+__global__ void copy_computeRI_grad_kernel(const int n, const int nSeqLen, const int nDim, const int nFullDim, const T* xr, const T* xi, const T* xcos, const T* xsin, T* xro, T* xio)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nIdx1 = ((i / nFullDim) % nFullDim) * nDim;
-		const int nIdx2 = (i % nDim);
+		const int nIdxBase = i % (nSeqLen * nFullDim);
+		const int nIdx1 = (nIdxBase / nFullDim) * nDim;
+		const int nIdx2 = nIdxBase % nDim;
 		const int nIdx = nIdx1 + nIdx2;
 
 		const T fCos = xcos[nIdx];
@@ -809,7 +813,7 @@ LONG RopeDataGpu<T>::Forward(int n, long hXdata, long hYdata, int nFreqOffset)
 	if (nFreqOffset > 0)
 		pfFreqSin += nFreqOffset;
 
-	copy_computeRI_kernel<T> << <CAFFE_GET_BLOCKS(n/2), CAFFE_CUDA_NUM_THREADS >> > (n/2, nDim, nFullDim, m_pfXr, m_pfXi, pfFreqCos, pfFreqSin, m_pfX_out_r, m_pfX_out_i);
+	copy_computeRI_kernel<T> << <CAFFE_GET_BLOCKS(n/2), CAFFE_CUDA_NUM_THREADS >> > (n/2, m_nSeqLen, nDim, nFullDim, m_pfXr, m_pfXi, pfFreqCos, pfFreqSin, m_pfX_out_r, m_pfX_out_i);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
@@ -848,7 +852,7 @@ LONG RopeDataGpu<T>::Backward(int n, long hXdata, long hYdiff, long hXdiff)
 	int nDim = m_nDim / 2;
 	int nFullDim = nDim * m_nHeads;
 
-	copy_computeRI_grad_kernel<T> << <CAFFE_GET_BLOCKS(n / 2), CAFFE_CUDA_NUM_THREADS >> > (n / 2, nDim, nFullDim, m_pfXr, m_pfXi, m_pfFreqCos, m_pfFreqSin, m_pfX_out_r, m_pfX_out_i);
+	copy_computeRI_grad_kernel<T> << <CAFFE_GET_BLOCKS(n / 2), CAFFE_CUDA_NUM_THREADS >> > (n / 2, m_nSeqLen, nDim, nFullDim, m_pfXr, m_pfXi, m_pfFreqCos, m_pfFreqSin, m_pfX_out_r, m_pfX_out_i);
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
