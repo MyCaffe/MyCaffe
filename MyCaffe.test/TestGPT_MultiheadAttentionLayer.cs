@@ -241,6 +241,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestRopeForward2()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestRopeForward2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardLlama()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
@@ -288,6 +306,7 @@ namespace MyCaffe.test
         void TestCudaAttentionTiming();
         void TestRopeForward();
         void TestRopeBackward();
+        void TestRopeForward2();
         void TestForwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash);
         void TestBackwardLlama(uint nBatch, uint nSeqLen, uint nHeads, uint nDim, bool bEnableFlash);
     }
@@ -1197,6 +1216,61 @@ namespace MyCaffe.test
 
                 if (hRope != 0)
                     m_cuda.FreeRope(hRope);
+            }
+        }
+
+        public void TestRopeForward2()
+        {
+            long hRopeGpu = 0;
+            long hRopeCpu = 0;
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY1 = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY2 = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            string strPath = getTestDataLlamaPath("rope2", "freqs_cos.npy");
+
+            try
+            {
+                blobX.LoadFromNumpy(strPath + "rope.xq_pre.npy");
+                blobY1.ReshapeLike(blobX);
+                blobY2.ReshapeLike(blobX);
+
+                int nBatch = blobX.num;
+                int nSeqLen = blobX.channels;
+                int nHeads = blobX.height;
+                int nDim = blobX.width;
+                int nCount = blobX.count();
+
+                m_cuda.debug();
+
+                // CPU
+                hRopeCpu = m_cuda.CreateRope(0, -1, nCount, nBatch, nSeqLen, nHeads, nDim);
+                m_cuda.RopeForward(hRopeCpu, nCount, blobX.gpu_data, blobY2.mutable_gpu_data);
+
+                blobVal.LoadFromNumpy(strPath + "rope.xq_post.npy");
+                m_log.CHECK(blobVal.Compare(blobY2, m_blobWork, false, (typeof(T) == typeof(float)) ? 2e-07 : 3e-05), "The Y (cpu) blob data is different.");
+
+                // GPU
+                hRopeGpu = m_cuda.CreateRope(1, 0, nCount, nBatch, nSeqLen, nHeads, nDim);
+                m_cuda.RopeForward(hRopeGpu, nCount, blobX.gpu_data, blobY1.mutable_gpu_data);
+
+                blobVal.LoadFromNumpy(strPath + "rope.xq_post.npy");
+                m_log.CHECK(blobVal.Compare(blobY1, m_blobWork, false, (typeof(T) == typeof(float)) ? 2e-07 : 3e-05), "The Y (gpu) blob data is different.");
+
+                m_log.CHECK(blobY1.Compare(blobY2, m_blobWork), "The Y (gpu) is different than Y (cpu).");
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY1);
+                dispose(ref blobY2);
+                dispose(ref blobVal);
+
+                if (hRopeGpu != 0)
+                    m_cuda.FreeRope(hRopeGpu);
+
+                if (hRopeCpu != 0)
+                    m_cuda.FreeRope(hRopeCpu);
             }
         }
 
