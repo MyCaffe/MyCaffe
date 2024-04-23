@@ -20,7 +20,7 @@ namespace MyCaffe.param
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
         int m_nAxis = 2;
         bool m_bOutputContainsPredictions = false;
-        bool m_bTranspose = false;
+        bool m_bTranspose = true;
         bool m_bUseFusedComp = false;
 
         /** @copydoc LayerParameterBase */
