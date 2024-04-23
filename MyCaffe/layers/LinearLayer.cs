@@ -241,7 +241,7 @@ namespace MyCaffe.layers
             m_rgShape[1] = m_nK;
             colBottom[0].Reshape(m_rgShape);
 
-            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, m_param.linear_param.enable_fused_comp);
+            m_matmul = new MatMulOp<T>(m_cuda, m_log, 2, !m_param.linear_param.enable_fused_comp);
             m_matmul.Create(colBottom[0], m_colBlobs[0], colTop[0], false, m_bTranspose);
 
             colBottom[0].Reshape(m_rgBtmShape);
