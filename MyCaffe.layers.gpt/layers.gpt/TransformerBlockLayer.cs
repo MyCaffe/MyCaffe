@@ -815,7 +815,6 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobEncOut = (colBottom.Count > 3) ? colBottom[2] : null;
             Blob<T> blobEncMask = (colBottom.Count > 3) ? colBottom[3] : null;
 
-            
             //-------------------------------------------
             // x = x + self.attn(self.ln_1(x))
 
@@ -846,10 +845,10 @@ namespace MyCaffe.layers.gpt
             {
                 throw new Exception("Unknown block type '" + m_param.transformer_block_param.block_type.ToString() + "'!");
             }
-            
+
             // xB = x + self.attn1(self.ln_1(x))
             m_cuda.add(nCount, blobX.gpu_data, m_blobAttn1.gpu_data, m_blobX.mutable_gpu_data);
-            
+
             // x_2 = self.ln_2(xB) 
             addInternal(m_blobX, m_blobNorm2);
             m_norm2.Forward(m_colInternalBottom, m_colInternalTop);
@@ -883,6 +882,7 @@ namespace MyCaffe.layers.gpt
             {
                 addInternal(blobNorm, m_blobMlp2);
                 m_fc2.Forward(m_colInternalBottom, m_colInternalTop);
+
                 m_cuda.mul(m_blobMlp1.count(), m_blobMlp1.gpu_data, m_blobMlp2.gpu_data, m_blobMlp3.mutable_gpu_data);
                 blobMlp = m_blobMlp3;
             }
