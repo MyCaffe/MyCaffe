@@ -5,6 +5,7 @@ using MyCaffe.param.gpt;
 using MyCaffe.param.ssd;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace MyCaffe.model
         double m_dfBaseLr = 0.01;
         int m_nIterSize = 1;
         Config m_config;
+        int m_nLayerCount = -1;
 
         /// <summary>
         /// The constructor.
@@ -182,6 +184,8 @@ namespace MyCaffe.model
             if (nLayerCountOverride > 0)
                 nLayers = (uint)nLayerCountOverride;
 
+            m_nLayerCount = (int)nLayers;
+
             TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
 
             if (prop != null)
@@ -264,6 +268,10 @@ namespace MyCaffe.model
                     }
                 }
 
+                int nLayers = m_nLayerCount;
+                if (m_config.n_layers < nLayers || nLayers <= 0)
+                    nLayers = m_config.n_layers;
+                
                 long nHeadSize = m_config.dim / m_config.n_heads;
                 int nIdx = 0;
                 float fFirst;
@@ -301,7 +309,7 @@ namespace MyCaffe.model
                 // Set the weight offset to Header + token_embedding
                 long lWeightStartOffset = lHeaderSize + lOffset * sizeof(float);
 
-                for (int i = 0; i < m_config.n_layers; i++)
+                for (int i = 0; i < nLayers; i++)
                 {
                     int nIdxRms1 = 1 + i * 9;
                     int nIdxRms2 = 1 + i * 9 + 5;
@@ -325,6 +333,7 @@ namespace MyCaffe.model
                     long lWqLocalOffset = i * lWqCount1;
                     col[nIdxWq].LoadFromBlobLoader(hBlobLoader, lWqCount1, lWqLocalOffset);
                     col[nIdxWq].AddToBlobLoaderOffset(hBlobLoader, lWqCount);
+
                     fFirst = col[nIdxWq].GetDataAsFloat(0);
                     nIdx++;
 
@@ -376,15 +385,15 @@ namespace MyCaffe.model
                     fFirst = col[nIdxW2].GetDataAsFloat(0);
                     nIdx++;
 
-                    col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + m_config.n_layers.ToString() + " ...", true);
-                    col[0].Log.Progress = ((double)i / (double)m_config.n_layers);
+                    col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + nLayers.ToString() + " ...", true);
+                    col[0].Log.Progress = ((double)i / (double)nLayers);
                 }
 
                 // read in the rms_final_weights
                 long lRmsFinalCount = m_config.dim;
                 lOffset += lRmsFinalCount;
 
-                int nIdxRmsFinal = 1 + m_config.n_layers * 9;
+                int nIdxRmsFinal = 1 + nLayers * 9;
                 col[nIdxRmsFinal].LoadFromBlobLoader(hBlobLoader, m_config.dim, 0);
                 col[nIdxRmsFinal].AddToBlobLoaderOffset(hBlobLoader, m_config.dim);
                 fFirst = col[nIdxRmsFinal].GetDataAsFloat(0);
@@ -460,6 +469,10 @@ namespace MyCaffe.model
                     }
                 }
 
+                int nLayers = m_nLayerCount;
+                if (m_config.n_layers < nLayers || nLayers <= 0)
+                    nLayers = m_config.n_layers;
+
                 long nHeadSize = m_config.dim / m_config.n_heads;
                 int nIdx = 0;
                 float fFirst;
@@ -474,7 +487,7 @@ namespace MyCaffe.model
                 long lRmsFfnCount = m_config.n_layers * m_config.dim;
                 lOffset += lRmsFfnCount;
 
-                for (int i = 0; i < m_config.n_layers; i++)
+                for (int i = 0; i < nLayers; i++)
                 {
                     int nIdxRms1 = 1 + i * 9;
                     int nIdxRms2 = 1 + i * 9 + 5;
@@ -498,7 +511,7 @@ namespace MyCaffe.model
                 long lRmsFinalCount = m_config.dim;
                 lOffset += lRmsFinalCount;
 
-                int nIdxRmsFinal = 1 + m_config.n_layers * 9;
+                int nIdxRmsFinal = 1 + nLayers * 9;
                 col[nIdxRmsFinal].LoadFromBlobLoader(hBlobLoader, m_config.dim, 0);
                 col[nIdxRmsFinal].AddToBlobLoaderOffset(hBlobLoader, m_config.dim);
                 fFirst = col[nIdxRmsFinal].GetDataAsFloat(0);
@@ -533,7 +546,7 @@ namespace MyCaffe.model
                 // Set the weight offset to Header + rms_att + rms_ffn + rms_final + token_embedding
                 long lWeightStartOffset = lHeaderSize + lOffset * sizeof(float);
 
-                for (int i = 0; i < m_config.n_layers; i++)
+                for (int i = 0; i < nLayers && i < m_nLayerCount; i++)
                 {
                     int nIdxWq = 2 + i * 9;
                     int nIdxWk = nIdxWq + 1;
@@ -594,8 +607,8 @@ namespace MyCaffe.model
                     fFirst = col[nIdxW2].GetDataAsFloat(0);
                     nIdx++;
 
-                    col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + m_config.n_layers.ToString() + " ...", true);
-                    col[0].Log.Progress = ((double)i / (double)m_config.n_layers);
+                    col[0].Log.WriteLine("Loading weights for layer " + i.ToString() + " of " + nLayers.ToString() + " ...", true);
+                    col[0].Log.Progress = ((double)i / (double)nLayers);
                 }
 
                 int nIdxWcls = nIdxRmsFinal + 1;
