@@ -710,7 +710,7 @@ namespace MyCaffe.layers.gpt
 
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
 
-                if (nPos >= 0 && m_param.multihead_attention_param.enable_key_value_cache)
+                if (m_param.multihead_attention_param.enable_key_value_cache)
                 {
                     m_blobKeyCache.Reshape(nPos + 1, m_nHeads, m_nSize, 1);
                     m_blobValCache.Reshape(nPos + 1, m_nHeads, 1, m_nSize);
