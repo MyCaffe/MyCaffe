@@ -63,12 +63,9 @@ namespace MyCaffe.layers.gpt
             m_blobMask = new Blob<T>(cuda, log);
             m_blobMask.Name = m_param.name + " mask";
 
-            if (!p.causal_self_attention_param.enable_key_value_cache)
-            {
-                List<int> rgShape = new List<int>() { 1, 1, (int)p.causal_self_attention_param.block_size, (int)p.causal_self_attention_param.block_size };
-                m_blobMask.Reshape(rgShape);
-                fillMask(m_blobMask);
-            }
+            List<int> rgShape = new List<int>() { 1, 1, (int)p.causal_self_attention_param.block_size, (int)p.causal_self_attention_param.block_size };
+            m_blobMask.Reshape(rgShape);
+            fillMask(m_blobMask);
 
             setup_internal_blobs(m_colInternalBlobs);
         }
@@ -198,14 +195,11 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobX = colBottom[0];
             m_nT = blobX.channels;    // sequence length
 
-            if (!m_param.causal_self_attention_param.enable_key_value_cache)
+            if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
             {
-                if (m_blobMask.height != m_nT || m_blobMask.width != m_nT)
-                {
-                    List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
-                    m_blobMask.Reshape(rgShape);
-                    fillMask(m_blobMask);
-                }
+                List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
+                m_blobMask.Reshape(rgShape);
+                fillMask(m_blobMask);
             }
 
             addInternal(new List<Blob<T>> { blobX, blobX, blobX, m_blobMask }, colTop[0]);
