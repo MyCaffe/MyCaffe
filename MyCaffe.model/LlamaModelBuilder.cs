@@ -546,7 +546,7 @@ namespace MyCaffe.model
                 // Set the weight offset to Header + rms_att + rms_ffn + rms_final + token_embedding
                 long lWeightStartOffset = lHeaderSize + lOffset * sizeof(float);
 
-                for (int i = 0; i < nLayers && i < m_nLayerCount; i++)
+                for (int i = 0; i < nLayers; i++)
                 {
                     int nIdxWq = 2 + i * 9;
                     int nIdxWk = nIdxWq + 1;
