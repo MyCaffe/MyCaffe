@@ -831,6 +831,7 @@ namespace MyCaffe.test
         int m_nBatchSize = 1;
         int m_nSeqLen = 512;
         int m_nIterSize = 1;
+        double m_dfDropout = 0.0;
 
         public TinyStoriesModelBuilderTest(string strName, int nDeviceID, string strModel, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
@@ -842,7 +843,7 @@ namespace MyCaffe.test
 
         protected override ModelBuilder<T> create()
         {
-            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel, m_nIterSize, (uint)m_nBatchSize, (uint)m_nSeqLen);
+            return new LlamaModelBuilder<T>(m_strBaseDir, m_strModel, m_nIterSize, (uint)m_nBatchSize, (uint)m_nSeqLen, 32000, m_dfDropout);
         }
 
         protected override void testCreateInferenceModel(bool bEnableLoRA)
@@ -960,13 +961,13 @@ namespace MyCaffe.test
         {
             m_strModel = "Stories15M_Instruct";
             m_nBatchSize = 64;
-            m_nSeqLen = 350;
+            m_nSeqLen = 256;
             m_nIterSize = (bFineTune) ? 8 : 1;
             ModelBuilder<T> builder = create();
 
             PropertySet prop = new PropertySet();
             prop.SetProperty("VocabularyType", ((int)TokenizedDataParameter.VOCABULARY_TYPE.LLAMA2).ToString());
-            NetParameter net_param = builder.CreateModel(prop, Phase.TRAIN, bFineTune);
+            NetParameter net_param = builder.CreateModel(prop, Phase.TRAIN, bFineTune, 1);
             net_param.enable_memory_stats = true;
             RawProto proto = net_param.ToProto("root");
             string strNet = proto.ToString();
