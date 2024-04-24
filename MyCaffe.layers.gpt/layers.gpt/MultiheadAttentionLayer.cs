@@ -243,9 +243,9 @@ namespace MyCaffe.layers.gpt
             m_blobAttB.Name = m_param.name + " AttB";
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = m_param.name + " Work";
-            m_blobY = createIntraLayerBlob("mth_y");
-            //m_blobY = new Blob<T>(cuda, log);
-            //m_blobY.Name = m_param.name + " Y";
+            //m_blobY = createIntraLayerBlob("mth_y");
+            m_blobY = new Blob<T>(cuda, log);
+            m_blobY.Name = m_param.name + " Y";
 
             if (m_param.multihead_attention_param.enable_key_value_cache)
             {
@@ -730,7 +730,7 @@ namespace MyCaffe.layers.gpt
                 }
                 else
                 {
-                    m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+                    m_blobAttA.MatMul(m_blobQt, m_blobKt1, true);
                     m_blobAttA.scale_data(dfScale);
 
                     // Apply mask to attention matrix
@@ -756,7 +756,7 @@ namespace MyCaffe.layers.gpt
 
                 // Multiply attention matrix with values
                 // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-                if (m_param.multihead_attention_param.enable_key_value_cache)
+                if (nPos >= 0 && m_param.multihead_attention_param.enable_key_value_cache)
                 {
                     m_blobWork.Reshape(1, m_nHeads, 1, m_nSize);
                     m_blobWork3.Reshape(1, m_nHeads, 1, 1);
@@ -823,8 +823,11 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            m_blobY.Reshape(m_rgYShape);
-            m_blobWork.Reshape(m_rgWorkShape);
+            //m_blobY.Reshape(m_rgYShape);
+            //m_blobWork.Reshape(m_rgWorkShape);
+
+            if (m_param.multihead_attention_param.enable_key_value_cache)
+                m_log.FAIL("Currently training key_value_cache based models is not supported.");
 
             // Gradient with respect to state then data.
             if (rgbPropagateDown[0])
