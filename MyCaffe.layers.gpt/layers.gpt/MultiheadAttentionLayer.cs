@@ -119,7 +119,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nHeads
             LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK", m_phase, p.freeze_learning);
             ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnK.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
+            ipAttnK.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnK.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -140,7 +140,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nHeads
             LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV", m_phase, p.freeze_learning);
             ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnV.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term; ;
+            ipAttnV.inner_product_param.bias_term = m_param.multihead_attention_param.bias_term;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnV.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -678,7 +678,7 @@ namespace MyCaffe.layers.gpt
                 int nFreqOffset = -1;
                 if (nPos > 0)
                     nFreqOffset = nPos * m_nSize / 2;
-
+                
                 m_cuda.RopeForward(m_hRope, m_blobQ.count(), m_blobQ.gpu_data, m_blobQ.mutable_gpu_data, nFreqOffset);
                 m_cuda.RopeForward(m_hRope, m_blobK.count(), m_blobK.gpu_data, m_blobK.mutable_gpu_data, nFreqOffset);
             }
