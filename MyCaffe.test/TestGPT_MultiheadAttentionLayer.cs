@@ -1148,8 +1148,6 @@ namespace MyCaffe.test
                 int nDim = blobX.width;
                 int nCount = blobX.count();
 
-                m_cuda.debug();
-
                 hRope = m_cuda.CreateRope(1, 0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeForward(hRope, nCount, blobX.gpu_data, blobY.mutable_gpu_data);
 
@@ -1199,8 +1197,6 @@ namespace MyCaffe.test
                 int nDim = blobX.width;
                 int nCount = blobX.count();
 
-                m_cuda.debug();
-
                 hRope = m_cuda.CreateRope(1, 0, nCount, nBatch, nSeqLen, nHeads, nDim);
                 m_cuda.RopeBackward(hRope, nCount, blobX.gpu_data, blobY.gpu_diff, blobX.mutable_gpu_diff);
 
@@ -1240,8 +1236,6 @@ namespace MyCaffe.test
                 int nHeads = blobX.height;
                 int nDim = blobX.width;
                 int nCount = blobX.count();
-
-                m_cuda.debug();
 
                 // CPU
                 hRopeCpu = m_cuda.CreateRope(0, -1, nCount, nBatch, nSeqLen, nHeads, nDim);
