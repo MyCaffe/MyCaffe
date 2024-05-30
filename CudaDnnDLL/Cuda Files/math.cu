@@ -7946,8 +7946,25 @@ __global__ void channel_interpolate_linear_fwd_kernel(const int n, const int nN,
 }
 
 template <typename T>
-__global__ void channel_interpolate_linear_bwd_kernel(const int n, const int nN, const int nC, const int nNsrc, const int nNdst, T* x, const T* y)
+__global__ void channel_interpolate_linear_bwd_kernel(const int n, const int nN, const int nC, const int nNsrc, const int nNdst, T* grad_x, const T* grad_y)
 {
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		const int n_idx = i / (nC * nNdst);
+		const int c_idx = (i % (nC * nNdst)) / nNdst;
+		const int dst_idx = i % nNdst;
+
+		const float src_idx = (float)dst_idx / (nNdst - 1) * (nNsrc - 1);
+		const int src_idx_floor = (int)floorf(src_idx);
+		const int src_idx_ceil = min(src_idx_floor + 1, nNsrc - 1);
+
+		const float weight = src_idx - src_idx_floor;
+		const int nXidx = n_idx * nC * nNsrc + c_idx * nNsrc;
+
+		// Accumulate gradients into grad_x
+		atomicAdd(&grad_x[nXidx + src_idx_floor], (1.0f - weight) * grad_y[i]);
+		atomicAdd(&grad_x[nXidx + src_idx_ceil], weight * grad_y[i]);
+	}
 }
 
 template <typename T>

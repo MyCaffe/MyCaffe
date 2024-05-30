@@ -2396,6 +2396,78 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_channel_interpolate_linear_bwd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Interpolate Linear Bwd");
+            long hSrc = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nN = 1;
+                        int nC = 1;
+                        int nDimDst = 14;
+                        int nDimSrc = 7;
+                        int nCount = nN * nC * nDimDst;
+
+                        List<double> rgdfSrc = new List<double>() { 1, 2, 3, 4, 5, 6, 7 };
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hDst = t.Cuda.AllocMemory(nDimDst);
+
+                        t.Cuda.channel_interpolate_linear(nCount, nN, nC, nDimSrc, nDimDst, hSrc, hDst, DIR.FWD);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        t.Cuda.FreeMemory(hSrc);
+                        hSrc = 0;
+                        t.Cuda.FreeMemory(hDst);
+                        hDst = 0;
+
+                        List<double> rgdfDst = new List<double>() { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+                        hSrc = t.Cuda.AllocMemory(nDimSrc);
+                        hDst = t.Cuda.AllocMemory(rgdfDst);
+
+                        t.Cuda.channel_interpolate_linear(nCount, nN, nC, nDimSrc, nDimDst, hSrc, hDst, DIR.BWD);
+                        double dfPartial = 0.15384615384615385;
+                        double[] rgSrc = t.Cuda.GetMemoryDouble(hSrc);
+                        List<double> rgdfSrcExp = new List<double>() {  2 - (dfPartial*2.5), 2 + dfPartial, 2 + dfPartial, 2 + dfPartial, 2 + dfPartial, 2 + dfPartial, 2 - (dfPartial*2.5) };
+
+                        for (int i = 0; i < nDimSrc; i++)
+                        {
+                            double dfDiff = rgdfSrcExp[i] - rgSrc[i];
+                            double dfErr = 1e-5;
+                            log.CHECK_LE(dfDiff, dfErr, "The values do not match at index " + i.ToString() + "!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_channel_compare()
         {
             CudaDnnTest test = new CudaDnnTest();
