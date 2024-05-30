@@ -362,6 +362,42 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardMax1DCuDNN()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestForwardMax1DCuDNN();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientMax1DCuDNN()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestGradientMax1DCuDNN();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardMaxPaddedCuDNN()
         {
             PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CUDNN);
@@ -469,6 +505,8 @@ namespace MyCaffe.test
         void TestSetupPaddedCuDNN(PoolingParameter.PoolingReshapeAlgorithm alg);
         void TestForwardMaxCuDNN();
         void TestGradientMaxCuDNN();
+        void TestForwardMax1DCuDNN();
+        void TestGradientMax1DCuDNN();
         void TestForwardMaxPaddedCuDNN();
         void TestForwardAveCuDNN();
         void TestGradientAveCuDNN();
@@ -594,6 +632,67 @@ namespace MyCaffe.test
                         m_log.CHECK_EQ(rgMask[i + 6], 12, "The mask element at " + (i + 6).ToString() + " should be 12");
                         m_log.CHECK_EQ(rgMask[i + 7], 9, "The mask element at " + (i + 7).ToString() + " should be 9");
                     }
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestForward1D()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+            p.pooling_param.kernel_h = 2;
+            p.pooling_param.kernel_w = 1;
+            p.pooling_param.stride_h = 1;
+            p.pooling_param.stride_w = 1;
+            p.pooling_param.pad_h = 0;
+            p.pooling_param.pad_w = 0;
+            p.pooling_param.stride.Clear();
+            p.pooling_param.kernel_size.Clear();
+            p.pooling_param.pad.Clear();
+            p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+            p.pooling_param.engine = m_engine;
+            int nNum = 2;
+            int nChannels = 2;
+
+            Bottom.Reshape(nNum, nChannels, 5, 1);
+            // Input: 2x2 channels of:
+            //  [1 2 5 2 3]
+            double[] rgBottom = convert(Bottom.mutable_cpu_data);
+            for (int i = 0; i < 5 * nNum * nChannels; i += 5)
+            {
+                rgBottom[i + 0] = 1;
+                rgBottom[i + 1] = 2;
+                rgBottom[i + 2] = 5;
+                rgBottom[i + 3] = 2;
+                rgBottom[i + 4] = 3;
+            }
+            Bottom.mutable_cpu_data = convert(rgBottom);
+
+            PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
+
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
+                m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
+                m_log.CHECK_EQ(4, Top.height, "The top height should equal 4.");
+                m_log.CHECK_EQ(1, Top.width, "The top width should equal 1.");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Expected output: 2x1 channels of:
+                //  [2 5 5 3]
+                double[] rgTop = convert(Top.update_cpu_data());
+                for (int i = 0; i < 4 * nNum * nChannels; i += 4)
+                {
+                    m_log.CHECK_EQ(rgTop[i + 0], 2, "The top element at " + (i + 0).ToString() + " should be 2");
+                    m_log.CHECK_EQ(rgTop[i + 1], 5, "The top element at " + (i + 1).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 2], 5, "The top element at " + (i + 2).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 3], 3, "The top element at " + (i + 3).ToString() + " should be 3");
                 }
             }
             finally
@@ -1328,6 +1427,40 @@ namespace MyCaffe.test
                     {
                         layer.Dispose();
                     }
+                }
+            }
+        }
+
+        public void TestForwardMax1DCuDNN()
+        {
+            TestForward1D();
+        }
+
+        public void TestGradientMax1DCuDNN()
+        {
+            for (int kernel_h = 3; kernel_h <= 4; kernel_h++)
+            {
+                int kernel_w = 1;
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+                p.pooling_param.engine = m_engine;
+                p.pooling_param.kernel_h = (uint)kernel_h;
+                p.pooling_param.kernel_w = (uint)kernel_w;
+                p.pooling_param.stride_h = 1;
+                p.pooling_param.stride_w = 1;
+                // currently, cuDNN pooling does not support padding.
+                p.pooling_param.pad_h = 0;
+                p.pooling_param.pad_w = 0;
+                p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+                PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
+
+                try
+                {
+                    GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
+                    checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                }
+                finally
+                {
+                    layer.Dispose();
                 }
             }
         }
