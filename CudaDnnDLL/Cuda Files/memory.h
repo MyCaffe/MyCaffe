@@ -2569,7 +2569,6 @@ inline long Memory<T>::RunExtensionDouble(LONG hExtension, LONG lfnIdx, T* pfInp
 template <class T>
 inline long Memory<T>::QueryExtensionResult(LONG hExtension, LONG lfnIdx, LONG* pInput, long lCount, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax)
 {
-	LONG lErr;
 	extensionHandle<T>* extension = GetExtension(hExtension);
 	if (extension == NULL)
 		return ERROR_EXTENSION_NOT_INITIALIZED;
