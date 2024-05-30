@@ -52,7 +52,7 @@ template void blob<float>::cleanup();
 
 
 template <class T>
-LONG blob<T>::create(Memory<T>* pMem, Math<T>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData = true, bool bDiff = false, bool bCreateDesc = false)
+LONG blob<T>::create(Memory<T>* pMem, Math<T>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData, bool bDiff, bool bCreateDesc)
 {
 	LONG lErr;
 
@@ -113,8 +113,8 @@ LONG blob<T>::create(Memory<T>* pMem, Math<T>* pMath, int nGpuID, int nN, int nC
 	return 0;
 }
 
-template LONG blob<double>::create(Memory<double>* pMem, Math<double>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData = true, bool bDiff = false, bool bCreateDesc = false);
-template LONG blob<float>::create(Memory<float>* pMem, Math<float>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData = true, bool bDiff = false, bool bCreateDesc = false);
+template LONG blob<double>::create(Memory<double>* pMem, Math<double>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData, bool bDiff, bool bCreateDesc);
+template LONG blob<float>::create(Memory<float>* pMem, Math<float>* pMath, int nGpuID, int nN, int nC, int nH, int nW, bool bData, bool bDiff, bool bCreateDesc);
 
 
 template<class T>
@@ -330,7 +330,7 @@ template LONG blob<float>::apply_mask(blob<float>& blobMask);
 
 
 template <class T>
-LONG blob<T>::matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false)
+LONG blob<T>::matmul(blob<T>& blobA, blob<T>& blobB, double dfScale, bool bAdiff, bool bBdiff, bool bCdiff, bool bTransA, bool bTransB)
 {
 	LONG lErr;
 
@@ -356,11 +356,11 @@ LONG blob<T>::matmul(blob<T>& blobA, blob<T>& blobB, double dfScale = 1.0, bool 
 
 }
 
-template LONG blob<double>::matmul(blob<double>& blobA, blob<double>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
-template LONG blob<float>::matmul(blob<float>& blobA, blob<float>& blobB, double dfScale = 1.0, bool bAdiff = false, bool bBdiff = false, bool bCdiff = false, bool bTransA = false, bool bTransB = false);
+template LONG blob<double>::matmul(blob<double>& blobA, blob<double>& blobB, double dfScale, bool bAdiff, bool bBdiff, bool bCdiff, bool bTransA, bool bTransB);
+template LONG blob<float>::matmul(blob<float>& blobA, blob<float>& blobB, double dfScale, bool bAdiff, bool bBdiff, bool bCdiff, bool bTransA, bool bTransB);
 
 template <class T>
-LONG blob<T>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
+LONG blob<T>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale, bool bTransA, bool bTransB)
 {
 	int ldb = (bTransB) ? k : n;
 	int lda = (bTransA) ? m : k;
@@ -372,12 +372,12 @@ LONG blob<T>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, lon
 	return m_pMath->gemm2(bTransB, bTransA, n, m, k, T(dfScale), hB, hA, T(0.0), hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
 }
 
-template LONG blob<double>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false);
-template LONG blob<float>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false);
+template LONG blob<double>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale, bool bTransA, bool bTransB);
+template LONG blob<float>::matmul(int nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale, bool bTransA, bool bTransB);
 
 
 template <class T>
-LONG blob<T>::matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, double dfScale = 1.0)
+LONG blob<T>::matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, double dfScale)
 {
 	LONG lErr;
 
@@ -396,8 +396,8 @@ LONG blob<T>::matmulgrad(blob<T>& blobA, blob<T>& blobB, blob<T>& blobWork, doub
 	return 0;
 }
 
-template LONG blob<double>::matmulgrad(blob<double>& blobA, blob<double>& blobB, blob<double>& blobWork, double dfScale = 1.0);
-template LONG blob<float>::matmulgrad(blob<float>& blobA, blob<float>& blobB, blob<float>& blobWork, double dfScale = 1.0);
+template LONG blob<double>::matmulgrad(blob<double>& blobA, blob<double>& blobB, blob<double>& blobWork, double dfScale);
+template LONG blob<float>::matmulgrad(blob<float>& blobA, blob<float>& blobB, blob<float>& blobWork, double dfScale);
 
 
 //=============================================================================

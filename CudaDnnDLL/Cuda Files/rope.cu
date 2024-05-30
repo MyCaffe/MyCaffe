@@ -189,8 +189,8 @@ LONG RopeDataCpu<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen,
 		{
 			T fPos = pfFreq[i] * pos;
 			int nIdx = pos * nDim + i;
-			m_pfFreqCos[nIdx] = (T)cosf(fPos);
-			m_pfFreqSin[nIdx] = (T)sinf(fPos);
+			m_pfFreqCos[nIdx] = (T)cosf((float)fPos);
+			m_pfFreqSin[nIdx] = (T)sinf((float)fPos);
 		}
 	}
 
@@ -536,7 +536,7 @@ LONG RopeDataGpu<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen,
 	for (int i = 0; i < m_nDim; i += 2)
 	{
 		T fPower = (T)(i / (T)m_nDim);
-		fPower = (T)powf(fTheta, fPower);
+		fPower = (T)powf((float)fTheta, fPower);
 		pfFreq[nIdx] = T(1.0) / fPower;
 		nIdx++;
 	}
@@ -547,8 +547,8 @@ LONG RopeDataGpu<T>::Initialize(int nGpuID, int nCount, int nBatch, int nSeqLen,
 		{
 			T fPos = pfFreq[i] * pos;
 			int nIdx = pos * nDim + i;
-			pfFreqCos[nIdx] = (T)cosf(fPos);
-			pfFreqSin[nIdx] = (T)sinf(fPos);
+			pfFreqCos[nIdx] = (T)cosf((float)fPos);
+			pfFreqSin[nIdx] = (T)sinf((float)fPos);
 		}
 	}
 

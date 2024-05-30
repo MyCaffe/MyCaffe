@@ -112,7 +112,7 @@ long cpdHandle<T>::ComputeTvalueAt(int nT, int nTau, int nZ, long hZ, T* pfTVal)
 	if (lErr = m_pMath->set(m_nN * m_nN, m_hWork, 0, -1))
 		return lErr;
 
-	if (lErr = m_pMath->clip_fwd(nZ, hZ, m_hD, -m_nB, m_nB))
+	if (lErr = m_pMath->clip_fwd(nZ, hZ, m_hD, T(-m_nB), T(m_nB)))
 		return lErr;
 
 	// Compute D[:tau] = 2 / (1 + exp(-Z[:tau]))
