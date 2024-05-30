@@ -7,8 +7,8 @@
     <ProjectGuid>{5374B00B-DA45-46AD-9A65-13ED9CC11F42}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MyCaffe.layers.ptst</RootNamespace>
-    <AssemblyName>MyCaffe.layers.ptst</AssemblyName>
+    <RootNamespace>MyCaffe.layers.ts</RootNamespace>
+    <AssemblyName>MyCaffe.layers.ts</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -21,7 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\MyCaffe.layers.ptst.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\MyCaffe.layers.ts.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,13 +30,13 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\MyCaffe.layers.ptst.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\MyCaffe.layers.ts.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>mycaffe.layers.ptst.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>mycaffe.layers.ts.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>MainIcon.ico</ApplicationIcon>
@@ -53,12 +53,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
-    <Compile Include="layers.ptst\RevINLayer.cs" />
+    <Compile Include="layers.ts\RevINLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="mycaffe.layers.ptst.pfx" />
+    <None Include="mycaffe.layers.ts.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />

@@ -8,7 +8,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.ptst
+namespace MyCaffe.layers.ts
 {
     /// <summary>
     /// The RevINLayer performs a Reversible Instance Normalization.  

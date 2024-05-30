@@ -9,9 +9,9 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 
 /// <summary>
-/// The MyCaffe.layers.ptst namespace contains all PatchTST related layers.
+/// The MyCaffe.layers.ts namespace contains all Time-Series related layers.
 /// </summary>
-namespace MyCaffe.layers.ptst
+namespace MyCaffe.layers.ts
 {
     /// <summary>
     /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.ptst namespace.
