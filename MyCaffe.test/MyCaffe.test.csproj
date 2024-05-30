@@ -364,10 +364,6 @@
       <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>
       <Name>MyCaffe.layers.nt</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.layers.ptst\MyCaffe.layers.ts.csproj">
-      <Project>{5374b00b-da45-46ad-9a65-13ed9cc11f42}</Project>
-      <Name>MyCaffe.layers.ts</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.layers.python\MyCaffe.layers.python.csproj">
       <Project>{185cd577-3996-4144-80b5-4f611156f31e}</Project>
       <Name>MyCaffe.layers.python</Name>
