@@ -281,6 +281,7 @@ class Math
 		long channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile);
 		long channel_op_fwd(int op, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY);
 		long channel_op_bwd(int op, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork);
+		long channel_interpolate_linear(int n, int nN, int nC, int nNsrc, int nNdst, long hX, long hY, int nDir);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
 		long col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);

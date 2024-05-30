@@ -7925,6 +7925,85 @@ template long Math<double>::channel_op_bwd(int nOp, int n, int nC, int nN1, int 
 template long Math<float>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork);
 
 
+template <typename T>
+__global__ void channel_interpolate_linear_fwd_kernel(const int n, const int nN, const int nC, const int nNsrc, const int nNdst, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		const int n_idx = i / (nC * nNdst);
+		const int c_idx = (i % (nC * nNdst)) / nNdst;
+		const int dst_idx = i % nNdst;
+
+		const float src_idx = (float)dst_idx / (nNdst - 1) * (nNsrc - 1);
+		const int src_idx_floor = (int)floorf(src_idx);
+		const int src_idx_ceil = min(src_idx_floor + 1, nNsrc - 1);
+
+		const float weight = src_idx - src_idx_floor;
+		const int nXidx = n_idx * nC * nNsrc + c_idx * nNsrc;
+
+		y[i] = (1.0f - weight) * x[nXidx + src_idx_floor] + weight * x[nXidx + src_idx_ceil];
+	}
+}
+
+template <typename T>
+__global__ void channel_interpolate_linear_bwd_kernel(const int n, const int nN, const int nC, const int nNsrc, const int nNdst, T* x, const T* y)
+{
+}
+
+template <typename T>
+long Math<T>::channel_interpolate_linear(int n, int nN, int nC, int nNsrc, int nNdst, long hX, long hY, int nDir)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (nNsrc > nNdst)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (nNdst % nNsrc != 0)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	if (nDir == 0)
+	{
+		if (nNsrc == nNdst)
+		{
+			if (lErr = cudaMemcpy(y, x, sizeof(T) * n * nC * nNsrc, cudaMemcpyDeviceToDevice))
+				return lErr;
+
+			return 0;
+		}
+
+		channel_interpolate_linear_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, nNsrc, nNdst, x, y);
+	}
+	else
+	{
+		if (nNsrc == nNdst)
+		{
+			if (lErr = cudaMemcpy(x, y, sizeof(T) * n * nC * nNsrc, cudaMemcpyDeviceToDevice))
+				return lErr;
+
+			return 0;
+		}
+
+		channel_interpolate_linear_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, nNsrc, nNdst, x, y);
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_interpolate_linear(int n, int nN, int nC, int nNsrc, int nNdst, long hX, long hY, int nDir);
+template long Math<float>::channel_interpolate_linear(int n, int nN, int nC, int nNsrc, int nNdst, long hX, long hY, int nDir);
+
+
 template<typename T>
 __global__ void im2col_kernel(int n, T* data_im, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_col)
 {

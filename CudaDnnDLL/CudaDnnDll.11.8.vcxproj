@@ -137,6 +137,8 @@
       <AdditionalOptions>-lineinfo --default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
       <Include>$(CUDA_PATH_V11_8)\cudann_11.8-win-v8.8.0.121</Include>
       <CudaRuntime>Shared</CudaRuntime>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
     </CudaCompile>
     <PostBuildEvent>
       <Command>if not exist $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8 md $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.8

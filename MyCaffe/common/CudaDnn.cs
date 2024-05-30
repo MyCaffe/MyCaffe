@@ -977,6 +977,7 @@ namespace MyCaffe.common
         void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
         void sort(int nCount, long hY);
 
+        void channel_interpolate_linear(int nCount, int nOuterNum, int nChannels, int nInnerNumSrc, int nInnerNumDst, long hX, long hY, DIR dir = DIR.FWD);
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
         void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, DIR dir);
@@ -1422,6 +1423,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_OP_BWD = 307,
             CUDA_CHANNEL_SUM_ALL = 308,
             CUDA_CHANNEL_SUM2 = 309,
+            CUDA_CHANNEL_INTERPOLATE_LINEAR = 310,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -9366,6 +9368,25 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPYALL, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPYALL, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
+        /// Perform linear intperpolation between the values of X and places the result in Y.  The nInnerNumDst must be greater than nInnerNumSrc, and the nInnerNumSrc must be a multiple of nInnerNumDst.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of total number of items in the Y tensor.</param>
+        /// <param name="nOuterNum">Specifies the number of outer items in both the X and Y tensors.</param>
+        /// <param name="nChannels">Specifies the number of channels in both the X and Y tensors.</param>
+        /// <param name="nInnerNumSrc">Specifies the inner number of items for each channel in the X tensor.</param>
+        /// <param name="nInnerNumDst">Specifies the inner number of items for each channel in the Y tensor.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory containing the X tensor data.</param>
+        /// <param name="hY">Specifies a handle to the GPU memory containing the Y tensor data.</param>
+        /// <param name="dir">Specifies the direction where FWD interpolates from X to Y and BWD interpolates in reverse from Y to X.</param>
+        public void channel_interpolate_linear(int nCount, int nOuterNum, int nChannels, int nInnerNumSrc, int nInnerNumDst, long hX, long hY, DIR dir = DIR.FWD)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_INTERPOLATE_LINEAR, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNumSrc, nInnerNumDst, hX, hY, (int)dir));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_INTERPOLATE_LINEAR, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNumSrc, nInnerNumDst, hX, hY, (int)dir));
         }
 
 

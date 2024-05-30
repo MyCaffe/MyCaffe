@@ -524,6 +524,7 @@ class Device
 		long cuda_channel_percentile(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_op_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_op_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_interpolate_linear(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
 		long cuda_im2col(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_im2col_nd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -4586,8 +4587,6 @@ inline long Device<T>::ExtensionRun(long lInput, T* pfInput, long llInput, LONGL
 template <class T>
 inline long Device<T>::QueryExtensionResult(long lInput, LONG* pInput, LPTSTR pszOutput, LONG lOutputMax, LPTSTR pszErr, LONG lErrMax)
 {
-	LONG lErr;
-
 	if (lInput < 2)
 		return ERROR_PARAM_OUT_OF_RANGE;
 

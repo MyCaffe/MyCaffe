@@ -755,6 +755,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_CHANNEL_OP_BWD:
 			return m_device.cuda_channel_op_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_INTERPOLATE_LINEAR:
+			return m_device.cuda_channel_interpolate_linear(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_IM2COL:
 			return m_device.cuda_im2col(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1989,6 +1992,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_OP_BWD:
 		return "CUDA_FN_CHANNEL_OP_BWD";
+
+	case CUDA_FN_CHANNEL_INTERPOLATE_LINEAR:
+		return "CUDA_FN_CHANNEL_INTERPOLATE_LINEAR";
 
 	case CUDA_FN_IM2COL:
 		return "CUDA_FN_IM2COL";
