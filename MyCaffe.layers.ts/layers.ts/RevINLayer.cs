@@ -138,13 +138,13 @@ namespace MyCaffe.layers.ts
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (m_param.revin_param.mode == param.tft.RevINParameter.MODE.NORMALIZE)
+            throw new NotImplementedException("The ReVIN layer is a work in progress.");
+
+            if (m_param.revin_param.mode == param.ts.RevINParameter.MODE.NORMALIZE)
             {
                 if (m_param.revin_param.subtract_last)
                 {
-                }
-                
-
+                }                
             }
         }
 

@@ -12,6 +12,7 @@ using MyCaffe.param.gpt;
 using MyCaffe.param.tft;
 using MyCaffe.param.lnn;
 using System.ComponentModel;
+using MyCaffe.param.ts;
 
 namespace MyCaffe.param
 {
@@ -276,6 +277,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the ExpLayer.
             /// </summary>
             EXP,
+            /// <summary>
+            /// Initializes a parameter for the FcLayer.
+            /// </summary>
+            FC,
             /// <summary>
             /// Initializes a parameter for the FilterLayer.
             /// </summary>
@@ -1278,6 +1283,12 @@ namespace MyCaffe.param
                     expected_top.Add("exp");
                     m_rgLayerParameters[lt] = new ExpParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.FC:
+                    expected_bottom.Add("input");
+                    expected_top.Add("fc");
+                    m_rgLayerParameters[lt] = new FcParameter();
                     break;
 
                 case LayerType.FILTER:
@@ -2449,6 +2460,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.FC
+        /// </summary>
+        public FcParameter fc_param
+        {
+            get { return (FcParameter)m_rgLayerParameters[LayerType.FC]; }
+            set { m_rgLayerParameters[LayerType.FC] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.FLATTEN
         /// </summary>
         public FlattenParameter flatten_param
@@ -3397,6 +3417,9 @@ namespace MyCaffe.param
                 case LayerType.EXP:
                     return "EXP";
 
+                case LayerType.FC:
+                    return "FC";
+
                 case LayerType.FILTER:
                     return "Filter";
 
@@ -3873,8 +3896,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(sharpe_accuracy_param, "sharpe_accuracy_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(sharpe_loss_param, "sharpe_loss_param"));
 
-            // PTST Layers
+            // TS Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(revin_param, "revin_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(fc_param, "fc_param"));
 
             // LNN Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_param, "cfc_param"));
@@ -4298,9 +4322,12 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("sharpe_loss_param")) != null)
                 p.sharpe_loss_param = SharpeLossParameter.FromProto(rpp);
 
-            // PTST Layers
+            // TS Layers
             if ((rpp = rp.FindChild("revin_param")) != null)
                 p.revin_param = RevINParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("fc_param")) != null)
+                p.fc_param = FcParameter.FromProto(rpp);
 
             // LNN Layers
             if ((rpp = rp.FindChild("cfc_param")) != null)
@@ -4534,6 +4561,9 @@ namespace MyCaffe.param
 
                 case "exp":
                     return LayerType.EXP;
+
+                case "fc":
+                    return LayerType.FC;
 
                 case "filter":
                     return LayerType.FILTER;

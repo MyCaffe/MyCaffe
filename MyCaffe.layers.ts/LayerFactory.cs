@@ -31,6 +31,12 @@ namespace MyCaffe.layers.ts
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.REVIN:
+                    return new RevINLayer<double>(cuda, log, p);
+
+                case LayerParameter.LayerType.FC:
+                    return new FcLayer<double>(cuda, log, p);
+
                 default:
                     return null;
             }
@@ -49,6 +55,12 @@ namespace MyCaffe.layers.ts
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.REVIN:
+                    return new RevINLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.FC:
+                    return new FcLayer<float>(cuda, log, p);
+
                 default:
                     return null;
             }

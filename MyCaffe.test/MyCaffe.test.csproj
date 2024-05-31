@@ -124,6 +124,7 @@
     <Compile Include="TestChangePointDetection.cs" />
     <Compile Include="TestGPT_RMSNormLayer.cs" />
     <Compile Include="TestGPT_PreTokenizedDataLayer.cs" />
+    <Compile Include="TestFcLayer.cs" />
     <Compile Include="TestWeightAdapters.cs" />
     <Compile Include="TestSharpeLossLayer.cs" />
     <Compile Include="TestLNN_CfcLayer.cs" />
