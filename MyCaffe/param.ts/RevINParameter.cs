@@ -5,7 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param.tft
+namespace MyCaffe.param.ts
 {
     /// <summary>
     /// Specifies the parameters for the RevINLayer (Reversible Instance Normalization).  
