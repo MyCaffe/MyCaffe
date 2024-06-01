@@ -430,6 +430,14 @@ namespace MyCaffe.param
             /// </summary>
             MVN,
             /// <summary>
+            /// Initializes a parameter for the NHitsBlockLayer.
+            /// </summary>
+            NHITS_BLOCK,
+            /// <summary>
+            /// Initializes a parameter for the NHitsStackLayer.
+            /// </summary>
+            NHITS_STACK,
+            /// <summary>
             /// Initializes a parameter for the NLLLossLayer
             /// </summary>
             NLL_LOSS,
@@ -1543,6 +1551,18 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("mvn");
                     m_rgLayerParameters[lt] = new MVNParameter();
+                    break;
+
+                case LayerType.NHITS_BLOCK:
+                    expected_bottom.Add("input");
+                    expected_top.Add("nhblk");
+                    m_rgLayerParameters[lt] = new NHitsBlockParameter();
+                    break;
+
+                case LayerType.NHITS_STACK:
+                    expected_bottom.Add("input");
+                    expected_top.Add("nhstk");
+                    m_rgLayerParameters[lt] = new NHitsStackParameter();
                     break;
 
                 case LayerType.NLL_LOSS:
@@ -2721,6 +2741,24 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.NHITS_BLOCK
+        /// </summary>
+        public NHitsBlockParameter nhits_block_param
+        {
+            get { return (NHitsBlockParameter)m_rgLayerParameters[LayerType.NHITS_BLOCK]; }
+            set { m_rgLayerParameters[LayerType.NHITS_BLOCK] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.NHITS_STACK
+        /// </summary>
+        public NHitsStackParameter nhits_stack_param
+        {
+            get { return (NHitsStackParameter)m_rgLayerParameters[LayerType.NHITS_STACK]; }
+            set { m_rgLayerParameters[LayerType.NHITS_STACK] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.NLL_LOSS
         /// </summary>
         public NLLLossParameter nll_loss_param
@@ -3534,6 +3572,12 @@ namespace MyCaffe.param
                 case LayerType.MVN:
                     return "MVN";
 
+                case LayerType.NHITS_BLOCK:
+                    return "NHitsBlock";
+
+                case LayerType.NHITS_STACK:
+                    return "NHitsStack";
+
                 case LayerType.NLL_LOSS:
                     return "NLLLoss";
 
@@ -3899,6 +3943,8 @@ namespace MyCaffe.param
             // TS Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(revin_param, "revin_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(fc_param, "fc_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(nhits_block_param, "nhits_block_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(nhits_block_param, "nhits_stack_param"));
 
             // LNN Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_param, "cfc_param"));
@@ -4329,6 +4375,12 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("fc_param")) != null)
                 p.fc_param = FcParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("nhits_block_param")) != null)
+                p.nhits_block_param = NHitsBlockParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("nhits_stack_param")) != null)
+                p.nhits_stack_param = NHitsStackParameter.FromProto(rpp);
+
             // LNN Layers
             if ((rpp = rp.FindChild("cfc_param")) != null)
                 p.cfc_param = CfcParameter.FromProto(rpp);
@@ -4685,6 +4737,14 @@ namespace MyCaffe.param
 
                 case "mvn":
                     return LayerType.MVN;
+
+                case "nhits_block":
+                case "nhitsblock":
+                    return LayerType.NHITS_BLOCK;
+
+                case "nhits_stack":
+                case "nhitsstack":
+                    return LayerType.NHITS_STACK;
 
                 case "nllloss":
                 case "nll_loss":

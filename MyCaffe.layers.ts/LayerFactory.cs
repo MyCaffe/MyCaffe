@@ -37,6 +37,12 @@ namespace MyCaffe.layers.ts
                 case LayerParameter.LayerType.FC:
                     return new FcLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.NHITS_BLOCK:
+                    return new NHitsBlockLayer<double>(cuda, log, p);
+
+                case LayerParameter.LayerType.NHITS_STACK:
+                    return new NHitsStackLayer<double>(cuda, log, p);
+
                 default:
                     return null;
             }
@@ -60,6 +66,12 @@ namespace MyCaffe.layers.ts
 
                 case LayerParameter.LayerType.FC:
                     return new FcLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.NHITS_BLOCK:
+                    return new NHitsBlockLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.NHITS_STACK:
+                    return new NHitsStackLayer<float>(cuda, log, p);
 
                 default:
                     return null;

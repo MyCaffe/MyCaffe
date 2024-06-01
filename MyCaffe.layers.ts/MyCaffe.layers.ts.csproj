@@ -53,6 +53,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.ts\NHitsStackLayer.cs" />
+    <Compile Include="layers.ts\NHitsBlockLayer.cs" />
     <Compile Include="layers.ts\FcLayer.cs" />
     <Compile Include="layers.ts\RevINLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

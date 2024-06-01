@@ -1,0 +1,105 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.ComponentModel;
+using MyCaffe.basecode;
+
+namespace MyCaffe.param.ts
+{
+    /// <summary>
+    /// Specifies the parameters for the NHitsStackParameter (used by NHitsStackLayer in N-HiTS models).  
+    /// </summary>
+    /// <remarks>
+    /// The NHitsStackLayer layer performs the Block processing and prediction accumulation.
+    /// 
+    /// Note: Pooling parameters are specified in the PoolingParameter class.
+    /// Note: FC parameters are specified in the FcParameter class.
+    /// Note: NHitsBlock parameters are specified in the NHitsBlockParameter class.
+    /// 
+    /// @see [Understanding N-HiTS Time Series Prediction](https://www.signalpop.com/2024/05/29/n-hits/) by Brown, 2024, SignalPop
+    /// @see [N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting](https://arxiv.org/abs/2201.12886) by Cristian Challu, Kin G. Olivares, Boris N. Oreshkin, Federico Garza, Max Mergenthaler-Canseco, and Artur Dubrawski, 2022, arXiv:2201.12886.
+    /// @see [Darts: User-Friendly Modern Machine Learning for Time Series](https://jmlr.org/papers/v23/21-1177.html) by Julien Herzen, Francesco Lässig, Samuele Giuliano Piazzetta, Thomas Neuer, Léo Tafti, Guillaume Raille, Tomas Van Pottelbergh, Marek Pasieka, Andrzej Skrodzki, Nicolas Huguenin, Maxime Dumonal, Jan Kościsz, Dennis Bader, Frédérick Gusset, Mounir Benheddi, Camila Williamson, Michal Kosinski, Matej Petrik, and Gaël Grosch, 2022, JMLR
+    /// @see [Github - unit8co/darts](https://github.com/unit8co/darts) by unit8co, 2022, GitHub.
+    /// 
+    /// WORK IN PROGRESS.
+    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class NHitsStackParameter : LayerParameterBase
+    {
+        int m_nBlockCount = 1;
+
+        /** @copydoc LayerParameterBase */
+        public NHitsStackParameter()
+        {
+        }
+
+        /// <summary>
+        /// Specifies the Block count.
+        /// </summary>
+        [Description("Specifies the number of the Block layers.")]
+        public int num_blocks
+        {
+            get { return m_nBlockCount; }
+            set { m_nBlockCount = value; }
+        }
+
+        /** @copydoc LayerParameterBase::Load */
+        public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
+        {
+            RawProto proto = RawProto.Parse(br.ReadString());
+            NHitsStackParameter p = FromProto(proto);
+
+            if (!bNewInstance)
+                Copy(p);
+
+            return p;
+        }
+
+        /** @copydoc LayerParameterBase::Copy */
+        public override void Copy(LayerParameterBase src)
+        {
+            NHitsStackParameter p = (NHitsStackParameter)src;
+            m_nBlockCount = p.m_nBlockCount;
+        }
+
+        /** @copydoc LayerParameterBase::Clone */
+        public override LayerParameterBase Clone()
+        {
+            NHitsStackParameter p = new NHitsStackParameter();
+            p.Copy(this);
+            return p;
+        }
+
+        /// <summary>
+        /// Convert the parameter into a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name to associate with the RawProto.</param>
+        /// <returns>The new RawProto is returned.</returns>
+        public override RawProto ToProto(string strName)
+        {
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add(new RawProto("num_blocks", num_blocks.ToString()));
+
+            return new RawProto(strName, "", rgChildren);
+        }
+
+        /// <summary>
+        /// Parses the parameter from a RawProto.
+        /// </summary>
+        /// <param name="rp">Specifies the RawProto to parse.</param>
+        /// <returns>A new instance of the parameter is returned.</returns>
+        public static NHitsStackParameter FromProto(RawProto rp)
+        {
+            string strVal;
+            NHitsStackParameter p = new NHitsStackParameter();
+
+            if ((strVal = rp.FindValue("num_blocks")) != null)
+                p.num_blocks = int.Parse(strVal);
+
+            return p;
+        }
+    }
+}
