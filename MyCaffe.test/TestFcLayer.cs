@@ -139,7 +139,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(double dfFillerStd, int nMethod)
+        public void TestBackward(double dfFillerStd)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = dfFillerStd;
@@ -152,7 +152,7 @@ namespace MyCaffe.test
             p.fc_param.num_output = 32;
             p.fc_param.bias_term = false;
             p.fc_param.activation = param.ts.FcParameter.ACTIVATION.RELU;
-            p.fc_param.dropout_ratio = 0.0f;
+            p.fc_param.dropout_ratio = 0.1f;
             p.fc_param.enable_normalization = false;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
@@ -176,12 +176,7 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            TestBackward(1.0, 0);
-        }
-
-        public void TestGradient2()
-        {
-            TestBackward(1.0, 1);
+            TestBackward(1.0);
         }
     }
 }
