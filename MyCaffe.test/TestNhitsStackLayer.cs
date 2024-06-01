@@ -34,6 +34,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardAutoSize()
+        {
+            NhitsStackLayerTest test = new NhitsStackLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INhitsStackLayerTest t in test.Tests)
+                {
+                    t.TestForwardAutoSize();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             NhitsStackLayerTest test = new NhitsStackLayerTest(EngineParameter.Engine.CAFFE);
@@ -55,6 +73,7 @@ namespace MyCaffe.test
     interface INhitsStackLayerTest : ITest
     {
         void TestForward();
+        void TestForwardAutoSize();
         void TestGradient();
     }
 
@@ -156,6 +175,63 @@ namespace MyCaffe.test
             }
         }
 
+        public void TestForwardAutoSize(double dfFillerStd, int nAutoIdx, int nStackCount)
+        {
+            FillerParameter fp = new FillerParameter("gaussian");
+            fp.std = dfFillerStd;
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+            filler.Fill(Bottom);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NHITS_STACK, "nhstk", Phase.TRAIN);
+            p.pooling_param.kernel_h = 8;
+            p.pooling_param.stride_h = 8;
+            p.pooling_param.kernel_w = 1;
+            p.pooling_param.stride_w = 1;
+            p.fc_param.axis = 2;
+            p.fc_param.num_output = 32;
+            p.fc_param.bias_term = true;
+            p.fc_param.activation = param.ts.FcParameter.ACTIVATION.RELU;
+            p.fc_param.dropout_ratio = 0.1f;
+            p.fc_param.enable_normalization = true;
+            p.nhits_block_param.num_input_chunks = 30;
+            p.nhits_block_param.num_output_chunks = 7;
+            p.nhits_block_param.downsample_size = 2;
+            p.nhits_block_param.num_layers = 2;
+            p.nhits_stack_param.num_blocks = 1;
+            p.nhits_stack_param.num_stacks = nStackCount;
+            p.nhits_stack_param.auto_pooling_downsample_index = nAutoIdx;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.NHITS_STACK, "The layer type is incorrect!");
+
+                m_blob_bottom.Reshape(2, 30, 3, 1);
+                m_blobStackFc0.Reshape(2, 7, 3, 1);
+                m_blobStackFc0.SetData(0);
+
+                BottomVec.Add(m_blobStackFc0);
+                TopVec.Add(m_blobStackFc1);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_top.num, 2, "The top(0) num should equal 2.");
+                m_log.CHECK_EQ(m_blob_top.channels, 30, "The top(0) num should equal 30.");
+                m_log.CHECK_EQ(m_blob_top.height, 3, "The top(0) height should equal 3.");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top(0) width should equal 1.");
+                m_log.CHECK_EQ(m_blobStackFc1.num, 2, "The top(1) num should equal 2.");
+                m_log.CHECK_EQ(m_blobStackFc1.channels, 7, "The top(1) num should equal 7.");
+                m_log.CHECK_EQ(m_blobStackFc1.height, 3, "The top(1) height should equal 3.");
+                m_log.CHECK_EQ(m_blobStackFc1.width, 1, "The top(1) width should equal 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
         public void TestBackward(double dfFillerStd)
         {
             FillerParameter fp = new FillerParameter("gaussian");
@@ -204,6 +280,11 @@ namespace MyCaffe.test
         public void TestForward()
         {
             TestForward(1.0);
+        }
+
+        public void TestForwardAutoSize()
+        {
+            TestForwardAutoSize(1.0, 0, 10);
         }
 
         public void TestGradient()

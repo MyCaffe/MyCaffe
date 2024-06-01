@@ -125,6 +125,44 @@ namespace MyCaffe.layers.ts
             get { return 2; }
         }
 
+        private List<int> calculate_sizes(int nChunks, int nStacks)
+        {
+            int nMaxV = nChunks / 2;
+
+            if (nStacks == 1)
+                return new List<int>() { nMaxV };   
+
+            double dfStart = Math.Log10(1);
+            double dfEnd = Math.Log10(nMaxV);
+            double dfStep = (dfEnd - dfStart) / (nStacks - 1);
+
+            List<int> rgStep = new List<int>();
+            for (int i = 0; i < nStacks; i++)
+            {
+                double dfLogStep = (dfStart + i * dfStep);
+                double dfStep1 = Math.Pow(10, dfLogStep);
+                int nVal = (int)(nMaxV / dfStep1);
+                rgStep.Add(Math.Max(nVal, 1));
+            }
+
+            return rgStep;
+        }   
+
+        private void calculate_pooling_downsampling(LayerParameter p, BlobCollection<T> colBtm)
+        {
+            if (p.nhits_stack_param.auto_pooling_downsample_index >= p.nhits_stack_param.num_stacks)
+                throw new Exception("The auto_pooling_downsample_index must be less than the num_stacks.");
+
+            List<int> rgKernelSizes = calculate_sizes(p.nhits_block_param.num_input_chunks, p.nhits_stack_param.num_stacks);
+            List<int> rgDownsampleSizes = calculate_sizes(p.nhits_block_param.num_output_chunks, p.nhits_stack_param.num_stacks);
+
+            p.pooling_param.kernel_h = (uint)rgKernelSizes[p.nhits_stack_param.auto_pooling_downsample_index];
+            p.pooling_param.kernel_w = 1;
+            p.pooling_param.stride_h = (uint)rgKernelSizes[p.nhits_stack_param.auto_pooling_downsample_index];
+            p.pooling_param.stride_w = 1;
+            p.nhits_block_param.downsample_size = rgDownsampleSizes[p.nhits_stack_param.auto_pooling_downsample_index];
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -140,6 +178,9 @@ namespace MyCaffe.layers.ts
                 p.nhits_block_param.Copy(layer_param.nhits_block_param);
                 p.pooling_param.Copy(layer_param.pooling_param);
                 p.fc_param.Copy(layer_param.fc_param);
+
+                if (layer_param.nhits_stack_param.auto_pooling_downsample_index >= 0)
+                    calculate_pooling_downsampling(layer_param, colBottom);
 
                 Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
                 addBtmTop(blobBtm1, m_colStackRes[i]);
