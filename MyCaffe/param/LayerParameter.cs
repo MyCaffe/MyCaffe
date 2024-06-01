@@ -1557,12 +1557,17 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("nhblk");
                     m_rgLayerParameters[lt] = new NHitsBlockParameter();
+                    m_rgLayerParameters[LayerType.FC] = new FcParameter();
+                    m_rgLayerParameters[LayerType.POOLING] = new PoolingParameter();
                     break;
 
                 case LayerType.NHITS_STACK:
                     expected_bottom.Add("input");
                     expected_top.Add("nhstk");
                     m_rgLayerParameters[lt] = new NHitsStackParameter();
+                    m_rgLayerParameters[LayerType.FC] = new FcParameter();
+                    m_rgLayerParameters[LayerType.POOLING] = new PoolingParameter();
+                    m_rgLayerParameters[LayerType.NHITS_BLOCK] = new NHitsBlockParameter(); 
                     break;
 
                 case LayerType.NLL_LOSS:
