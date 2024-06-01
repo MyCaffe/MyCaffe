@@ -29,10 +29,36 @@ namespace MyCaffe.param.ts
     public class NHitsStackParameter : LayerParameterBase
     {
         int m_nBlockCount = 1;
+        int m_nAutoPoolingDownsmapleIndex = -1;
+        int m_nNumStacks = 1;
 
         /** @copydoc LayerParameterBase */
         public NHitsStackParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the number of stacks.
+        /// </summary>
+        [Description("Specifies the number of stacks.")]
+        public int num_stacks
+        {
+            get { return m_nNumStacks; }
+            set { m_nNumStacks = value; }
+        }
+
+        /// <summary>
+        /// When specified (e.g. >= 0), the pooling layer at the specified index has its pooling kernel, stride and downsamplingn sizes automatically calculated.
+        /// </summary>
+        /// <remarks>
+        /// When used, the 'num_stacks' parameter must also be set with the total number of stacks used.  The auto pooling kernel, stride and downsampling sizes 
+        /// are calculated based on the input data size and the number of stacks and replace the current pooling kernel, stride and downsampling sizes.
+        /// </remarks>
+        [Description("When specified (e.g. >= 0), the pooling layer at the specified index has its pooling kernel, stride and downsamplingn sizes automatically calculated.")]
+        public int auto_pooling_downsample_index
+        {
+            get { return m_nAutoPoolingDownsmapleIndex; }
+            set { m_nAutoPoolingDownsmapleIndex = value; }
         }
 
         /// <summary>
@@ -62,6 +88,8 @@ namespace MyCaffe.param.ts
         {
             NHitsStackParameter p = (NHitsStackParameter)src;
             m_nBlockCount = p.m_nBlockCount;
+            m_nAutoPoolingDownsmapleIndex = p.m_nAutoPoolingDownsmapleIndex;
+            m_nNumStacks = p.m_nNumStacks;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -82,6 +110,8 @@ namespace MyCaffe.param.ts
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add(new RawProto("num_blocks", num_blocks.ToString()));
+            rgChildren.Add(new RawProto("auto_pooling_downsample_index", auto_pooling_downsample_index.ToString()));
+            rgChildren.Add(new RawProto("num_stacks", num_stacks.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -98,6 +128,12 @@ namespace MyCaffe.param.ts
 
             if ((strVal = rp.FindValue("num_blocks")) != null)
                 p.num_blocks = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("auto_pooling_downsample_index")) != null)
+                p.auto_pooling_downsample_index = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("num_stacks")) != null)
+                p.num_stacks = int.Parse(strVal);
 
             return p;
         }
