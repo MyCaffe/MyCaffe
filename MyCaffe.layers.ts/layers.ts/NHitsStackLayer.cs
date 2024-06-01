@@ -30,6 +30,7 @@ namespace MyCaffe.layers.ts
         List<Layer<T>> m_rgBlockLayers = new List<Layer<T>>();
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
+        Blob<T> m_blobWork;
 
         /// <summary>
         /// The constructor.
@@ -40,7 +41,7 @@ namespace MyCaffe.layers.ts
         public NHitsStackLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.NHITS_BLOCK;
+            m_type = LayerParameter.LayerType.NHITS_STACK;
 
             for (int i=0; i< p.nhits_stack_param.num_blocks; i++)
             {
@@ -52,11 +53,25 @@ namespace MyCaffe.layers.ts
                 blob.Name = "sfc" + i.ToString();
                 m_colStackFc.Add(blob);
             }
+
+            m_blobWork = new Blob<T>(cuda, log);
+            m_blobWork.Name = p.name + ".pred_grad_accum";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobWork);
+            m_colStackFc.Dispose();
+            m_colStackFc.Clear();
+            m_colStackRes.Dispose();
+            m_colStackRes.Clear();
+
+            foreach (Layer<T> layer in m_rgBlockLayers)
+            {
+                layer.Dispose();
+            }
+
             base.dispose();
         }
 
@@ -82,6 +97,8 @@ namespace MyCaffe.layers.ts
                 col.Add(m_colStackRes[i]);
                 col.Add(m_colStackFc[i]);
             }
+
+            col.Add(m_blobWork);
         }
 
         /// <summary>
@@ -108,7 +125,6 @@ namespace MyCaffe.layers.ts
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm1 = colBottom[0];
-            Blob<T> blobBtm2 = colBottom[1];
 
             for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
             {
@@ -119,12 +135,11 @@ namespace MyCaffe.layers.ts
 
                 Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
                 addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(blobBtm2, m_colStackFc[i]);
+                addBtmTop(null, m_colStackFc[i], false);
                 layer.Setup(m_colBtm, m_colTop);
                 m_rgBlockLayers.Add(layer);
 
                 blobBtm1 = m_colStackRes[i];
-                blobBtm2 = m_colStackFc[i];
             }
         }
 
@@ -136,17 +151,20 @@ namespace MyCaffe.layers.ts
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm1 = colBottom[0];
-            Blob<T> blobBtm2 = colBottom[1];
 
             for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
             {
                 addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(blobBtm2, m_colStackFc[i]);
+                addBtmTop(null, m_colStackFc[i], false);
                 m_rgBlockLayers[i].Reshape(m_colBtm, m_colTop);
 
                 blobBtm1 = m_colStackRes[i];
-                blobBtm2 = m_colStackFc[i];
             }
+
+            m_blobWork.ReshapeLike(colBottom[1]);
+
+            colTop[0].ReshapeLike(colBottom[0]);
+            colTop[1].ReshapeLike(colBottom[1]);
         }
 
         /// <summary>
@@ -166,10 +184,12 @@ namespace MyCaffe.layers.ts
         {
             Blob<T> blobBtm1 = colBottom[0];
 
+            colTop[1].CopyFrom(colBottom[1]);
+
             for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
             {
                 addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(null, m_colStackFc[i]);
+                addBtmTop(null, m_colStackFc[i], false);
                 m_rgBlockLayers[i].Forward(m_colBtm, m_colTop);
 
                 blobBtm1 = m_colStackRes[i];
@@ -203,7 +223,10 @@ namespace MyCaffe.layers.ts
             if (!rgbPropagateDown[0])
                 return;
 
+            colBottom[1].CopyFrom(colTop[1], true);
+
             Blob<T> blobBtm1 = colBottom[0];
+            Blob<T> blobBtm2 = colBottom[1];
 
             for (int i = layer_param.nhits_stack_param.num_blocks - 1; i>=0; i--)
             {
@@ -211,8 +234,11 @@ namespace MyCaffe.layers.ts
                 m_colStackFc[i].CopyFrom(colTop[1], true);
 
                 addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(null, m_colStackFc[i]);
+                addBtmTop(m_blobWork, m_colStackFc[i], false);
                 m_rgBlockLayers[i].Backward(m_colTop, rgbPropagateDown, m_colBtm);
+
+                // Accumulate the gradients.
+                m_cuda.add(colBottom[1].count(), colBottom[1].gpu_diff, m_blobWork.gpu_diff, colBottom[1].mutable_gpu_diff);
 
                 blobBtm1 = m_colStackRes[i];
             }

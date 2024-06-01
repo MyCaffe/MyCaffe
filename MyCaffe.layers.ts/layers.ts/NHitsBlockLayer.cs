@@ -37,6 +37,7 @@ namespace MyCaffe.layers.ts
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         int m_nNumCovariates = 1;
+        int[] m_rgShape = new int[] { 1, 1, 1, 1 };
 
         /// <summary>
         /// The constructor.
@@ -133,6 +134,21 @@ namespace MyCaffe.layers.ts
             get { return 2; }
         }
 
+        private int[] unsqueeze(Blob<T> blob)
+        {
+            for (int i = 0; i < blob.shape().Count; i++)
+            {
+                m_rgShape[i] = blob.shape(i);
+            }
+            blob.Reshape(blob.shape(0), 1, blob.count(1), 1);
+            return m_rgShape;
+        }
+
+        private void squeeze(Blob<T> blob)
+        {
+            blob.Reshape(blob.shape(0), blob.count(1), 1, 1);
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -140,14 +156,21 @@ namespace MyCaffe.layers.ts
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_nNumCovariates = colBottom[0].channels / layer_param.nhits_block_param.num_input_chunks;
+            m_nNumCovariates = colBottom[0].count(1) / layer_param.nhits_block_param.num_input_chunks;
+            if (m_nNumCovariates < 1)
+                m_log.FAIL("The number of covariates must be greater than 0.  The bottom[0] must have the shape (N, T, C, 1) where N = batch, T = time steps, C = covariates.");
+
+            if (colBottom[0].width != 1)
+                m_log.FAIL("The width of the bottom[0] must be 1.");
 
             LayerParameter pool = new LayerParameter(LayerParameter.LayerType.POOLING, "pool", m_phase);
             pool.pooling_param.Copy(layer_param.pooling_param);
             m_layerPool = Layer<T>.Create(m_cuda, m_log, pool, null);
 
+            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Setup(m_colBtm, m_colTop);
+            colBottom[0].Reshape(rgShape);
 
             Blob<T> blobBtm = m_blobPool;
 
@@ -164,8 +187,8 @@ namespace MyCaffe.layers.ts
                 m_rgLayerFc.Add(fcl);
             }
 
-            LayerParameter backcast = new LayerParameter(LayerParameter.LayerType.LINEAR, "backcast", m_phase);
-            backcast.inner_product_param.axis = 1;
+            LayerParameter backcast = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "backcast", m_phase);
+            backcast.inner_product_param.axis = 2;
             backcast.inner_product_param.num_output = (uint)(layer_param.nhits_block_param.num_input_chunks / layer_param.nhits_block_param.downsample_size);
             m_layerBackcast = Layer<T>.Create(m_cuda, m_log, backcast, null);
 
@@ -173,16 +196,13 @@ namespace MyCaffe.layers.ts
             m_layerBackcast.Setup(m_colBtm, m_colTop);
             blobBtm = m_blobThetaBc;
 
-            LayerParameter forecast = new LayerParameter(LayerParameter.LayerType.LINEAR, "forecast", m_phase);
-            forecast.inner_product_param.axis = 1;
+            LayerParameter forecast = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "forecast", m_phase);
+            forecast.inner_product_param.axis = 2;
             forecast.inner_product_param.num_output = (uint)(layer_param.nhits_block_param.num_output_chunks / layer_param.nhits_block_param.downsample_size);
             m_layerForecast = Layer<T>.Create(m_cuda, m_log, forecast, null);
 
             addBtmTop(blobBtm, m_blobThetaFc);
             m_layerForecast.Setup(m_colBtm, m_colTop);
-
-            colTop[0].ReshapeLike(colBottom[0]);
-            colTop[1].Reshape(colBottom[0].num, layer_param.nhits_block_param.num_output_chunks, m_nNumCovariates, 1);
         }
 
         /// <summary>
@@ -192,10 +212,14 @@ namespace MyCaffe.layers.ts
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_nNumCovariates = colBottom[0].channels / layer_param.nhits_block_param.num_input_chunks;
+            m_nNumCovariates = colBottom[0].count(1) / layer_param.nhits_block_param.num_input_chunks;
+            if (m_nNumCovariates < 1)
+                m_log.FAIL("The number of covariates must be greater than 0.  The bottom[0] must have the shape (N, T, C, 1) where N = batch, T = time steps, C = covariates.");
 
+            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Reshape(m_colBtm, m_colTop);
+            colBottom[0].Reshape(rgShape);
 
             Blob<T> blobBtm = m_blobPool;
 
@@ -215,7 +239,7 @@ namespace MyCaffe.layers.ts
             m_layerForecast.Reshape(m_colBtm, m_colTop);
 
             colTop[0].ReshapeLike(colBottom[0]);
-            colTop[1].Reshape(colBottom[0].num, layer_param.nhits_block_param.num_output_chunks, m_nNumCovariates, 1);
+            colTop[1].Reshape(blobBtm.num, layer_param.nhits_block_param.num_output_chunks, m_nNumCovariates, 1);
         }
 
         /// <summary>
@@ -234,11 +258,10 @@ namespace MyCaffe.layers.ts
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Process the Pooling layer (this creates the frequency domain representation)
-            colBottom[0].Unsqueeze(1);
+            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Forward(m_colBtm, m_colTop);
-            colBottom[0].Squeeze(1);
-            m_blobPool.Squeeze(1);
+            colBottom[0].Reshape(rgShape);
 
             // Process the FC layers
             Blob<T> blobBtm = m_blobPool;
@@ -284,8 +307,8 @@ namespace MyCaffe.layers.ts
                 return;
 
             // Interpolate backward the backcast and forecast results from the original size
-            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, m_blobThetaBc.count(1), colTop[0].count(1), m_blobThetaBc.mutable_gpu_diff, colTop[0].gpu_data, DIR.BWD);
-            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, m_blobThetaFc.count(1), colTop[1].count(1), m_blobThetaFc.mutable_gpu_diff, colTop[1].gpu_data, DIR.BWD);
+            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, m_blobThetaBc.count(1), colTop[0].count(1), m_blobThetaBc.mutable_gpu_diff, colTop[0].gpu_diff, DIR.BWD);
+            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, m_blobThetaFc.count(1), colTop[1].count(1), m_blobThetaFc.mutable_gpu_diff, colTop[1].gpu_diff, DIR.BWD);
 
             // Process the Linear forecast layer
             addBtmTop(m_blobFc, m_blobThetaFc);
@@ -299,7 +322,6 @@ namespace MyCaffe.layers.ts
             m_cuda.add(m_blobFc.count(), m_blobFc.gpu_diff, m_colFc[m_colFc.Count - 1].gpu_diff, m_colFc[m_colFc.Count - 1].mutable_gpu_diff);
 
             // Process the FC layers
-            Blob<T> blobTop = m_colFc[m_colFc.Count - 1];
             for (int i = m_colFc.Count - 1; i >= 0; i--)
             {
                 Blob<T> blobBtm = (i == 0) ? m_blobPool : m_colFc[i - 1];
