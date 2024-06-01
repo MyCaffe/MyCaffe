@@ -102,9 +102,17 @@ namespace MyCaffe.layers.ts
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: x
+        /// Returns the min number of required bottom (input) Blobs: x
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the max number of required bottom (input) Blobs: x, y_hat (accumulated predictions)
+        /// </summary>
+        public override int MaxBottomBlobs
         {
             get { return 2; }
         }
@@ -164,7 +172,7 @@ namespace MyCaffe.layers.ts
             m_blobWork.ReshapeLike(colBottom[1]);
 
             colTop[0].ReshapeLike(colBottom[0]);
-            colTop[1].ReshapeLike(colBottom[1]);
+            colTop[1].ReshapeLike(m_colStackFc[m_colStackFc.Count-1]);
         }
 
         /// <summary>
@@ -184,7 +192,10 @@ namespace MyCaffe.layers.ts
         {
             Blob<T> blobBtm1 = colBottom[0];
 
-            colTop[1].CopyFrom(colBottom[1]);
+            if (colBottom.Count > 1)
+                colTop[1].CopyFrom(colBottom[1]);
+            else
+                colTop[1].SetData(0);
 
             for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
             {
@@ -223,10 +234,10 @@ namespace MyCaffe.layers.ts
             if (!rgbPropagateDown[0])
                 return;
 
-            colBottom[1].CopyFrom(colTop[1], true);
+            if (colBottom.Count > 1)
+                colBottom[1].CopyFrom(colTop[1], true);
 
             Blob<T> blobBtm1 = colBottom[0];
-            Blob<T> blobBtm2 = colBottom[1];
 
             for (int i = layer_param.nhits_stack_param.num_blocks - 1; i>=0; i--)
             {
@@ -238,7 +249,8 @@ namespace MyCaffe.layers.ts
                 m_rgBlockLayers[i].Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
                 // Accumulate the gradients.
-                m_cuda.add(colBottom[1].count(), colBottom[1].gpu_diff, m_blobWork.gpu_diff, colBottom[1].mutable_gpu_diff);
+                if (colBottom.Count > 1)
+                    m_cuda.add(colBottom[1].count(), colBottom[1].gpu_diff, m_blobWork.gpu_diff, colBottom[1].mutable_gpu_diff);
 
                 blobBtm1 = m_colStackRes[i];
             }
