@@ -167,10 +167,8 @@ namespace MyCaffe.layers.ts
             pool.pooling_param.Copy(layer_param.pooling_param);
             m_layerPool = Layer<T>.Create(m_cuda, m_log, pool, null);
 
-            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Setup(m_colBtm, m_colTop);
-            colBottom[0].Reshape(rgShape);
 
             Blob<T> blobBtm = m_blobPool;
 
@@ -216,10 +214,8 @@ namespace MyCaffe.layers.ts
             if (m_nNumCovariates < 1)
                 m_log.FAIL("The number of covariates must be greater than 0.  The bottom[0] must have the shape (N, T, C, 1) where N = batch, T = time steps, C = covariates.");
 
-            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Reshape(m_colBtm, m_colTop);
-            colBottom[0].Reshape(rgShape);
 
             Blob<T> blobBtm = m_blobPool;
 
@@ -239,7 +235,11 @@ namespace MyCaffe.layers.ts
             m_layerForecast.Reshape(m_colBtm, m_colTop);
 
             colTop[0].ReshapeLike(colBottom[0]);
-            colTop[1].Reshape(blobBtm.num, layer_param.nhits_block_param.num_output_chunks, m_nNumCovariates, 1);
+
+            if (layer_param.nhits_block_param.data_order == param.ts.NHitsBlockParameter.DATA_ORDER.NTC)
+                colTop[1].Reshape(blobBtm.num, layer_param.nhits_block_param.num_output_chunks, m_nNumCovariates, 1);
+            else
+                colTop[1].Reshape(blobBtm.num, m_nNumCovariates, layer_param.nhits_block_param.num_output_chunks, 1);
         }
 
         /// <summary>
@@ -258,10 +258,8 @@ namespace MyCaffe.layers.ts
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Process the Pooling layer (this creates the frequency domain representation)
-            int[] rgShape = unsqueeze(colBottom[0]);
             addBtmTop(colBottom[0], m_blobPool);
             m_layerPool.Forward(m_colBtm, m_colTop);
-            colBottom[0].Reshape(rgShape);
 
             // Process the FC layers
             Blob<T> blobBtm = m_blobPool;
@@ -283,8 +281,13 @@ namespace MyCaffe.layers.ts
             m_layerForecast.Forward(m_colBtm, m_colTop);
 
             // Interpolate the backcast and forecast results to the original size
-            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, m_blobThetaBc.count(1), colTop[0].count(1), m_blobThetaBc.gpu_data, colTop[0].mutable_gpu_data, DIR.FWD);
-            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, m_blobThetaFc.count(1), colTop[1].count(1), m_blobThetaFc.gpu_data, colTop[1].mutable_gpu_data, DIR.FWD);
+            int nCountBc = m_blobThetaBc.count(1);
+            int nCountTop0 = colTop[0].count(1);
+            int nCountFc = m_blobThetaFc.count(1);
+            int nCountTop1 = colTop[1].count(1);
+
+            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, nCountBc, nCountTop0, m_blobThetaBc.gpu_data, colTop[0].mutable_gpu_data, DIR.FWD);
+            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, nCountFc, nCountTop1, m_blobThetaFc.gpu_data, colTop[1].mutable_gpu_data, DIR.FWD);
         }
 
         /// <summary>
@@ -307,8 +310,13 @@ namespace MyCaffe.layers.ts
                 return;
 
             // Interpolate backward the backcast and forecast results from the original size
-            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, m_blobThetaBc.count(1), colTop[0].count(1), m_blobThetaBc.mutable_gpu_diff, colTop[0].gpu_diff, DIR.BWD);
-            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, m_blobThetaFc.count(1), colTop[1].count(1), m_blobThetaFc.mutable_gpu_diff, colTop[1].gpu_diff, DIR.BWD);
+            int nCountBc = m_blobThetaBc.count(1);
+            int nCountTop0 = colTop[0].count(1);
+            int nCountFc = m_blobThetaFc.count(1);
+            int nCountTop1 = colTop[1].count(1);
+
+            m_cuda.channel_interpolate_linear(colTop[0].count(), colTop[0].num, 1, nCountBc, nCountTop0, m_blobThetaBc.mutable_gpu_diff, colTop[0].gpu_diff, DIR.BWD);
+            m_cuda.channel_interpolate_linear(colTop[1].count(), colTop[1].num, 1, nCountFc, nCountTop1, m_blobThetaFc.mutable_gpu_diff, colTop[1].gpu_diff, DIR.BWD);
 
             // Process the Linear forecast layer
             addBtmTop(m_blobFc, m_blobThetaFc);

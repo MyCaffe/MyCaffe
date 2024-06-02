@@ -31,10 +31,36 @@ namespace MyCaffe.param.ts
         int m_nInputChunks = 30;
         int m_nOutputChunks = 7;
         int m_nDownSampleSize = 1;
+        DATA_ORDER m_dataOrder = DATA_ORDER.NTC;
+
+
+        /// <summary>
+        /// Specifies the data order of each time-series input data stream.
+        /// </summary>
+        public enum DATA_ORDER
+        {
+            /// <summary>
+            /// Specifies the data order as NTC (Num, Time-Step, Covariate).
+            /// </summary>
+            NTC = 0,
+            /// <summary>
+            /// Specifies the data order as NCT (Num, Covariate, Time-Step).
+            /// </summary>
+            NCT = 1
+        }
 
         /** @copydoc LayerParameterBase */
         public NHitsBlockParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the data order of each time-series input data stream.
+        /// </summary>
+        public DATA_ORDER data_order
+        {
+            get { return m_dataOrder; }
+            set { m_dataOrder = value; }
         }
 
         /// <summary>
@@ -98,6 +124,7 @@ namespace MyCaffe.param.ts
             m_nInputChunks = p.m_nInputChunks;
             m_nOutputChunks = p.m_nOutputChunks;
             m_nDownSampleSize = p.m_nDownSampleSize;
+            m_dataOrder = p.m_dataOrder;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -121,6 +148,7 @@ namespace MyCaffe.param.ts
             rgChildren.Add(new RawProto("num_input_chunks", num_input_chunks.ToString()));
             rgChildren.Add(new RawProto("num_output_chunks", num_output_chunks.ToString()));
             rgChildren.Add(new RawProto("downsample_size", downsample_size.ToString()));
+            rgChildren.Add(new RawProto("data_order", data_order.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -146,6 +174,9 @@ namespace MyCaffe.param.ts
 
             if ((strVal = rp.FindValue("downsample_size")) != null)
                 p.downsample_size = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("data_order")) != null)
+                p.data_order = (DATA_ORDER)Enum.Parse(typeof(DATA_ORDER), strVal, true);
 
             return p;
         }

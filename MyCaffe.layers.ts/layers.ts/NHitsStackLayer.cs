@@ -31,12 +31,11 @@ namespace MyCaffe.layers.ts
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         Blob<T> m_blobWork;
-        Blob<T> m_blobBtmRes = null;
-        Blob<T> m_blobBtmFc = null;
         int m_nNum;
         int m_nTimeStepsBc;
         int m_nTimeStepsFc;
         int m_nCovariates;
+        Dictionary<int, int[]> m_rgBtmShapes = new Dictionary<int, int[]>();
 
         /// <summary>
         /// The constructor.
@@ -47,17 +46,12 @@ namespace MyCaffe.layers.ts
         public NHitsStackLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
+            m_rgBtmShapes.Add(0, new int[] { 1, 1, 1, 1 });
+            m_rgBtmShapes.Add(1, new int[] { 1, 1, 1, 1 });
+
             m_type = LayerParameter.LayerType.NHITS_STACK;
             m_nTimeStepsBc = p.nhits_block_param.num_input_chunks;
             m_nTimeStepsFc = p.nhits_block_param.num_output_chunks;
-
-            if (p.nhits_stack_param.data_order != param.ts.NHitsStackParameter.DATA_ORDER.NTC || p.nhits_stack_param.treat_covariates_separately)
-            {
-                m_blobBtmRes = new Blob<T>(cuda, log);
-                m_blobBtmRes.Name = p.name + ".btm.res";
-                m_blobBtmFc = new Blob<T>(cuda, log);
-                m_blobBtmFc.Name = p.name + ".btm.fc";
-            }
 
             for (int i=0; i< p.nhits_stack_param.num_blocks; i++)
             {
@@ -78,8 +72,6 @@ namespace MyCaffe.layers.ts
         protected override void dispose()
         {
             dispose(ref m_blobWork);
-            dispose(ref m_blobBtmRes);
-            dispose(ref m_blobBtmFc);
 
             m_colStackFc.Dispose();
             m_colStackFc.Clear();
@@ -110,9 +102,6 @@ namespace MyCaffe.layers.ts
         {
             if (col.Count > 0)
                 return;
-
-            col.Add(m_blobBtmRes);
-            col.Add(m_blobBtmFc);
 
             for (int i = 0; i < m_colStackRes.Count; i++)
             {
@@ -164,7 +153,14 @@ namespace MyCaffe.layers.ts
                 double dfLogStep = (dfStart + i * dfStep);
                 double dfStep1 = Math.Pow(10, dfLogStep);
                 int nVal = (int)(nMaxV / dfStep1);
-                rgStep.Add(Math.Max(nVal, 1));
+                int nStep = Math.Max(nVal, 1);
+
+                while (nChunks % nStep != 0 && nStep > 1)
+                {
+                    nStep--;
+                }
+
+                rgStep.Add(nStep);
             }
 
             return rgStep;
@@ -185,55 +181,44 @@ namespace MyCaffe.layers.ts
             p.nhits_block_param.downsample_size = rgDownsampleSizes[p.nhits_stack_param.auto_pooling_downsample_index];
         }
 
-        private Blob<T> arrange_inputs(BlobCollection<T> col, int nIdx, Blob<T> blobBtmT, int nTimeSteps, DIR dir, bool bResize = false)
+        private void reset_btm_shape(int nIdx, Blob<T> blob)
+        {
+            blob.Reshape(m_rgBtmShapes[nIdx]);
+        }
+
+        private Blob<T> arrange_inputs(BlobCollection<T> col, int nIdx, int nTimeSteps, DIR dir, bool bResize = false, bool bSetBtmShape = false)
         {
             if (col.Count <= nIdx)
                 return null;
 
             Blob<T> blobBtm = col[nIdx];
 
-            return arrange_inputs(blobBtm, blobBtmT, nTimeSteps, dir, bResize);
+            return arrange_inputs(blobBtm, nIdx, nTimeSteps, dir, bResize, bSetBtmShape);
         }
 
-        private Blob<T> arrange_inputs(Blob<T> blobBtm, Blob<T> blobBtmT, int nTimeSteps, DIR dir, bool bResize = false)
+        private Blob<T> arrange_inputs(Blob<T> blobBtm, int nIdx, int nTimeSteps, DIR dir, bool bResize = false, bool bSetBtmShape = false)
         {
-            if (layer_param.nhits_stack_param.data_order == param.ts.NHitsStackParameter.DATA_ORDER.NTC)
+            if (dir == DIR.FWD)
+                m_log.CHECK_EQ(blobBtm.width, 1, "The width must be 1 when the data order is NTC.");
+
+            if (bSetBtmShape)
+            {
+                m_rgBtmShapes[nIdx][0] = blobBtm.num;
+                m_rgBtmShapes[nIdx][1] = blobBtm.channels;
+                m_rgBtmShapes[nIdx][2] = blobBtm.height;
+                m_rgBtmShapes[nIdx][3] = blobBtm.width;
+            }
+
+            if (layer_param.nhits_stack_param.data_order == param.ts.NHitsBlockParameter.DATA_ORDER.NTC)
             {
                 if (bResize)
                 {
                     m_nNum = blobBtm.num;
                     m_nCovariates = blobBtm.height;
                     m_log.CHECK_EQ(blobBtm.channels, nTimeSteps, "The number of channels in blob '" + blobBtm.Name + "' must be equal to the number of time steps.");
-
-                    if (dir == DIR.FWD)
-                    {
-                        if (blobBtm.num_axes == 3)
-                            blobBtm.UnsqueezeTo(4);
-                        else
-                            m_log.CHECK_EQ(blobBtm.width, 1, "The width must be 1 when the data order is NTC.");
-                    }
                 }
 
-                // Treat inputs in similar manner to the original N-HiTS model.
-                if (!layer_param.nhits_stack_param.treat_covariates_separately)
-                {
-                    return blobBtm;
-                }
-                else
-                {
-                    if (dir == DIR.FWD)
-                    {
-                        blobBtmT.Reshape(m_nNum, m_nCovariates, nTimeSteps, 1);
-                        m_cuda.transposeHW(m_nNum, 1, nTimeSteps, m_nCovariates, blobBtm.gpu_data, blobBtmT.mutable_gpu_data);
-                        return blobBtmT;
-                    }
-                    else
-                    {
-                        blobBtmT.Reshape(m_nNum, nTimeSteps, m_nCovariates, 1);
-                        m_cuda.transposeHW(m_nNum, 1, m_nCovariates, nTimeSteps, blobBtm.gpu_diff, blobBtmT.mutable_gpu_diff);
-                        return blobBtmT;
-                    }
-                }
+                blobBtm.Reshape(m_nNum, 1, blobBtm.count(1), 1);
             }
             else // NCT data ordering
             {
@@ -244,26 +229,10 @@ namespace MyCaffe.layers.ts
                     m_log.CHECK_EQ(blobBtm.height, nTimeSteps, "The number of height in blob '" + blobBtm.Name + "' must be equal to the number of time steps.");
                 }
 
-                if (!layer_param.nhits_stack_param.treat_covariates_separately)
-                {
-                    if (dir == DIR.FWD)
-                    {
-                        blobBtmT.Reshape(m_nNum, nTimeSteps, m_nCovariates, 1);
-                        m_cuda.transposeHW(m_nNum, 1, m_nCovariates, nTimeSteps, blobBtm.gpu_data, blobBtmT.mutable_gpu_data);
-                        return blobBtmT;
-                    }
-                    else
-                    {
-                        blobBtmT.Reshape(m_nNum, m_nCovariates, nTimeSteps, 1);
-                        m_cuda.transposeHW(m_nNum, 1, nTimeSteps, m_nCovariates, blobBtm.gpu_diff, blobBtmT.mutable_gpu_diff);
-                        return blobBtmT;
-                    }
-                }
-                else
-                {
-                    return blobBtm;
-                }
+                blobBtm.Reshape(m_nNum, m_nCovariates, blobBtm.count(2), 1);
             }
+
+            return blobBtm;
         }
 
         /// <summary>
@@ -273,25 +242,33 @@ namespace MyCaffe.layers.ts
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_blobBtmRes, m_nTimeStepsBc, DIR.FWD, true);
+            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_nTimeStepsBc, DIR.FWD, true, true);
 
-            for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+            try
             {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.NHITS_BLOCK, "blk" + i.ToString(), m_phase);
-                p.nhits_block_param.Copy(layer_param.nhits_block_param);
-                p.pooling_param.Copy(layer_param.pooling_param);
-                p.fc_param.Copy(layer_param.fc_param);
+                for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+                {
+                    LayerParameter p = new LayerParameter(LayerParameter.LayerType.NHITS_BLOCK, "blk" + i.ToString(), m_phase);
+                    p.nhits_block_param.Copy(layer_param.nhits_block_param);
+                    p.nhits_block_param.data_order = layer_param.nhits_stack_param.data_order;
+                    p.pooling_param.Copy(layer_param.pooling_param);
+                    p.fc_param.Copy(layer_param.fc_param);
 
-                if (layer_param.nhits_stack_param.auto_pooling_downsample_index >= 0)
-                    calculate_pooling_downsampling(layer_param, colBottom);
+                    if (layer_param.nhits_stack_param.auto_pooling_downsample_index >= 0)
+                        calculate_pooling_downsampling(layer_param, colBottom);
 
-                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-                addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(null, m_colStackFc[i], false);
-                layer.Setup(m_colBtm, m_colTop);
-                m_rgBlockLayers.Add(layer);
+                    Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+                    addBtmTop(blobBtm1, m_colStackRes[i]);
+                    addBtmTop(null, m_colStackFc[i], false);
+                    layer.Setup(m_colBtm, m_colTop);
+                    m_rgBlockLayers.Add(layer);
 
-                blobBtm1 = m_colStackRes[i];
+                    blobBtm1 = m_colStackRes[i];
+                }
+            }
+            finally
+            {
+                reset_btm_shape(0, colBottom[0]);
             }
         }
 
@@ -302,25 +279,32 @@ namespace MyCaffe.layers.ts
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_blobBtmRes, m_nTimeStepsBc, DIR.FWD, true);
+            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_nTimeStepsBc, DIR.FWD, true, true);
 
-            for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+            try
             {
-                addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(null, m_colStackFc[i], false);
-                m_rgBlockLayers[i].Reshape(m_colBtm, m_colTop);
+                for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+                {
+                    addBtmTop(blobBtm1, m_colStackRes[i]);
+                    addBtmTop(null, m_colStackFc[i], false);
+                    m_rgBlockLayers[i].Reshape(m_colBtm, m_colTop);
 
-                blobBtm1 = m_colStackRes[i];
+                    blobBtm1 = m_colStackRes[i];
+                }
+
+                m_blobWork.ReshapeLike(colBottom[1]);
+
+                colTop[0].ReshapeLike(colBottom[0]);
+
+                if (layer_param.nhits_stack_param.data_order == param.ts.NHitsBlockParameter.DATA_ORDER.NTC)
+                    colTop[1].Reshape(m_nNum, m_nTimeStepsFc, m_nCovariates, 1);
+                else
+                    colTop[1].Reshape(m_nNum, m_nCovariates, m_nTimeStepsFc, 1);
             }
-
-            m_blobWork.ReshapeLike(colBottom[1]);
-
-            colTop[0].ReshapeLike(colBottom[0]);
-
-            if (layer_param.nhits_stack_param.data_order == param.ts.NHitsStackParameter.DATA_ORDER.NTC)
-                colTop[1].Reshape(m_nNum, m_nTimeStepsFc, m_nCovariates, 1);
-            else
-                colTop[1].Reshape(m_nNum, m_nCovariates, m_nTimeStepsFc, 1);
+            finally
+            {
+                reset_btm_shape(0, colBottom[0]);
+            }
         }
 
         /// <summary>
@@ -338,25 +322,41 @@ namespace MyCaffe.layers.ts
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_blobBtmRes, m_nTimeStepsBc, DIR.FWD);
+            Blob<T> blobBtm1 = arrange_inputs(colBottom, 0, m_nTimeStepsBc, DIR.FWD);
             Blob<T> blobBtm2;
 
-            if (colBottom.Count > 1)
-                colTop[1].CopyFrom(colBottom[1]);
-            else
-                colTop[1].SetData(0);
-
-            for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+            try
             {
-                addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(null, m_colStackFc[i], false);
-                m_rgBlockLayers[i].Forward(m_colBtm, m_colTop);
+                if (colBottom.Count > 1)
+                    colTop[1].CopyFrom(colBottom[1]);
+                else
+                    colTop[1].SetData(0);
 
-                blobBtm1 = m_colStackRes[i];
-                blobBtm2 = m_colStackFc[i];
+                for (int i = 0; i < layer_param.nhits_stack_param.num_blocks; i++)
+                {
+                    addBtmTop(blobBtm1, m_colStackRes[i]);
+                    addBtmTop(null, m_colStackFc[i], false);
+                    m_rgBlockLayers[i].Forward(m_colBtm, m_colTop);
 
-                // Accumulate the prediction values.
-                m_cuda.add(colTop[1].count(), colTop[1].gpu_data, blobBtm2.gpu_data, colTop[1].mutable_gpu_data);
+                    blobBtm1 = m_colStackRes[i];
+                    blobBtm2 = m_colStackFc[i];
+
+                    // Transpose the data if needed.
+                    if (layer_param.nhits_stack_param.data_order == param.ts.NHitsBlockParameter.DATA_ORDER.NCT)
+                    {
+                        m_blobWork.ReshapeLike(colTop[1]);
+                        m_cuda.transposeHW(m_nNum, 1, m_nTimeStepsFc, m_nCovariates, blobBtm2.gpu_data, m_blobWork.mutable_gpu_data);
+                        blobBtm2 = m_blobWork;
+                    }
+
+                    // Accumulate the prediction values.
+                    m_cuda.add(colTop[1].count(), colTop[1].gpu_data, blobBtm2.gpu_data, colTop[1].mutable_gpu_data);
+                }
+            }
+            finally
+            {
+                reset_btm_shape(0, colBottom[0]);
+                colTop[0].ReshapeLike(colBottom[0]);
             }
         }
 
@@ -387,26 +387,43 @@ namespace MyCaffe.layers.ts
             if (colBottom.Count > 1)
                 colBottom[1].CopyFrom(colTop[1], true);
 
-            Blob<T> blobBtm1 = colBottom[0];
+            Blob<T> blobBtm1 = arrange_inputs(colBottom[0], 0, m_nTimeStepsBc, DIR.FWD);
+            Blob<T> blobTop = arrange_inputs(colTop[1], 1, m_nTimeStepsFc, DIR.FWD);
+            m_blobWork.ReshapeLike(blobTop);
 
-            for (int i = layer_param.nhits_stack_param.num_blocks - 1; i>=0; i--)
+            try
             {
-                // Copy the prediction gradients.
-                m_colStackFc[i].CopyFrom(colTop[1], true);
+                for (int i = layer_param.nhits_stack_param.num_blocks - 1; i >= 0; i--)
+                {
+                    // Copy the prediction gradients.
+                    m_colStackFc[i].CopyFrom(blobTop, true);
 
-                addBtmTop(blobBtm1, m_colStackRes[i]);
-                addBtmTop(m_blobWork, m_colStackFc[i], false);
-                m_rgBlockLayers[i].Backward(m_colTop, rgbPropagateDown, m_colBtm);
+                    addBtmTop(blobBtm1, m_colStackRes[i]);
+                    addBtmTop(m_blobWork, m_colStackFc[i], false);
+                    m_rgBlockLayers[i].Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-                // Accumulate the gradients.
-                if (colBottom.Count > 1)
-                    m_cuda.add(colBottom[1].count(), colBottom[1].gpu_diff, m_blobWork.gpu_diff, colBottom[1].mutable_gpu_diff);
+                    // Accumulate the gradients.
+                    if (colBottom.Count > 1)
+                    {
+                        // Transpose the data if needed.
+                        if (layer_param.nhits_stack_param.data_order == param.ts.NHitsBlockParameter.DATA_ORDER.NCT)
+                        {
+                            m_cuda.transposeHW(m_nNum, 1, m_nTimeStepsFc, m_nCovariates, m_blobWork.gpu_diff, m_blobWork.mutable_gpu_data);
+                            m_cuda.copy(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff);
+                        }
 
-                blobBtm1 = m_colStackRes[i];
+                        m_cuda.add(colBottom[1].count(), colBottom[1].gpu_diff, m_blobWork.gpu_diff, colBottom[1].mutable_gpu_diff);
+                    }
+
+                    blobBtm1 = m_colStackRes[i];
+                }
+
+                colBottom[0].CopyFrom(blobBtm1, true);
             }
-
-            Blob<T> blobBtm = arrange_inputs(blobBtm1, m_blobBtmRes, m_nTimeStepsBc, DIR.BWD);
-            colBottom[0].CopyFrom(blobBtm, true);
+            finally
+            {
+                reset_btm_shape(0, colBottom[0]);
+            }
         }
     }
 }
