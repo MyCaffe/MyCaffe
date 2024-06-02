@@ -31,10 +31,45 @@ namespace MyCaffe.param.ts
         int m_nBlockCount = 1;
         int m_nAutoPoolingDownsmapleIndex = -1;
         int m_nNumStacks = 1;
+        DATA_ORDER m_dataOrder = DATA_ORDER.NTC;
+        bool m_bTreatCovariatesSeparately = false;
+
+        /// <summary>
+        /// Specifies the data order of each time-series input data stream.
+        /// </summary>
+        public enum DATA_ORDER
+        {
+            /// <summary>
+            /// Specifies the data order as NTC (Num, Time-Step, Covariate).
+            /// </summary>
+            NTC = 0,
+            /// <summary>
+            /// Specifies the data order as NCT (Num, Covariate, Time-Step).
+            /// </summary>
+            NCT = 1
+        }
 
         /** @copydoc LayerParameterBase */
         public NHitsStackParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies whether to treat the covariates separately or grouped with the time-series data (default = false).
+        /// </summary>
+        public bool treat_covariates_separately
+        {
+            get { return m_bTreatCovariatesSeparately; }
+            set { m_bTreatCovariatesSeparately = value; }
+        }
+
+        /// <summary>
+        /// Specifies the data order of each time-series input data stream.
+        /// </summary>
+        public DATA_ORDER data_order
+        {
+            get { return m_dataOrder; }
+            set { m_dataOrder = value; }
         }
 
         /// <summary>
@@ -90,6 +125,8 @@ namespace MyCaffe.param.ts
             m_nBlockCount = p.m_nBlockCount;
             m_nAutoPoolingDownsmapleIndex = p.m_nAutoPoolingDownsmapleIndex;
             m_nNumStacks = p.m_nNumStacks;
+            m_dataOrder = p.m_dataOrder;
+            m_bTreatCovariatesSeparately = p.m_bTreatCovariatesSeparately;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -112,6 +149,8 @@ namespace MyCaffe.param.ts
             rgChildren.Add(new RawProto("num_blocks", num_blocks.ToString()));
             rgChildren.Add(new RawProto("auto_pooling_downsample_index", auto_pooling_downsample_index.ToString()));
             rgChildren.Add(new RawProto("num_stacks", num_stacks.ToString()));
+            rgChildren.Add(new RawProto("data_order", data_order.ToString()));
+            rgChildren.Add(new RawProto("treat_covariates_separately", treat_covariates_separately.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -134,6 +173,12 @@ namespace MyCaffe.param.ts
 
             if ((strVal = rp.FindValue("num_stacks")) != null)
                 p.num_stacks = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("data_order")) != null)
+                p.data_order = (DATA_ORDER)Enum.Parse(typeof(DATA_ORDER), strVal, true);
+
+            if ((strVal = rp.FindValue("treat_covariates_separately")) != null)
+                p.treat_covariates_separately = bool.Parse(strVal);
 
             return p;
         }
