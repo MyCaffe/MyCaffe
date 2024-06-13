@@ -555,6 +555,32 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueItems&apos;, &apos;EndTime&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueItems] ADD 
+        ///	    [EndTime] [datetime] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueItemsTable1 {
+            get {
+                return ResourceManager.GetString("UpdateValueItemsTable1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueItems&apos;, &apos;Steps&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueItems] ADD 
+        ///	    [Steps] [int] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueItemsTable2 {
+            get {
+                return ResourceManager.GetString("UpdateValueItemsTable2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerID&apos;) IS NULL
         ///BEGIN
         ///    ALTER TABLE [dbo].[ValueStreams] ADD 
