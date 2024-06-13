@@ -531,6 +531,13 @@ BEGIN
 	    [Steps] [int] NULL
 END</value>
   </data>
+  <data name="UpdateValueItemsTable3" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueItems', 'StartTime') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueItems] ADD 
+	    [StartTime] [datetime] NULL
+END</value>
+  </data>
   <data name="UpdateValueStreamsTable" xml:space="preserve">
     <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerID') IS NULL
 BEGIN

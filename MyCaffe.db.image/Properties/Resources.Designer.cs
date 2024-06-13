@@ -581,6 +581,19 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueItems&apos;, &apos;StartTime&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueItems] ADD 
+        ///	    [StartTime] [datetime] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueItemsTable3 {
+            get {
+                return ResourceManager.GetString("UpdateValueItemsTable3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerID&apos;) IS NULL
         ///BEGIN
         ///    ALTER TABLE [dbo].[ValueStreams] ADD 
