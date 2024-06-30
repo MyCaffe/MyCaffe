@@ -1,4 +1,6 @@
-
+# This project uses the Unscented Kalman Filter (UKF) created by Roger Labbe and available
+# at https://github.com/rlabbe/filterpy, which is distributed under the MIT License.
+# See the LICENSE file for more details at https://github.com/rlabbe/filterpy/blob/master/LICENSE
 import yfinance as yf
 import numpy as np
 from filterpy.kalman import UnscentedKalmanFilter as UKF
