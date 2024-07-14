@@ -185,6 +185,7 @@ namespace MyCaffe.basecode
         int m_nIndex = 0;
         int m_nOriginalLabel = 0;
         int m_nLabel = 0;
+        double m_dfScore = 0;
         int m_nHeight = 0;
         int m_nWidth = 0;
         int m_nChannels = 0;
@@ -1318,6 +1319,7 @@ namespace MyCaffe.basecode
         {
             m_bIsRealData = d.m_bIsRealData;
             m_nLabel = d.m_nLabel;
+            m_dfScore = d.m_dfScore;
             m_nOriginalLabel = d.m_nOriginalLabel;
             m_nChannels = d.m_nChannels;
             m_nHeight = nHeight.GetValueOrDefault(d.m_nHeight);
@@ -1602,6 +1604,15 @@ namespace MyCaffe.basecode
         public void SetLabel(int nLabel)
         {
             m_nLabel = nLabel;
+        }
+
+        /// <summary>
+        /// Set the score value for the datum.
+        /// </summary>
+        /// <param name="dfScore">Specifies the score value.</param>
+        public void SetScore(double dfScore)
+        {
+            m_dfScore = dfScore;
         }
 
         /// <summary>
@@ -2335,6 +2346,14 @@ namespace MyCaffe.basecode
         {
             get { return m_nOriginalLabel; }
             set { m_nOriginalLabel = value; }
+        }
+
+        /// <summary>
+        /// Returns the score for the data.
+        /// </summary>
+        public double Score
+        {
+            get { return m_dfScore; }
         }
 
         /// <summary>
