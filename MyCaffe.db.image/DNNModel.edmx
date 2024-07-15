@@ -165,6 +165,7 @@
           <Property Name="DebugDataFormatID" Type="tinyint" />
           <Property Name="DataCriteriaFormatID" Type="tinyint" />
           <Property Name="OriginalSourceID" Type="int" />
+          <Property Name="Score" Type="numeric" Precision="18" Scale="10" />
         </EntityType>
         <EntityType Name="SourceParameters">
           <Key>
@@ -388,6 +389,7 @@
           <Property Name="DebugDataFormatID" Type="Byte" />
           <Property Name="DataCriteriaFormatID" Type="Byte" />
           <Property Name="OriginalSourceID" Type="Int32" />
+          <Property Name="Score" Type="Decimal" Precision="18" Scale="10" />
         </EntityType>
         <EntityType Name="DatasetParameter">
           <Key>
@@ -565,6 +567,7 @@
           <EntitySetMapping Name="RawImages">
             <EntityTypeMapping TypeName="DNNModel.RawImage">
               <MappingFragment StoreEntitySet="RawImages">
+                <ScalarProperty Name="Score" ColumnName="Score" />
                 <ScalarProperty Name="OriginalSourceID" ColumnName="OriginalSourceID" />
                 <ScalarProperty Name="DataCriteriaFormatID" ColumnName="DataCriteriaFormatID" />
                 <ScalarProperty Name="DebugDataFormatID" ColumnName="DebugDataFormatID" />

@@ -185,7 +185,7 @@ namespace MyCaffe.basecode
         int m_nIndex = 0;
         int m_nOriginalLabel = 0;
         int m_nLabel = 0;
-        double m_dfScore = 0;
+        decimal? m_dfScore = null;
         int m_nHeight = 0;
         int m_nWidth = 0;
         int m_nChannels = 0;
@@ -1610,7 +1610,7 @@ namespace MyCaffe.basecode
         /// Set the score value for the datum.
         /// </summary>
         /// <param name="dfScore">Specifies the score value.</param>
-        public void SetScore(double dfScore)
+        public void SetScore(decimal dfScore)
         {
             m_dfScore = dfScore;
         }
@@ -2351,7 +2351,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns the score for the data.
         /// </summary>
-        public double Score
+        public decimal? Score
         {
             get { return m_dfScore; }
         }

@@ -2018,6 +2018,7 @@ namespace MyCaffe.db.image
             img.Active = bActive;
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
+            img.Score = d.Score;
 
             if (nOriginalSourceID.HasValue)
                 img.OriginalSourceID = nOriginalSourceID.Value;

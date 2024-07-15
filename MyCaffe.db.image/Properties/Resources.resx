@@ -517,6 +517,13 @@ BEGIN
 	    [BatchCount] [int] NULL
 END</value>
   </data>
+  <data name="UpdateRawImagesTable1" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score] [numeric](18,10) NULL
+END</value>
+  </data>
   <data name="UpdateValueItemsTable1" xml:space="preserve">
     <value>IF COL_LENGTH('dbo.ValueItems', 'EndTime') IS NULL
 BEGIN
