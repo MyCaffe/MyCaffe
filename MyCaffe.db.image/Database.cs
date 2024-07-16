@@ -1146,7 +1146,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
             }
         }
 
@@ -5835,6 +5835,7 @@ namespace MyCaffe.db.image
             item.virtualid = virtualid;
             item.index = index;
             item.label = label;
+            item.score = score;
             item.boost = boost;
             item.time = time;
             item.desc = desc;
@@ -5902,7 +5903,20 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Specifies the image label used within the lambda statement.
         /// </summary>
-        public int? label { get;  set; } 
+        public int? label { get;  set; }
+
+        /// <summary>
+        /// Specifies the image score.
+        /// </summary>
+        public decimal Score
+        {
+            get { return score.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score used within the lambda statement.
+        /// </summary>
+        public decimal? score { get; set; }
 
         /// <summary>
         /// Specifies the image boost.
