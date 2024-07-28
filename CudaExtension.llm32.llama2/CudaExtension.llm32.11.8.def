@@ -1,4 +1,4 @@
-LIBRARY	"CudaExtension.llm16.11.8.dll"
+LIBRARY	"CudaExtension.llm32.llama2.11.8.dll"
 
 STACKSIZE 8000000
 

@@ -54,7 +54,7 @@
     <CudaCompile Include="Files\primitives.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>CudaExtension.llm32.11.8</ProjectName>
+    <ProjectName>CudaExtension.llm32.llama2.11.8</ProjectName>
     <ProjectGuid>{DE3ADBA1-8B5A-4457-A140-C8E23BA99D69}</ProjectGuid>
     <RootNamespace>CudaDLL_NN</RootNamespace>
     <Keyword>Win32Proj</Keyword>
