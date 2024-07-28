@@ -39,6 +39,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <cuda_runtime.h>
+
 //=============================================================================
 //	Constants
 //=============================================================================
@@ -7948,6 +7950,7 @@ __global__ void channel_interpolate_linear_fwd_kernel(const int n, const int nN,
 template <typename T>
 __global__ void channel_interpolate_linear_bwd_kernel(const int n, const int nN, const int nC, const int nNsrc, const int nNdst, T* grad_x, const T* grad_y)
 {
+#if	__CUDA_ARCH__ >= 600
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
 	{
 		const int n_idx = i / (nC * nNdst);
@@ -7965,6 +7968,7 @@ __global__ void channel_interpolate_linear_bwd_kernel(const int n, const int nN,
 		atomicAdd(&grad_x[nXidx + src_idx_floor], (1.0f - weight) * grad_y[i]);
 		atomicAdd(&grad_x[nXidx + src_idx_ceil], weight * grad_y[i]);
 	}
+#endif
 }
 
 template <typename T>
@@ -8011,7 +8015,11 @@ long Math<T>::channel_interpolate_linear(int n, int nN, int nC, int nNsrc, int n
 			return 0;
 		}
 
+#if	__CUDA_ARCH__ >= 600
 		channel_interpolate_linear_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, nNsrc, nNdst, x, y);
+#else
+		return ERROR_CUDA_KERNEL_NOT_IMPLEMENTED;
+#endif
 	}
 
 	return cudaStreamSynchronize(0);
