@@ -24,7 +24,7 @@ namespace MyCaffe.test
     public class TestExtensionLlm
     {
         [TestMethod]
-        public void TestLoad()
+        public void TestLoad_Llama2()
         {
             ExtenionTestLlm test = new ExtenionTestLlm();
 
@@ -35,7 +35,7 @@ namespace MyCaffe.test
                     // Llama tests only support float.
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestLoad();
+                    t.TestLoad("llama2");
                 }
             }
             finally
@@ -45,7 +45,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGenerate()
+        public void TestGenerate_Llama2()
         {
             ExtenionTestLlm test = new ExtenionTestLlm();
 
@@ -56,7 +56,7 @@ namespace MyCaffe.test
                     // Llama tests only support float.
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestGenerate();
+                    t.TestGenerate("llama2");
                 }
             }
             finally
@@ -66,7 +66,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGenerateAsync()
+        public void TestGenerateAsync_Llama2()
         {
             ExtenionTestLlm test = new ExtenionTestLlm();
 
@@ -77,7 +77,7 @@ namespace MyCaffe.test
                     // Llama tests only support float.
                     if (t.DataType == DataType.DOUBLE)
                         continue;
-                    t.TestGenerateAsync();
+                    t.TestGenerateAsync("llama2");
                 }
             }
             finally
@@ -89,9 +89,9 @@ namespace MyCaffe.test
 
     interface IExtensionTestLlm : ITest
     {
-        void TestLoad();
-        void TestGenerate();
-        void TestGenerateAsync();
+        void TestLoad(string strLlamaVersion);
+        void TestGenerate(string strLlamaVersion);
+        void TestGenerateAsync(string strLlamaVersion);
     }
 
     class ExtenionTestLlm : TestBase
@@ -139,74 +139,78 @@ namespace MyCaffe.test
             }
         }
 
-        private string DllPath
+        private string GetDllPath(string strLlamaVersion)
         {
-            get
+            string strVersion = m_cuda.Path;
+            int nPos = strVersion.LastIndexOf('.');
+            if (nPos > 0)
+                strVersion = strVersion.Substring(0, nPos);
+
+            string strTarget = "CudaDnnDll.";
+            nPos = strVersion.IndexOf(strTarget);
+            if (nPos >= 0)
+                strVersion = strVersion.Substring(nPos + strTarget.Length);
+
+            string strPath1 = m_cuda.Path;
+            nPos = strPath1.LastIndexOf('\\');
+            if (nPos >= 0)
+                strPath1 = strPath1.Substring(0, nPos);
+
+            string strPath;
+
+            if (strVersion.Length > 0)
             {
-                string strVersion = m_cuda.Path;
-                int nPos = strVersion.LastIndexOf('.');
-                if (nPos > 0)
-                    strVersion = strVersion.Substring(0, nPos);
+                if (strVersion != "12.3" && strVersion.Contains("12.3"))
+                    strVersion = "12.3";
 
-                string strTarget = "CudaDnnDll.";
-                nPos = strVersion.IndexOf(strTarget);
-                if (nPos >= 0)
-                    strVersion = strVersion.Substring(nPos + strTarget.Length);
-
-                string strPath1 = m_cuda.Path;
-                nPos = strPath1.LastIndexOf('\\');
-                if (nPos >= 0)
-                    strPath1 = strPath1.Substring(0, nPos);
-
-                string strPath;
-
-                if (strVersion.Length > 0)
+                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + strVersion + ".dll";
+            }
+            else
+            {
+                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.3.dll";
+                if (!File.Exists(strPath))
                 {
-                    if (strVersion != "12.3" && strVersion.Contains("12.3"))
-                        strVersion = "12.3";
-
-                    strPath = strPath1 + "\\CudaExtension.llm16." + strVersion + ".dll";
-                }
-                else
-                {
-                    strPath = strPath1 + "\\CudaExtension.llm16.12.3.dll";
+                    strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.2.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = strPath1 + "\\CudaExtension.llm16.12.2.dll";
+                        strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.1.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = strPath1 + "\\CudaExtension.llm16.12.1.dll";
+                            strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.0.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = strPath1 + "\\CudaExtension.llm16.12.0.dll";
+                                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".11.8.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = strPath1 + "\\CudaExtension.llm16.11.8.dll";
-                                    if (!File.Exists(strPath))
-                                    {
-                                        throw new Exception("Could not find the CudaExtension.llm16.xx.dll file!");
-                                    }
+                                    throw new Exception("Could not find the CudaExtension.llm16." + strLlamaVersion + ".xx.dll file!");
                                 }
                             }
                         }
                     }
                 }
-
-                return strPath;
             }
+
+            return strPath;
         }
 
-        public void TestLoad()
+        public void TestLoad(string strLlamaVersion)
         {
             long hExtension = 0;
 
             try
             {
-                hExtension = m_cuda.CreateExtension(DllPath);
+                hExtension = m_cuda.CreateExtension(GetDllPath(strLlamaVersion));
                 m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                 string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+
+                if (strLlamaVersion == "llama2")
+                {
+                    strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                    strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+                }
+
                 string strInput = strModelFile + ";" + strTokenizerFile;
 
                 T[] rgParam = new T[3];
@@ -233,17 +237,24 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGenerate()
+        public void TestGenerate(string strLlamaVersion)
         {
             long hExtension = 0;
 
             try
             {
-                hExtension = m_cuda.CreateExtension(DllPath);
+                hExtension = m_cuda.CreateExtension(GetDllPath(strLlamaVersion));
                 m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                 string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+
+                if (strLlamaVersion == "llama2")
+                {
+                    strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                    strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+                }
+
                 string strInput = strModelFile + ";" + strTokenizerFile;
 
                 T[] rgParam = new T[3];
@@ -287,7 +298,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGenerateAsync()
+        public void TestGenerateAsync(string strLlamaVersion)
         {
             LlmInference<T> llm = null;
 
@@ -297,10 +308,17 @@ namespace MyCaffe.test
                 llm.OnStatus += Llm_OnStatus;
                 llm.OnResults += Llm_OnResults;
 
-                llm.Initialize(DllPath, 1.0f, 0.9f, 0);
+                llm.Initialize(GetDllPath(strLlamaVersion), 1.0f, 0.9f, 0);
 
                 string strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                 string strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+
+                if (strLlamaVersion == "llama2")
+                {
+                    strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
+                    strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
+                }
+
                 llm.LoadAsync(strModelFile, strTokenizerFile);
                 m_evtLoaded.WaitOne();
 
