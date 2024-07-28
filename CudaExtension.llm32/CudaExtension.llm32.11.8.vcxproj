@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="CudaExtension.llm16.cpp" />
+    <ClCompile Include="CudaExtension.llm32.cpp" />
     <ClCompile Include="Files\llama2_cpu.cpp" />
     <ClCompile Include="Files\llama2_gpu.cpp" />
     <ClCompile Include="Files\llama2_sampler.cpp" />
@@ -32,7 +32,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="CudaExtension.llm16.11.8.def" />
+    <None Include="CudaExtension.llm32.11.8.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Files\config.h" />
@@ -48,13 +48,13 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="CudaExtension.llm16.11.8.rc" />
+    <ResourceCompile Include="CudaExtension.llm32.11.8.rc" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Files\primitives.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>CudaExtension.llm16.11.8</ProjectName>
+    <ProjectName>CudaExtension.llm32.11.8</ProjectName>
     <ProjectGuid>{DE3ADBA1-8B5A-4457-A140-C8E23BA99D69}</ProjectGuid>
     <RootNamespace>CudaDLL_NN</RootNamespace>
     <Keyword>Win32Proj</Keyword>
