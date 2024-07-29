@@ -163,26 +163,26 @@ namespace MyCaffe.test
                 if (strVersion != "12.3" && strVersion.Contains("12.3"))
                     strVersion = "12.3";
 
-                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + strVersion + ".dll";
+                strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + "." + strVersion + ".dll";
             }
             else
             {
-                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.3.dll";
+                strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + ".12.3.dll";
                 if (!File.Exists(strPath))
                 {
-                    strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.2.dll";
+                    strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + ".12.2.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.1.dll";
+                        strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + ".12.1.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".12.0.dll";
+                            strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + ".12.0.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = strPath1 + "\\CudaExtension.llm16." + strLlamaVersion + ".11.8.dll";
+                                strPath = strPath1 + "\\CudaExtension.llm32." + strLlamaVersion + ".11.8.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    throw new Exception("Could not find the CudaExtension.llm16." + strLlamaVersion + ".xx.dll file!");
+                                    throw new Exception("Could not find the CudaExtension.llm32." + strLlamaVersion + ".xx.dll file!");
                                 }
                             }
                         }
