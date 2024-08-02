@@ -36,7 +36,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>mycaffe.layers.ts.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>mycaffe.layers.tx.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>MainIcon.ico</ApplicationIcon>
@@ -62,6 +62,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="mycaffe.layers.ts.pfx" />
+    <None Include="mycaffe.layers.tx.pfx" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />
