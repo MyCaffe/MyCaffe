@@ -76,7 +76,7 @@
     <Reference Include="OnnxControl, Version=1.12.3.56, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
       <HintPath>..\packages\OnnxControl.1.12.3.56\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleGraphing, Version=1.12.3.56, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
+    <Reference Include="SimpleGraphing, Version=1.12.3.56, Culture=neutral, PublicKeyToken=a6a83653ab32d73a, processorArchitecture=MSIL">
       <HintPath>..\packages\SimpleGraphingControl.1.12.3.56\lib\net40\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
