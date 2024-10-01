@@ -69,6 +69,17 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Updates the Bucket with a new minimum and maximum value.
+        /// </summary>
+        /// <param name="dfMin">Specifies the new min.</param>
+        /// <param name="dfMax">Specifies the new max.</param>
+        public void Update(double dfMin, double dfMax)
+        {
+            m_fMin = dfMin;
+            m_fMax = dfMax;
+        }
+
+        /// <summary>
         /// Returns the number of items added to the Bucket.
         /// </summary>
         public int Count
