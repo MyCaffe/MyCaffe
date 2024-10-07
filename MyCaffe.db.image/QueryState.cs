@@ -152,7 +152,11 @@ namespace MyCaffe.db.image
                     idx = GetIndex(nLabel, bBoosted);
                     if (idx == null)
                     {
-                        SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                        idx = m_master.GetIndex(nLabel, bBoosted);
+                        if (idx == null)
+                            return null;
+
+                        SetIndex(idx.Clone(), nLabel, bBoosted);
                         idx = GetIndex(nLabel, bBoosted);
                         nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
                     }
@@ -160,7 +164,14 @@ namespace MyCaffe.db.image
                     {
                         nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
                         if (idx.IsEmpty)
-                            SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                        {
+                            idx = m_master.GetIndex(nLabel, bBoosted);
+                            if (idx == null)
+                                return null;
+
+                            SetIndex(idx.Clone(), nLabel, bBoosted);
+                            nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                        }
                     }
                 }
             }
