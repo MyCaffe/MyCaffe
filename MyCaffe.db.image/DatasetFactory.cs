@@ -2070,7 +2070,8 @@ namespace MyCaffe.db.image
             sd.DataCriteriaFormat = (SimpleDatum.DATA_FORMAT)nDataCriteriaFormatId.GetValueOrDefault(0);
             sd.DebugData = rgDebugData;
             sd.DebugDataFormat = (SimpleDatum.DATA_FORMAT)nDebugDataFormatId.GetValueOrDefault(0);
-
+            if (img.Score.HasValue)
+                sd.SetScore(img.Score.Value);
             sd.LoadAnnotationDataFromDataCriteria();
 
             return sd;
