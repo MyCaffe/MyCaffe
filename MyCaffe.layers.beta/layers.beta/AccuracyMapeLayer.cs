@@ -140,7 +140,7 @@ namespace MyCaffe.layers.beta
             if (m_alg == AccuracyMapeParameter.MAPE_ALGORITHM.SMAPE)
             {
                 // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
-                m_cuda.sub(colBottom[0].count(), colBottom[1].gpu_data, colBottom[0].gpu_data, m_blobWork.mutable_gpu_data);
+                m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
                 m_cuda.abs(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
                 // D = Calculate (|y(i)| + |yhat(i)|)/2
                 m_cuda.abs(colBottom[0].count(), colBottom[0].gpu_data, m_blobWork2.mutable_gpu_data);
@@ -150,8 +150,6 @@ namespace MyCaffe.layers.beta
                 // Calculate N/D
                 m_cuda.div(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork2.gpu_data, m_blobWork.mutable_gpu_data);
                 m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
-                // Multiply x 100
-                m_cuda.mul_scalar(m_blobWork.count(), 100.0, m_blobWork.mutable_gpu_data);
                 // Sum all values
                 m_blobWork.SetDiff(0);
                 m_cuda.channel_sum(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff);
@@ -159,12 +157,12 @@ namespace MyCaffe.layers.beta
             }
             else
             {
+                // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
+                m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
                 // Divide by y(i)
                 m_cuda.div(colBottom[1].count(), m_blobWork.gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
                 // Denan, setting all nan's to 0.
                 m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
-                // Multiply x 100
-                m_cuda.mul_scalar(m_blobWork.count(), 100.0, m_blobWork.mutable_gpu_data);
                 // Sum absolute value of all values for each batch.
                 fAcc = m_cuda.asum_float(m_blobWork.count(), m_blobWork.gpu_data);
             }
