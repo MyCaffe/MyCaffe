@@ -507,14 +507,17 @@ namespace MyCaffe.layers
                 }
             }
 
-            if (m_bTranspose)
+            if (!layer_param.freeze_learning)
             {
-                m_cuda.transposeHW(1, 1, 24, 24, hWeightDiff, m_blobWork.mutable_gpu_data);
-                m_cuda.copy(m_blobWork.count(), m_blobWork.gpu_data, hWeightDiff);
-            }
+                if (m_bTranspose)
+                {
+                    m_cuda.transposeHW(1, 1, 24, 24, hWeightDiff, m_blobWork.mutable_gpu_data);
+                    m_cuda.copy(m_blobWork.count(), m_blobWork.gpu_data, hWeightDiff);
+                }
 
-            if (m_weightAdapter != null)
-                m_weightAdapter.Backward(colTop, colBottom, m_weightAdapter.Weight);
+                if (m_weightAdapter != null)
+                    m_weightAdapter.Backward(colTop, colBottom, m_weightAdapter.Weight);
+            }
         }
     }
 }
