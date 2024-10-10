@@ -42,8 +42,12 @@ namespace MyCaffe.layers.beta
 
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = layer_param.name + ".work";
-            m_blobWork2 = new Blob<T>(cuda, log);
-            m_blobWork2.Name = layer_param.name + ".work2";
+
+            if (m_alg == AccuracyMapeParameter.MAPE_ALGORITHM.SMAPE)
+            {
+                m_blobWork2 = new Blob<T>(cuda, log);
+                m_blobWork2.Name = layer_param.name + ".work2";
+            }
         }
 
         /** @copydoc Layer::dispose */
@@ -103,7 +107,8 @@ namespace MyCaffe.layers.beta
                 m_log.CHECK_EQ(m_nOuterNum * m_nInnerNum, colBottom[1].count(), "Number of labels must match number of predictions; e.g., if label axis = 1 and prediction shape is (N, C, H, W), label count (number of labels) must be N*H*W, with integer values in {0, 1, ..., C=1}.");
 
             m_blobWork.ReshapeLike(colBottom[0]);
-            m_blobWork2.ReshapeLike(colBottom[0]);
+            if (m_blobWork2 != null)
+                m_blobWork2.ReshapeLike(colBottom[0]);
 
             List<int> rgTopShape = new List<int>(); // Accuracy is a scalar; 0 axes.
             colTop[0].Reshape(rgTopShape);
