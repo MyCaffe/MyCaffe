@@ -11,7 +11,8 @@ namespace MyCaffe.layers.beta
     /// <summary>
     /// The AccuracyMapeLayer computes the regression accuracy using the MAPE formula:
     ///     @f$
-    ///         accuracy = \frac{1}{N} \sum\limits_{n=1}^N \left| \frac{p_n - t_n}{t_n} \right|
+    ///         MAPE accuracy = \frac{1}{N} \sum\limits_{n=1}^N \left| \frac{p_n - t_n}{t_n} \right| \times 100
+    ///         SMAPE accuracy = \frac{1}{N} \sum\limits_{n=1}^N \left (|frac{p_n - t_n|}{(|p_n| + |t_n|)/2} \right) \times 100
     ///     @f$
     /// </summary>
     /// <remarks>
@@ -25,6 +26,8 @@ namespace MyCaffe.layers.beta
         int m_nOuterNum;
         int m_nInnerNum;
         Blob<T> m_blobWork = null;
+        Blob<T> m_blobWork2 = null;
+        AccuracyMapeParameter.MAPE_ALGORITHM m_alg = AccuracyMapeParameter.MAPE_ALGORITHM.MAPE;
 
         /// <summary>
         /// Constructor.
@@ -35,14 +38,19 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.ACCURACY_MAPE;
+            m_alg = p.accuracy_mape_param.algorithm;
+
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = layer_param.name + ".work";
+            m_blobWork2 = new Blob<T>(cuda, log);
+            m_blobWork2.Name = layer_param.name + ".work2";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
             dispose(ref m_blobWork);
+            dispose(ref m_blobWork2);
             base.dispose();
         }
 
@@ -95,6 +103,7 @@ namespace MyCaffe.layers.beta
                 m_log.CHECK_EQ(m_nOuterNum * m_nInnerNum, colBottom[1].count(), "Number of labels must match number of predictions; e.g., if label axis = 1 and prediction shape is (N, C, H, W), label count (number of labels) must be N*H*W, with integer values in {0, 1, ..., C=1}.");
 
             m_blobWork.ReshapeLike(colBottom[0]);
+            m_blobWork2.ReshapeLike(colBottom[0]);
 
             List<int> rgTopShape = new List<int>(); // Accuracy is a scalar; 0 axes.
             colTop[0].Reshape(rgTopShape);
@@ -118,16 +127,44 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Calculate y(i) - yhat(i), where y(i) is the target and yhat(i) is the predicted.
-            m_cuda.sub(colBottom[0].count(), colBottom[1].gpu_data, colBottom[0].gpu_data, m_blobWork.mutable_gpu_data);
-            // Divide by y(i)
-            m_cuda.div(colBottom[1].count(), m_blobWork.gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
-            // Denan, setting all nan's to 0.
-            m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
+            float fAccuracy = 0;
+            float fAcc = 0;
 
-            // Sum absolute value of all values for each batch.
-            float fAcc = m_cuda.asum_float(m_blobWork.count(), m_blobWork.gpu_data);
-            float fAccuracy = fAcc / m_blobWork.count();
+            // Calculate Symetric Mean Absolute Percentage Error
+            // - SMAPE adjusts for the size of actual values and can handle zero values better.
+            if (m_alg == AccuracyMapeParameter.MAPE_ALGORITHM.SMAPE)
+            {
+                // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
+                m_cuda.sub(colBottom[0].count(), colBottom[1].gpu_data, colBottom[0].gpu_data, m_blobWork.mutable_gpu_data);
+                m_cuda.abs(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
+                // D = Calculate (|y(i)| + |yhat(i)|)/2
+                m_cuda.abs(colBottom[0].count(), colBottom[0].gpu_data, m_blobWork2.mutable_gpu_data);
+                m_cuda.abs(colBottom[1].count(), colBottom[1].gpu_data, m_blobWork2.mutable_gpu_diff);
+                m_cuda.add(m_blobWork2.count(), m_blobWork2.gpu_data, m_blobWork2.gpu_diff, m_blobWork2.mutable_gpu_data);
+                m_cuda.mul_scalar(m_blobWork2.count(), 0.5, m_blobWork2.mutable_gpu_data);
+                // Calculate N/D
+                m_cuda.div(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork2.gpu_data, m_blobWork.mutable_gpu_data);
+                m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
+                // Multiply x 100
+                m_cuda.mul_scalar(m_blobWork.count(), 100.0, m_blobWork.mutable_gpu_data);
+                // Sum all values
+                m_blobWork.SetDiff(0);
+                m_cuda.channel_sum(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff);
+                fAcc = convertF(m_blobWork.GetDiff(0));
+            }
+            else
+            {
+                // Divide by y(i)
+                m_cuda.div(colBottom[1].count(), m_blobWork.gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
+                // Denan, setting all nan's to 0.
+                m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
+                // Multiply x 100
+                m_cuda.mul_scalar(m_blobWork.count(), 100.0, m_blobWork.mutable_gpu_data);
+                // Sum absolute value of all values for each batch.
+                fAcc = m_cuda.asum_float(m_blobWork.count(), m_blobWork.gpu_data);
+            }
+
+            fAccuracy = fAcc / m_blobWork.count();
 
             colTop[0].SetData(fAccuracy, 0);
         }
