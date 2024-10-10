@@ -130,6 +130,10 @@ namespace MyCaffe.param
             /// </summary>
             ACCURACY_ENCODING,
             /// <summary>
+            /// Initializes a parameter for the AccuracyMapeLayer.
+            /// </summary>
+            ACCURACY_MAPE,
+            /// <summary>
             /// Initializes a parameter for the AnnotatedDataLayer.
             /// </summary>
             ANNOTATED_DATA,
@@ -1016,6 +1020,13 @@ namespace MyCaffe.param
                     expected_top.Add("accuracy");
                     m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
                     m_rgLayerParameters[LayerType.DECODE] = new DecodeParameter();
+                    break;
+
+                case LayerType.ACCURACY_MAPE:
+                    expected_bottom.Add("input");
+                    expected_bottom.Add("label");
+                    expected_top.Add("accuracy");
+                    m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
                     break;
 
                 case LayerType.ANNOTATED_DATA:
@@ -3346,6 +3357,9 @@ namespace MyCaffe.param
                 case LayerType.ACCURACY_ENCODING:
                     return "AccuracyEncoding";
 
+                case LayerType.ACCURACY_MAPE:
+                    return "AccuracyMape";
+
                 case LayerType.ARGMAX:
                     return "ArgMax";
 
@@ -4494,6 +4508,10 @@ namespace MyCaffe.param
                 case "accuracyencoding":
                 case "accuracy_encoding":
                     return LayerType.ACCURACY_ENCODING;
+
+                case "accuracymape":
+                case "accuracy_mape":
+                    return LayerType.ACCURACY_MAPE;
 
                 case "argmax":
                     return LayerType.ARGMAX;
