@@ -1337,8 +1337,9 @@ namespace MyCaffe.db.image
         /// Returns the image mean for a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="rgParams">Optionally, specifies image mean parameters to query (default = none)</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum GetItemMean(int nSrcId)
+        public SimpleDatum GetItemMean(int nSrcId, params string[] rgParams)
         {
             if (m_evtAbortInitialization.WaitOne(0))
                 return null;
@@ -1349,7 +1350,7 @@ namespace MyCaffe.db.image
                     return m_rgMeanCache[nSrcId];
             }
 
-            SimpleDatum sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImageMean(null, null, true);
+            SimpleDatum sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImageMean(null, null, true, rgParams);
 
             if (!m_rgMeanCache.ContainsKey(nSrcId))
                 m_rgMeanCache.Add(nSrcId, sd);

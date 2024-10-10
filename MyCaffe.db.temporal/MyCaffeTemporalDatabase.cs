@@ -937,7 +937,7 @@ namespace MyCaffe.db.temporal
             return ts.GetCount();
         }
 
-        public SimpleDatum GetItemMean(int nSrcId) /**@private */
+        public SimpleDatum GetItemMean(int nSrcId, params string[] rgParams) /**@private */
         {
             throw new NotImplementedException();
         }

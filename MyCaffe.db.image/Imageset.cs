@@ -710,8 +710,9 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="log">Specifies the Log used to output status.</param>
         /// <param name="rgAbort">Specifies a set of wait handles for aborting the operation.</param>
+        /// <param name="rgParams">Optionally, specifies image mean parameters to query (default = none)</param>
         /// <returns>The SimpleDatum with the image mean is returned.</returns>
-        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort)
+        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort, params string[] rgParams)
         {
             if (m_imgMean != null)
                 return m_imgMean;

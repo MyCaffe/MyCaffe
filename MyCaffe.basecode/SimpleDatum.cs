@@ -210,6 +210,7 @@ namespace MyCaffe.basecode
         int m_nHitCount = 0;
         ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
         AnnotationGroupCollection m_rgAnnotationGroup = null;
+        Dictionary<string, float> m_rgParam = null;
         /// <summary>
         /// Specifies a user value.
         /// </summary>
@@ -907,6 +908,35 @@ namespace MyCaffe.basecode
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Get a parameter set in the SimpleDatum.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the parameter.</param>
+        /// <returns>The value of the parameter is returned.</returns>
+        public float? GetParameter(string strName)
+        {
+            if (m_rgParam == null)
+                return null;
+
+            if (!m_rgParam.ContainsKey(strName))
+                return null;
+
+            return m_rgParam[strName];
+        }
+
+        /// <summary>
+        /// Set a parameter in the SimpleDatum.
+        /// </summary>
+        /// <param name="strName">Specifies the parameter name.</param>
+        /// <param name="fVal">Specifies the parameter value.</param>
+        public void SetParameter(string strName, float fVal)
+        {
+            if (m_rgParam == null)
+                m_rgParam = new Dictionary<string, float>();
+
+            m_rgParam.Add(strName, fVal);
         }
 
         /// <summary>

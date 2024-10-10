@@ -54,6 +54,8 @@ namespace MyCaffe.param
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
+        bool m_bUseScoreAsLabel = false;
+        bool m_bEnableScoreAsLabelNormalization = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -300,6 +302,35 @@ namespace MyCaffe.param
             set { m_nOneHotLabelEncodingSize = value; }
         }
 
+        /// <summary>
+        /// When enabled the score is used as the label, which is useful in regression models (default = false).
+        /// </summary>
+        public bool use_score_as_label
+        {
+            get { return m_bUseScoreAsLabel; }
+            set { m_bUseScoreAsLabel = value; }
+        }
+
+        /// <summary>
+        /// When enabled, score as label normalization is attempted (default = false).
+        /// </summary>
+        /// <remarks>
+        /// Score as label normalization requires that a Mean image exist in the dataset with the following
+        /// image parameters set in the database.
+        ///     'Mean' - specifies the mean score.
+        ///     'StdDev' - specifies the standard deviation of the score.
+        /// During normalization, these values are used to perform Z-score normalization where the mean score is
+        /// subtracted from each score then divided by the score standard deviation.
+        /// 
+        /// If these parameters or the mean image do not exist, a warning is produced and no normalization
+        /// takes place.
+        /// </remarks>
+        public bool enable_score_as_label_normalization
+        {
+            get { return m_bEnableScoreAsLabelNormalization; }
+            set { m_bEnableScoreAsLabelNormalization = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -337,6 +368,8 @@ namespace MyCaffe.param
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
+            m_bUseScoreAsLabel = p.m_bUseScoreAsLabel;
+            m_bEnableScoreAsLabelNormalization = p.m_bEnableScoreAsLabelNormalization;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -410,6 +443,14 @@ namespace MyCaffe.param
 
             if (one_hot_label_size > 0)
                 rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
+
+            if (use_score_as_label)
+            {
+                rgChildren.Add("use_score_as_label", use_score_as_label.ToString());
+
+                if (enable_score_as_label_normalization)
+                    rgChildren.Add("enable_score_as_label_normalization", enable_score_as_label_normalization.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -522,6 +563,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("one_hot_label_size")) != null)
                 p.one_hot_label_size = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_score_as_label")) != null)
+                p.use_score_as_label = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_score_as_label_normalization")) != null)
+                p.enable_score_as_label_normalization = bool.Parse(strVal);
 
             return p;
         }

@@ -825,11 +825,12 @@ namespace MyCaffe.basecode
         /// Returns the item (e.g., image or temporal item) mean for a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="rgParams">Optionally, specifies image mean parameters to query (default = none)</param>
         /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
         /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(DatabaseErrorData))]
-        SimpleDatum GetItemMean(int nSrcId);
+        SimpleDatum GetItemMean(int nSrcId, params string[] rgParams);
 
         /// <summary>
         /// Returns the item (e.g., image or temporal item) mean for the Training data source of a given data set.

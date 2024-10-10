@@ -60,6 +60,10 @@ namespace MyCaffe.layers
         private int m_nIteration = 0;
         private int m_nBatchCount = 0;
         private SimpleDatum[] m_rgDatum = null;
+        private bool m_bUseScoreAsLabel = false;
+        private bool m_bNormalizeScoreAsLabel = false;
+        private float? m_fScoreMean = null;
+        private float? m_fScoreStdev = null;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -109,7 +113,7 @@ namespace MyCaffe.layers
             m_db = new data.DB<T>((IXImageDatabaseBase)db);
             m_db.Open(p.data_param.source);
 
-            if (p.data_param.display_timing)
+            if (m_param.data_param.display_timing)
             {
                 m_swTimerBatch = new Stopwatch();
                 m_swTimerTransaction = new Stopwatch();
@@ -123,6 +127,28 @@ namespace MyCaffe.layers
 
             if (m_param.data_param.enable_debug_output)
                 m_blobDebug1 = new Blob<T>(cuda, log, false);
+
+            if (m_param.data_param.use_score_as_label)
+            {
+                m_bUseScoreAsLabel = true;
+                m_bNormalizeScoreAsLabel = p.data_param.enable_score_as_label_normalization;
+
+                if (m_bNormalizeScoreAsLabel)
+                {
+                    int nSrcID = db.GetSourceID(m_param.data_param.source);
+                    SimpleDatum sdMean = db.GetItemMean(nSrcID, "Mean", "StdDev");
+
+                    if (sdMean != null)
+                    {
+                        m_fScoreMean = sdMean.GetParameter("Mean");
+                        m_fScoreStdev = sdMean.GetParameter("StdDev");
+                    }
+                    else
+                    {
+                        log.WriteLine("WARNING: Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -164,6 +190,38 @@ namespace MyCaffe.layers
                 m_blobDebug1.Dispose();
                 m_blobDebug1 = null;
             }
+        }
+
+        /// <summary>
+        /// If available, returns the score mean set when 'use_score_as_label' = true.
+        /// </summary>
+        public float? score_mean
+        {
+            get { return m_fScoreMean; }
+        }
+
+        /// <summary>
+        /// If available, returns the score stdev set when 'use_score_as_label' = true.
+        /// </summary>
+        public float? score_stdev
+        {
+            get { return m_fScoreStdev; }
+        }
+
+        /// <summary>
+        /// Unnormalize the score based label - only applies when 'use_score_as_label' = true.
+        /// </summary>
+        /// <param name="fVal">Specifies the normalized score based label.</param>
+        /// <returns>The un-normalized score is returned.</returns>
+        public float UnNormalizeScoreLabel(float fVal)
+        {
+            if (!m_fScoreMean.HasValue || !m_fScoreStdev.HasValue || m_fScoreStdev.Value == 0)
+                return fVal;
+
+            fVal *= m_fScoreStdev.Value;
+            fVal += m_fScoreMean.Value;
+
+            return fVal;
         }
 
         /// <summary>
@@ -861,7 +919,24 @@ namespace MyCaffe.layers
                         }
                         else
                         {
-                            m_rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                            if (layer_param.data_param.use_score_as_label)
+                            {
+                                if (!datum.Score.HasValue)
+                                    m_log.FAIL("When 'use_score_as_label = true' each image must have a 'score' value.  An image without a 'score' was found.");
+
+                                float fVal = (float)Convert.ChangeType(datum.Score.Value, typeof(float));
+                                if (layer_param.data_param.enable_score_as_label_normalization && m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
+                                {
+                                    fVal -= m_fScoreMean.Value;
+                                    fVal /= m_fScoreStdev.Value;
+                                }
+
+                                m_rgTopLabel[i] = (T)Convert.ChangeType(fVal, typeof(T));
+                            }
+                            else
+                            {
+                                m_rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                            }
                         }
                     }
                 }

@@ -314,17 +314,46 @@ namespace MyCaffe.db.image
             return m_nLoadedCount;
         }
 
+        private void loadParameters(SimpleDatum sd, params string[] rgParams)
+        {
+            List<RawImageParameter> rg = null;
+
+            foreach (string str in rgParams)
+            {
+                float? fVal = sd.GetParameter(str);
+                if (!fVal.HasValue)
+                {
+                    if (rg == null)
+                        rg = m_factory.QueryRawImageParameters(sd.ImageID);
+
+                    List<RawImageParameter> rg1 = rg.Where(p => p.Name == str).ToList();
+
+                    if (rg1.Count > 0)
+                    {
+                        if (rg1[0].NumericValue2.HasValue)
+                            sd.SetParameter(str, (float)rg1[0].NumericValue2.Value);
+                        else if (rg1[0].NumericValue.HasValue)
+                            sd.SetParameter(str, (float)rg1[0].NumericValue.Value);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Returns the image mean for the ImageSet.
         /// </summary>
         /// <param name="log">Specifies the Log used to output status.</param>
         /// <param name="rgAbort">Specifies a set of wait handles for aborting the operation.</param>
         /// <param name="bQueryOnly">Specifies whether or not to only query for the mean and not calculate if missing.</param>
+        /// <param name="rgParams">Optionally, specifies image mean parameters to query (default = none)</param>
         /// <returns>The SimpleDatum with the image mean is returned.</returns>
-        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort, bool bQueryOnly)
+        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort, bool bQueryOnly, params string[] rgParams)
         {
             if (m_imgMean != null || bQueryOnly)
+            {
+                loadParameters(m_imgMean, rgParams);
                 return m_imgMean;
+            }
 
             int nLoadedCount = GetLoadedCount();
             int nTotalCount = GetTotalCount();
@@ -364,6 +393,7 @@ namespace MyCaffe.db.image
             }
 
             m_imgMean.SetLabel(0);
+            loadParameters(m_imgMean, rgParams);
 
             return m_imgMean;
         }
