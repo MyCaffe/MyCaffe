@@ -18,6 +18,7 @@ namespace MyCaffe.layers.beta
     /// <remarks>
     /// @see [A better measure of relative prediction accuracy for model selection and model estimation](https://arxiv.org/abs/2105.05249) by Chris Tofallis, 2021.
     /// @see [Mean Absolute Percentage Error for regression models](https://arxiv.org/abs/2105.05249) by Arnaud De Myttenaere (Viadeo, SAMM), Boris Golden (Viadeo), Bénédicte Le Grand (CRI), and Fabrice Rossi (SAMM), 2016.
+    /// @see [MAPE vs sMAPE - When to choose what?](https://medium.com/illumination/mape-vs-smape-when-to-choose-what-be51a170df16) by Thiruthuvaraj Rajasekhar, Medium, 2021.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AccuracyMapeLayer<T> : Layer<T>
