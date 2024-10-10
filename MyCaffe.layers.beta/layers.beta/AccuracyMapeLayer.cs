@@ -153,7 +153,7 @@ namespace MyCaffe.layers.beta
                 m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
                 // Sum all values
                 m_blobWork.SetDiff(0);
-                m_cuda.channel_sum(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff);
+                m_cuda.channel_sumEx(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff, false, DIR.FWD);
                 fAcc = convertF(m_blobWork.GetDiff(0));
             }
             else
