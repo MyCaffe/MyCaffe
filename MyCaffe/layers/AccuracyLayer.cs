@@ -46,13 +46,16 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.ACCURACY;
             m_blobNumsBuffer = new Blob<T>(cuda, log, false);
+            m_blobNumsBuffer.Name = layer_param.name + ".nums";
             m_blobAccData = new Blob<T>(cuda, log);
+            m_blobAccData.Name = layer_param.name + ".acc";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            m_blobNumsBuffer.Dispose();
+            dispose(ref m_blobNumsBuffer);
+            dispose(ref m_blobAccData);
             base.dispose();
         }
 
