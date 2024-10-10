@@ -2145,7 +2145,8 @@ namespace MyCaffe
                 }
                 else if (layer.type == LayerParameter.LayerType.ACCURACY ||
                     layer.type == LayerParameter.LayerType.ACCURACY_DECODE ||
-                    layer.type == LayerParameter.LayerType.ACCURACY_ENCODING)
+                    layer.type == LayerParameter.LayerType.ACCURACY_ENCODING ||
+                    layer.type == LayerParameter.LayerType.ACCURACY_MAPE)
                 {
                     accuracyParam = layer.layer_param.accuracy_param;
                 }
