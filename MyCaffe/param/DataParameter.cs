@@ -305,6 +305,7 @@ namespace MyCaffe.param
         /// <summary>
         /// When enabled the score is used as the label, which is useful in regression models (default = false).
         /// </summary>
+        [Category("Labels"), Description("When enabled the score is used as the label, which is useful in regression models (default = false).")]
         public bool use_score_as_label
         {
             get { return m_bUseScoreAsLabel; }
@@ -325,6 +326,7 @@ namespace MyCaffe.param
         /// If these parameters or the mean image do not exist, a warning is produced and no normalization
         /// takes place.
         /// </remarks>
+        [Category("Labels"), Description("When enabled, score as label normalization is attempted using z-score normalization (default = false).")]
         public bool enable_score_as_label_normalization
         {
             get { return m_bEnableScoreAsLabelNormalization; }
