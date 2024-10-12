@@ -9,7 +9,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// The AccuracyMapeLayer computes the regression accuracy using the MAPE formula:
+    /// The AccuracyRegressionLayer computes the regression accuracy using the MAPE, SMAPE or Bucketing formula:
     ///     @f$
     ///         MAPE accuracy = \frac{1}{N} \sum\limits_{n=1}^N \left| \frac{p_n - t_n}{t_n} \right| \times 100
     ///         SMAPE accuracy = \frac{1}{N} \sum\limits_{n=1}^N \left (|frac{p_n - t_n|}{(|p_n| + |t_n|)/2} \right) \times 100
@@ -21,33 +21,42 @@ namespace MyCaffe.layers.beta
     /// @see [MAPE vs sMAPE - When to choose what?](https://medium.com/illumination/mape-vs-smape-when-to-choose-what-be51a170df16) by Thiruthuvaraj Rajasekhar, Medium, 2021.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class AccuracyMapeLayer<T> : Layer<T>
+    public class AccuracyRegressionLayer<T> : Layer<T>
     {
         int m_nLabelAxis;
         int m_nOuterNum;
         int m_nInnerNum;
         Blob<T> m_blobWork = null;
         Blob<T> m_blobWork2 = null;
-        AccuracyMapeParameter.MAPE_ALGORITHM m_alg = AccuracyMapeParameter.MAPE_ALGORITHM.MAPE;
+        AccuracyRegressionParameter.ALGORITHM m_alg = AccuracyRegressionParameter.ALGORITHM.MAPE;
+        RollingBucketAccuracy m_rgBucketAccuracy = null;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="cuda">Cuda engine.</param>
         /// <param name="log">General log.</param>
-        public AccuracyMapeLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public AccuracyRegressionLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.ACCURACY_MAPE;
-            m_alg = p.accuracy_mape_param.algorithm;
+            m_type = LayerParameter.LayerType.ACCURACY_REGRESSION;
+            m_alg = p.accuracy_regression_param.algorithm;
 
-            m_blobWork = new Blob<T>(cuda, log);
-            m_blobWork.Name = layer_param.name + ".work";
-
-            if (m_alg == AccuracyMapeParameter.MAPE_ALGORITHM.SMAPE)
+            if (m_alg == AccuracyRegressionParameter.ALGORITHM.MAPE ||
+                m_alg == AccuracyRegressionParameter.ALGORITHM.SMAPE)
             {
-                m_blobWork2 = new Blob<T>(cuda, log);
-                m_blobWork2.Name = layer_param.name + ".work2";
+                m_blobWork = new Blob<T>(cuda, log);
+                m_blobWork.Name = layer_param.name + ".work";
+
+                if (m_alg == AccuracyRegressionParameter.ALGORITHM.SMAPE)
+                {
+                    m_blobWork2 = new Blob<T>(cuda, log);
+                    m_blobWork2.Name = layer_param.name + ".work2";
+                }
+            }
+            else
+            {
+                m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
             }
         }
 
@@ -107,7 +116,8 @@ namespace MyCaffe.layers.beta
             if (m_param.accuracy_param.axis != 0 || nLabelDim != 1)
                 m_log.CHECK_EQ(m_nOuterNum * m_nInnerNum, colBottom[1].count(), "Number of labels must match number of predictions; e.g., if label axis = 1 and prediction shape is (N, C, H, W), label count (number of labels) must be N*H*W, with integer values in {0, 1, ..., C=1}.");
 
-            m_blobWork.ReshapeLike(colBottom[0]);
+            if (m_blobWork != null)
+                m_blobWork.ReshapeLike(colBottom[0]);
             if (m_blobWork2 != null)
                 m_blobWork2.ReshapeLike(colBottom[0]);
 
@@ -136,9 +146,17 @@ namespace MyCaffe.layers.beta
             float fAccuracy = 0;
             float fAcc = 0;
 
+            // Calculate bucketing method of accuracy where bucket counts are used to determine overall accuracy.
+            if (m_alg == AccuracyRegressionParameter.ALGORITHM.BUCKETING)
+            {
+                float[] rgPredicted = convertF(colBottom[0].mutable_cpu_data);
+                float[] rgTarget = convertF(colBottom[1].mutable_cpu_data);
+                m_rgBucketAccuracy.Add(rgPredicted, rgTarget);
+                fAccuracy = (float)m_rgBucketAccuracy.CalculateAccuracy();
+            }
             // Calculate Symetric Mean Absolute Percentage Error
             // - SMAPE adjusts for the size of actual values and can handle zero values better.
-            if (m_alg == AccuracyMapeParameter.MAPE_ALGORITHM.SMAPE)
+            else if (m_alg == AccuracyRegressionParameter.ALGORITHM.SMAPE)
             {
                 // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
                 m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
@@ -156,6 +174,7 @@ namespace MyCaffe.layers.beta
                 m_cuda.channel_sumEx(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff, false, DIR.FWD);
                 fAcc = convertF(m_blobWork.GetDiff(0));
             }
+            // Calculate Mean Absolute Percentage Error
             else
             {
                 // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
@@ -178,6 +197,137 @@ namespace MyCaffe.layers.beta
         {
             if (rgbPropagateDown[0])
                 throw new NotImplementedException();
+        }
+    }
+
+    class RollingBucketAccuracy
+    {
+        double m_dfMin;
+        double m_dfMax;
+        int m_nCount;
+        int m_nMinIterations;
+        int m_nMaxIterations;
+        List<BucketAccuracy> m_rgItems = new List<BucketAccuracy>();
+
+        public RollingBucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations)
+        {
+            m_dfMin = dfMin;
+            m_dfMax = dfMax;
+            m_nCount = nCount;
+            m_nMinIterations = nMinIterations;
+            m_nMaxIterations = nMaxIterations;
+
+            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount, nMinIterations, nMaxIterations));
+        }
+
+        public void Add(float[] rgPred, float[] rgTgt)
+        {
+            bool? bRes = m_rgItems[0].Add(rgPred, rgTgt);
+            if (bRes.GetValueOrDefault(false))
+                m_rgItems.RemoveAt(0);
+
+            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount, m_nMinIterations, m_nMaxIterations);
+            m_rgItems.Add(b);
+
+            foreach (BucketAccuracy b1 in m_rgItems)
+            {
+                b.Add(rgPred, rgTgt);
+            }
+        }
+
+        public double CalculateAccuracy()
+        {
+            if (m_rgItems.Count == 0)
+                return 0;
+
+            return m_rgItems[0].CalculateAccuracy();
+        }
+    }
+
+    class BucketAccuracy
+    {
+        BucketCollection m_colPredPos = null;
+        BucketCollection m_colPredNeg = null;
+        BucketCollection m_colTgtPos = null;
+        BucketCollection m_colTgtNeg = null;
+        int m_nMinIterations = 0;
+        int m_nMaxIterations = 0;
+        int m_nIterations = 0;
+
+        public BucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations)
+        {
+            m_nMinIterations = nMinIterations;
+            m_nMaxIterations = nMaxIterations;
+
+            int nBucketCount = nCount;
+            if (dfMin < 0)
+            {
+                nBucketCount /= 2;
+                m_colPredNeg = new BucketCollection(dfMin, 0, nBucketCount);
+                m_colTgtNeg = new BucketCollection(dfMin, 0, nBucketCount);
+            }
+
+            m_colPredPos = new BucketCollection(0, dfMax, nBucketCount);
+            m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
+        }
+
+        public bool? Add(float[] rgPred, float[] rgTgt)
+        {
+            for (int i = 0; i < rgPred.Length; i++)
+            {
+                if (rgPred[i] < 0 && m_colPredNeg != null)
+                    m_colPredNeg.Add(rgPred[i]);
+                else
+                    m_colPredPos.Add(rgPred[i]);
+
+                if (rgTgt[i] < 0 && m_colTgtNeg != null)
+                    m_colTgtNeg.Add(rgTgt[i]);
+                else
+                    m_colTgtPos.Add(rgTgt[i]);
+            }
+
+            m_nIterations++;
+
+            if (m_nIterations < m_nMinIterations)
+                return null;
+
+            if (m_nIterations > m_nMaxIterations)
+                return true;
+
+            return false;
+        }
+
+        public double CalculateAccuracy()
+        {
+            if (m_nIterations < m_nMinIterations)
+                return 0;
+
+            int nTotalError = 0;
+            int nTotalGroundTruth = 0;
+
+            if (m_colPredNeg != null)
+            {
+                for (int i = 0; i < m_colPredNeg.Count; i++)
+                {
+                    int nGroundTruthCount = m_colTgtNeg[i].Count;
+                    int nPredictedCount = m_colPredNeg[i].Count;
+
+                    nTotalError += (Math.Abs(nPredictedCount - nGroundTruthCount));
+                    nTotalGroundTruth += nGroundTruthCount;
+                }
+            }
+
+            for (int i = 0; i < m_colPredPos.Count; i++)
+            {
+                int nGroundTruthCount = m_colTgtPos[i].Count;
+                int nPredictedCount = m_colPredPos[i].Count;
+
+                nTotalError += (Math.Abs(nPredictedCount - nGroundTruthCount));
+                nTotalGroundTruth += nGroundTruthCount;
+            }
+
+            double dfAccuracy = (1 - (nTotalError / (double)nTotalGroundTruth));
+            return dfAccuracy;
         }
     }
 }

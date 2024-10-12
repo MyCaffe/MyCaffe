@@ -132,7 +132,7 @@ namespace MyCaffe.param
             /// <summary>
             /// Initializes a parameter for the AccuracyMapeLayer.
             /// </summary>
-            ACCURACY_MAPE,
+            ACCURACY_REGRESSION,
             /// <summary>
             /// Initializes a parameter for the AnnotatedDataLayer.
             /// </summary>
@@ -1022,12 +1022,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.DECODE] = new DecodeParameter();
                     break;
 
-                case LayerType.ACCURACY_MAPE:
+                case LayerType.ACCURACY_REGRESSION:
                     expected_bottom.Add("input");
                     expected_bottom.Add("label");
                     expected_top.Add("accuracy");
                     m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
-                    m_rgLayerParameters[lt] = new AccuracyMapeParameter();
+                    m_rgLayerParameters[lt] = new AccuracyRegressionParameter();
                     break;
 
                 case LayerType.ANNOTATED_DATA:
@@ -2191,10 +2191,10 @@ namespace MyCaffe.param
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.ACCURACY_MAPE
         /// </summary>
-        public AccuracyMapeParameter accuracy_mape_param
+        public AccuracyRegressionParameter accuracy_regression_param
         {
-            get { return (AccuracyMapeParameter)m_rgLayerParameters[LayerType.ACCURACY_MAPE]; }
-            set { m_rgLayerParameters[LayerType.ACCURACY_MAPE] = value; }
+            get { return (AccuracyRegressionParameter)m_rgLayerParameters[LayerType.ACCURACY_REGRESSION]; }
+            set { m_rgLayerParameters[LayerType.ACCURACY_REGRESSION] = value; }
         }
 
         /// <summary>
@@ -3367,7 +3367,7 @@ namespace MyCaffe.param
                 case LayerType.ACCURACY_ENCODING:
                     return "AccuracyEncoding";
 
-                case LayerType.ACCURACY_MAPE:
+                case LayerType.ACCURACY_REGRESSION:
                     return "AccuracyMape";
 
                 case LayerType.ARGMAX:
@@ -3918,7 +3918,7 @@ namespace MyCaffe.param
             // Alpha layers.
 
             // Beta layers.
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(accuracy_mape_param, "accuracy_mape_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(accuracy_regression_param, "accuracy_mape_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(attention_param, "attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_octave_param, "convolution_octave_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
@@ -4270,7 +4270,7 @@ namespace MyCaffe.param
 
             // Beta layers.
             if ((rpp = rp.FindChild("accuracy_mape_param")) != null)
-                p.accuracy_mape_param = AccuracyMapeParameter.FromProto(rpp);
+                p.accuracy_regression_param = AccuracyRegressionParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("attention_param")) != null)
                 p.attention_param = AttentionParameter.FromProto(rpp);
@@ -4525,7 +4525,7 @@ namespace MyCaffe.param
 
                 case "accuracymape":
                 case "accuracy_mape":
-                    return LayerType.ACCURACY_MAPE;
+                    return LayerType.ACCURACY_REGRESSION;
 
                 case "argmax":
                     return LayerType.ARGMAX;

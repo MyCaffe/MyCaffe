@@ -205,7 +205,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="param.beta\AccuracyMapeParameter.cs" />
+    <Compile Include="param.beta\AccuracyRegressionParameter.cs" />
     <Compile Include="param.gpt\PreTokenizedDataParameter.cs" />
     <Compile Include="param.tft\SharpeLossParameter.cs" />
     <Compile Include="param.ts\NHitsStackParameter.cs" />
