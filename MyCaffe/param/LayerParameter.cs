@@ -713,6 +713,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the VariableSelectionNetworkLayer
             /// </summary>
             VARSELNET,
+            /// <summary>
+            /// Initializes a parameter for the ZScoreLayer
+            /// </summary>
+            Z_SCORE,
 #pragma warning disable 1591
             _MAX
 #pragma warning restore 1591
@@ -1996,6 +2000,12 @@ namespace MyCaffe.param
                     expected_top.Add("sprcwts");
                     m_rgLayerParameters[lt] = new VarSelNetParameter();
                     break;
+
+                case LayerType.Z_SCORE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("zscore");
+                    m_rgLayerParameters[lt] = new ZScoreParameter();
+                    break;
             }
         } 
 
@@ -3227,6 +3237,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.Z_SCORE
+        /// </summary>
+        public ZScoreParameter z_score_param
+        {
+            get { return (ZScoreParameter)m_rgLayerParameters[LayerType.Z_SCORE]; }
+            set { m_rgLayerParameters[LayerType.Z_SCORE] = value; }
+        }
+
+        /// <summary>
         /// Clears the collection of Blobs used by this layer.
         /// </summary>
         public void clear_blobs()
@@ -3797,6 +3816,9 @@ namespace MyCaffe.param
                 case LayerType.VARSELNET:
                     return "VarSelNet";
 
+                case LayerType.Z_SCORE:
+                    return "ZScore";
+
                 default:
                     return "Unknown";
             }
@@ -3938,6 +3960,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(z_score_param, "z_score_param"));
 
             // HDF5 layes.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hdf5_data_param, "hdf5_data_param"));
@@ -4322,6 +4345,10 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("unpooling_param")) != null)
                 p.unpooling_param = UnPoolingParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("z_score_param")) != null)
+                p.z_score_param = ZScoreParameter.FromProto(rpp);
+
 
             // HDF5 layers.
             if ((rpp = rp.FindChild("hdf5_data_param")) != null)
@@ -4996,6 +5023,10 @@ namespace MyCaffe.param
 
                 case "varselnet":
                     return LayerType.VARSELNET;
+
+                case "z_score":
+                case "zscore":
+                    return LayerType.Z_SCORE;
 
                 default:
                     throw new Exception("Unknown 'layertype' value: " + str);

@@ -109,6 +109,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.UNPOOLING:
                     return new UnPoolingLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.Z_SCORE:
+                    return new ZScoreLayer<double>(cuda, log, p, db);
+
                 default:
                     return null;
             }
@@ -210,6 +213,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.UNPOOLING:
                     return new UnPoolingLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.Z_SCORE:
+                    return new ZScoreLayer<float>(cuda, log, p, db);
 
                 default:
                     return null;

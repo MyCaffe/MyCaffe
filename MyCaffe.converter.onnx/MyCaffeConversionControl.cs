@@ -1367,7 +1367,8 @@ namespace MyCaffe.converter.onnx
                 type == LayerParameter.LayerType.SIGMOID ||
                 type == LayerParameter.LayerType.ELU ||
                 type == LayerParameter.LayerType.PRELU ||
-                type == LayerParameter.LayerType.DROPOUT)
+                type == LayerParameter.LayerType.DROPOUT ||
+                type == LayerParameter.LayerType.Z_SCORE)
                 return true;
 
             return false;
