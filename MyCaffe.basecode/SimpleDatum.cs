@@ -940,6 +940,31 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returnn all parameter names as a string.
+        /// </summary>
+        /// <returns>The list of all parameters is returned.</returns>
+        public string GetParameterNames()
+        {
+            if (m_rgParam == null || m_rgParam.Count == 0)
+                return "{ none }";
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{");
+            foreach (KeyValuePair<string, float> kv in m_rgParam)
+            {
+                sb.Append("'");
+                sb.Append(kv.Key);
+                sb.Append("'");
+                sb.Append(",");                
+            }
+
+            // Remove the trailing ','
+            sb.Remove(sb.Length - 1, 1);
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Get/set the hit count for the SimpleDatum.
         /// </summary>
         public int HitCount
