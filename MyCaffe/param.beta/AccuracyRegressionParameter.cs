@@ -17,8 +17,8 @@ namespace MyCaffe.param
     public class AccuracyRegressionParameter : LayerParameterBase
     {
         ALGORITHM m_alg = ALGORITHM.MAPE;
-        double m_dfBucketMin = -20.0;
-        double m_dfBucketMax = 20.0;
+        double m_dfBucketMin = -2.0;
+        double m_dfBucketMax = 2.0;
         int m_nBucketCount = 10;
 
         /// <summary>
