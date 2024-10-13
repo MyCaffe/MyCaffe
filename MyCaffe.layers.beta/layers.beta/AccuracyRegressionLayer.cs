@@ -56,6 +56,9 @@ namespace MyCaffe.layers.beta
             }
             else
             {
+                if (p.accuracy_regression_param.bucket_count <= 1)
+                    throw new Exception("The accuracy regression bucket count must be > 1.");
+
                 m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
             }
         }
