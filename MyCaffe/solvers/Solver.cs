@@ -1622,6 +1622,9 @@ namespace MyCaffe.solvers
         /// <returns>The accuracy of the test run is returned as a percentage in the range [0, 1].</returns>
         public double TestClassification(int nIterationOverride = -1, int nTestNetId = 0)
         {
+            if (m_snapshotWeightUpdatemMethod == SNAPSHOT_WEIGHT_UPDATE_METHOD.ALWAYS_ON_TEST)
+                Snapshot(true, false, true);
+
             bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0) ? true : false;
 
             if (m_bForceTest)
@@ -1635,11 +1638,18 @@ namespace MyCaffe.solvers
 
             Net<T> test_net = m_net;
 
-            if (m_rgTestNets.Count > nTestNetId)
+            if (m_param.use_training_net_for_testing)
             {
-                m_log.CHECK(m_rgTestNets[nTestNetId] != null, "The test net at " + nTestNetId.ToString() + " is null!");
-                m_rgTestNets[nTestNetId].ShareTrainedLayersWith(m_net);
-                test_net = m_rgTestNets[nTestNetId];
+                m_log.WriteLine("WARNING: using training net for testing.");
+            }
+            else
+            {
+                if (m_rgTestNets.Count > nTestNetId)
+                {
+                    m_log.CHECK(m_rgTestNets[nTestNetId] != null, "The test net at " + nTestNetId.ToString() + " is null!");
+                    m_rgTestNets[nTestNetId].ShareTrainedLayersWith(m_net);
+                    test_net = m_rgTestNets[nTestNetId];
+                }
             }
 
             List<double> test_score = new List<double>();
@@ -1743,7 +1753,11 @@ namespace MyCaffe.solvers
                     if (bDisplay)
                     {
                         m_log.Progress = dfPct;
-                        m_log.WriteLine("Testing '" + test_net.name + "' at " + dfPct.ToString("P"));
+                        string strName = test_net.name;
+                        if (m_param.use_training_net_for_testing)
+                            strName += " [training net]";
+
+                        m_log.WriteLine("Testing '" + strName + "' at " + dfPct.ToString("P"));
                     }
 
                     sw.Restart();

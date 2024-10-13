@@ -76,6 +76,7 @@ namespace MyCaffe.param
         bool m_bEnableClipGradientOutput = false;
         bool m_bVerboseOptimizationOutput = true;
         bool m_bUseTestNetForRunning = false;
+        bool m_bUseTrainingNetForTesting = false;
 
         // SSD Parameters
         EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
@@ -272,6 +273,16 @@ namespace MyCaffe.param
         {
             get { return m_bUseTestNetForRunning; }
             set { m_bUseTestNetForRunning = value; }
+        }
+
+        /// <summary>
+        /// When enabled the training net is used for testing (default = false).
+        /// </summary>
+        [Description("When enabled the training net is used for testing (default = false).")]
+        public bool use_training_net_for_testing
+        {
+            get { return m_bUseTrainingNetForTesting; }
+            set { m_bUseTrainingNetForTesting = value; }
         }
 
         /// <summary>
@@ -1113,6 +1124,7 @@ namespace MyCaffe.param
             rgChildren.Add("accuracy_average_window", accuracy_average_window.ToString());
             rgChildren.Add("verbose_optimization_output", verbose_optimization_output.ToString());
             rgChildren.Add("use_test_net_for_running", use_test_net_for_running.ToString());
+            rgChildren.Add("use_training_net_for_testing", use_training_net_for_testing.ToString());
             
             return new RawProto(strName, "", rgChildren);
         }
@@ -1370,6 +1382,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("use_test_net_for_running")) != null)
                 p.use_test_net_for_running = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_training_net_for_testing")) != null)
+                p.use_training_net_for_testing = bool.Parse(strVal);
 
             return p;
         }
