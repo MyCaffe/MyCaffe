@@ -154,40 +154,43 @@ namespace MyCaffe.layers.beta
                 m_rgBucketAccuracy.Add(rgPredicted, rgTarget);
                 fAccuracy = (float)m_rgBucketAccuracy.CalculateAccuracy();
             }
-            // Calculate Symetric Mean Absolute Percentage Error
-            // - SMAPE adjusts for the size of actual values and can handle zero values better.
-            else if (m_alg == AccuracyRegressionParameter.ALGORITHM.SMAPE)
-            {
-                // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
-                m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
-                m_cuda.abs(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
-                // D = Calculate (|y(i)| + |yhat(i)|)/2
-                m_cuda.abs(colBottom[0].count(), colBottom[0].gpu_data, m_blobWork2.mutable_gpu_data);
-                m_cuda.abs(colBottom[1].count(), colBottom[1].gpu_data, m_blobWork2.mutable_gpu_diff);
-                m_cuda.add(m_blobWork2.count(), m_blobWork2.gpu_data, m_blobWork2.gpu_diff, m_blobWork2.mutable_gpu_data);
-                m_cuda.mul_scalar(m_blobWork2.count(), 0.5, m_blobWork2.mutable_gpu_data);
-                // Calculate N/D
-                m_cuda.div(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork2.gpu_data, m_blobWork.mutable_gpu_data);
-                m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
-                // Sum all values
-                m_blobWork.SetDiff(0);
-                m_cuda.channel_sumEx(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff, false, DIR.FWD);
-                fAcc = convertF(m_blobWork.GetDiff(0));
-            }
-            // Calculate Mean Absolute Percentage Error
             else
             {
-                // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
-                m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
-                // Divide by y(i)
-                m_cuda.div(colBottom[1].count(), m_blobWork.gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
-                // Denan, setting all nan's to 0.
-                m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
-                // Sum absolute value of all values for each batch.
-                fAcc = m_cuda.asum_float(m_blobWork.count(), m_blobWork.gpu_data);
-            }
+                // Calculate Symetric Mean Absolute Percentage Error
+                // - SMAPE adjusts for the size of actual values and can handle zero values better.
+                if (m_alg == AccuracyRegressionParameter.ALGORITHM.SMAPE)
+                {
+                    // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
+                    m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
+                    m_cuda.abs(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_data);
+                    // D = Calculate (|y(i)| + |yhat(i)|)/2
+                    m_cuda.abs(colBottom[0].count(), colBottom[0].gpu_data, m_blobWork2.mutable_gpu_data);
+                    m_cuda.abs(colBottom[1].count(), colBottom[1].gpu_data, m_blobWork2.mutable_gpu_diff);
+                    m_cuda.add(m_blobWork2.count(), m_blobWork2.gpu_data, m_blobWork2.gpu_diff, m_blobWork2.mutable_gpu_data);
+                    m_cuda.mul_scalar(m_blobWork2.count(), 0.5, m_blobWork2.mutable_gpu_data);
+                    // Calculate N/D
+                    m_cuda.div(m_blobWork.count(), m_blobWork.gpu_data, m_blobWork2.gpu_data, m_blobWork.mutable_gpu_data);
+                    m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
+                    // Sum all values
+                    m_blobWork.SetDiff(0);
+                    m_cuda.channel_sumEx(m_blobWork.count(), 1, 1, m_blobWork.count(), m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff, false, DIR.FWD);
+                    fAcc = convertF(m_blobWork.GetDiff(0));
+                }
+                // Calculate Mean Absolute Percentage Error
+                else
+                {
+                    // N = Calculate |y(i) - yhat(i)|, where y(i) is the target and yhat(i) is the predicted.
+                    m_cuda.sub(colBottom[0].count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
+                    // Divide by y(i)
+                    m_cuda.div(colBottom[1].count(), m_blobWork.gpu_data, colBottom[1].gpu_data, m_blobWork.mutable_gpu_data);
+                    // Denan, setting all nan's to 0.
+                    m_cuda.denan(m_blobWork.count(), m_blobWork.mutable_gpu_data, 0);
+                    // Sum absolute value of all values for each batch.
+                    fAcc = m_cuda.asum_float(m_blobWork.count(), m_blobWork.gpu_data);
+                }
 
-            fAccuracy = fAcc / m_blobWork.count();
+                fAccuracy = fAcc / m_blobWork.count();
+            }
 
             colTop[0].SetData(fAccuracy, 0);
         }
@@ -205,6 +208,7 @@ namespace MyCaffe.layers.beta
         double m_dfMin;
         double m_dfMax;
         int m_nCount;
+        int m_nIteration = 0;
         int m_nMinIterations;
         int m_nMaxIterations;
         List<BucketAccuracy> m_rgItems = new List<BucketAccuracy>();
@@ -214,30 +218,32 @@ namespace MyCaffe.layers.beta
             m_dfMin = dfMin;
             m_dfMax = dfMax;
             m_nCount = nCount;
+            m_nIteration = 0;
             m_nMinIterations = nMinIterations;
             m_nMaxIterations = nMaxIterations;
 
-            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount, nMinIterations, nMaxIterations));
+            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount));
         }
 
         public void Add(float[] rgPred, float[] rgTgt)
         {
-            bool? bRes = m_rgItems[0].Add(rgPred, rgTgt);
-            if (bRes.GetValueOrDefault(false))
-                m_rgItems.RemoveAt(0);
+            m_nIteration++;
 
-            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount, m_nMinIterations, m_nMaxIterations);
+            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount);
             m_rgItems.Add(b);
 
             foreach (BucketAccuracy b1 in m_rgItems)
             {
-                b.Add(rgPred, rgTgt);
+                b1.Add(rgPred, rgTgt);
             }
+
+            if (m_nIteration >= m_nMaxIterations)
+                m_rgItems.RemoveAt(0);
         }
 
         public double CalculateAccuracy()
         {
-            if (m_rgItems.Count == 0)
+            if (m_rgItems.Count == 0 || m_nIteration < m_nMinIterations)
                 return 0;
 
             return m_rgItems[0].CalculateAccuracy();
@@ -250,15 +256,9 @@ namespace MyCaffe.layers.beta
         BucketCollection m_colPredNeg = null;
         BucketCollection m_colTgtPos = null;
         BucketCollection m_colTgtNeg = null;
-        int m_nMinIterations = 0;
-        int m_nMaxIterations = 0;
-        int m_nIterations = 0;
 
-        public BucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations)
+        public BucketAccuracy(double dfMin, double dfMax, int nCount)
         {
-            m_nMinIterations = nMinIterations;
-            m_nMaxIterations = nMaxIterations;
-
             int nBucketCount = nCount;
             if (dfMin < 0)
             {
@@ -271,7 +271,7 @@ namespace MyCaffe.layers.beta
             m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
         }
 
-        public bool? Add(float[] rgPred, float[] rgTgt)
+        public void Add(float[] rgPred, float[] rgTgt)
         {
             for (int i = 0; i < rgPred.Length; i++)
             {
@@ -285,23 +285,10 @@ namespace MyCaffe.layers.beta
                 else
                     m_colTgtPos.Add(rgTgt[i]);
             }
-
-            m_nIterations++;
-
-            if (m_nIterations < m_nMinIterations)
-                return null;
-
-            if (m_nIterations > m_nMaxIterations)
-                return true;
-
-            return false;
         }
 
         public double CalculateAccuracy()
         {
-            if (m_nIterations < m_nMinIterations)
-                return 0;
-
             int nTotalError = 0;
             int nTotalGroundTruth = 0;
 
