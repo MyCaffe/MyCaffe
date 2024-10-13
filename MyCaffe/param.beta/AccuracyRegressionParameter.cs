@@ -58,6 +58,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the minimum value of the bucket range used with BUCKETING.
         /// </summary>
+        [Description("Specifies the minimum value of the bucket range used with BUCKETING.")]
         public double bucket_min
         {
             get { return m_dfBucketMin; }
@@ -67,6 +68,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the maximum value of the bucket range used with BUCKETING.
         /// </summary>
+        [Description("Specifies the maximum value of the bucket range used with BUCKETING.")]
         public double bucket_max
         {
             get { return m_dfBucketMax; }
@@ -76,6 +78,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the number of buckets to use with BUCKETING.
         /// </summary>
+        [Description("Specifies the number of buckets to use with BUCKETING (bucket count must be 2 or greater).")]
         public int bucket_count
         {
             get { return m_nBucketCount; }
