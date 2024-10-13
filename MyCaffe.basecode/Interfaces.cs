@@ -194,7 +194,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Update the snapshot weights when the accuracy increases or the error decreases.
         /// </summary>
-        FAVOR_BOTH
+        FAVOR_BOTH,
+        /// <summary>
+        /// Update the snapshow on each test cycle regardless of the accuracy or error change. 
+        /// </summary>
+        ALWAYS_ON_TEST
     }
 
     /// <summary>
