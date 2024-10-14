@@ -21,7 +21,7 @@ namespace MyCaffe.layers.beta
     /// @see [MAPE vs sMAPE - When to choose what?](https://medium.com/illumination/mape-vs-smape-when-to-choose-what-be51a170df16) by Thiruthuvaraj Rajasekhar, Medium, 2021.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class AccuracyRegressionLayer<T> : Layer<T>
+    public class AccuracyRegressionLayer<T> : Layer<T>, IXAccuracyTest
     {
         int m_nLabelAxis;
         int m_nOuterNum;
@@ -30,6 +30,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobWork2 = null;
         AccuracyRegressionParameter.ALGORITHM m_alg = AccuracyRegressionParameter.ALGORITHM.MAPE;
         RollingBucketAccuracy m_rgBucketAccuracy = null;
+        BucketAccuracy m_testingAccuracy = null;
 
         /// <summary>
         /// Constructor.
@@ -60,6 +61,7 @@ namespace MyCaffe.layers.beta
                     throw new Exception("The accuracy regression bucket count must be > 1.");
 
                 m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
+                m_testingAccuracy = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
             }
         }
 
@@ -69,6 +71,41 @@ namespace MyCaffe.layers.beta
             dispose(ref m_blobWork);
             dispose(ref m_blobWork2);
             base.dispose();
+        }
+
+        /// <summary>
+        /// Reset the testing run.
+        /// </summary>
+        /// <exception cref="Exception">Exceptions are thrown when not using the BUCKETING algorithm.</exception>
+        public void ResetTesting()
+        {
+            if (layer_param.accuracy_regression_param.algorithm != AccuracyRegressionParameter.ALGORITHM.BUCKETING)
+                throw new Exception("The 'ResetTesting' is only supported when using the 'BUCKETING' algorithm.");
+
+            m_testingAccuracy = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+        }
+
+        /// <summary>
+        /// Add new values to the testing accuracy buckets.
+        /// </summary>
+        /// <param name="fPredicted">Specifies the predicted value.</param>
+        /// <param name="fGroundTruth">Specifies the ground truth target value.</param>
+        public void AddTesting(float fPredicted, float fGroundTruth)
+        {
+            if (m_testingAccuracy != null)
+                m_testingAccuracy.Add(new float[] { fPredicted }, new float[] { fGroundTruth });
+        }
+
+        /// <summary>
+        /// Calculate the accuracy using the testing accuracy bucket collection.
+        /// </summary>
+        /// <returns>The accuracy value is returned.</returns>
+        public double CalculateTestingAccuracy()
+        {
+            if (m_testingAccuracy == null)
+                return 0;
+
+            return m_testingAccuracy.CalculateAccuracy();
         }
 
         /// <summary>
@@ -253,7 +290,7 @@ namespace MyCaffe.layers.beta
         }
     }
 
-    class BucketAccuracy
+    public class BucketAccuracy
     {
         BucketCollection m_colPredPos = null;
         BucketCollection m_colPredNeg = null;
@@ -292,9 +329,10 @@ namespace MyCaffe.layers.beta
 
         public double CalculateAccuracy()
         {
-            int nTotalError = 0;
-            int nTotalGroundTruth = 0;
+            int nTotalCorrect = 0;
+            int nTotalPredictions = 0;
 
+            // Calculate for negative predictions
             if (m_colPredNeg != null)
             {
                 for (int i = 0; i < m_colPredNeg.Count; i++)
@@ -302,22 +340,26 @@ namespace MyCaffe.layers.beta
                     int nGroundTruthCount = m_colTgtNeg[i].Count;
                     int nPredictedCount = m_colPredNeg[i].Count;
 
-                    nTotalError += (Math.Abs(nPredictedCount - nGroundTruthCount));
-                    nTotalGroundTruth += nGroundTruthCount;
+                    // Assuming correct predictions are when counts match
+                    nTotalCorrect += Math.Min(nGroundTruthCount, nPredictedCount);
+                    nTotalPredictions += nGroundTruthCount;
                 }
             }
 
+            // Calculate for positive predictions
             for (int i = 0; i < m_colPredPos.Count; i++)
             {
                 int nGroundTruthCount = m_colTgtPos[i].Count;
                 int nPredictedCount = m_colPredPos[i].Count;
 
-                nTotalError += (Math.Abs(nPredictedCount - nGroundTruthCount));
-                nTotalGroundTruth += nGroundTruthCount;
+                // Assuming correct predictions are when counts match
+                nTotalCorrect += Math.Min(nGroundTruthCount, nPredictedCount);
+                nTotalPredictions += nGroundTruthCount;
             }
 
-            double dfAccuracy = (1 - (nTotalError / (double)nTotalGroundTruth));
-            return dfAccuracy;
+            // Calculate accuracy as a percentage
+            double accuracy = nTotalPredictions > 0 ? (nTotalCorrect / (double)nTotalPredictions) : 0;
+            return accuracy;
         }
     }
 }

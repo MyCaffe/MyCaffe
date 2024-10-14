@@ -1583,6 +1583,28 @@ namespace MyCaffe.basecode
         #endregion
     }
 
+    /// <summary>
+    /// Specifies the accuracy test interface implemented by some of the accuracy layers.
+    /// </summary>
+    public interface IXAccuracyTest
+    {
+        /// <summary>
+        /// Reset the testing accuracy - must be called at least once.
+        /// </summary>
+        void ResetTesting();
+        /// <summary>
+        /// Add the testing predicted and ground truth results.
+        /// </summary>
+        /// <param name="fPredicted">Specifies the predicted value.</param>
+        /// <param name="fGroundTruth">Specifies the ground truth value.</param>
+        void AddTesting(float fPredicted, float fGroundTruth);
+        /// <summary>
+        /// Calculate and return the accuracy.
+        /// </summary>
+        /// <returns>The accuracy value is returned as a percentage.</returns>
+        double CalculateTestingAccuracy();
+    }
+
 #pragma warning disable 1591
 
     [DataContract]

@@ -2136,6 +2136,7 @@ namespace MyCaffe
                 net = m_solver.TrainingNet;
 
             AccuracyParameter accuracyParam = null;
+            Layer<T> layerAccuracy = null;
             foreach (Layer<T> layer in net.layers)
             {
                 if (layer.type == LayerParameter.LayerType.LABELMAPPING)
@@ -2149,6 +2150,7 @@ namespace MyCaffe
                     layer.type == LayerParameter.LayerType.ACCURACY_REGRESSION)
                 {
                     accuracyParam = layer.layer_param.accuracy_param;
+                    layerAccuracy = layer;
                 }
             }
 
@@ -2174,6 +2176,7 @@ namespace MyCaffe
             int nImgCount = nCount;
 
             Blob<T> blobData = null;
+            IXAccuracyTest iAccuracyTest = layerAccuracy as IXAccuracyTest;
 
             try
             {
@@ -2190,7 +2193,6 @@ namespace MyCaffe
                         m_log.WriteLine("Test Many aborted!");
                         return null;
                     }
-
 
                     sd = (rgImg != null) ? rgImg[i] : m_db.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
 
@@ -2275,53 +2277,66 @@ namespace MyCaffe
                     }
                     else
                     {
-                        int nDetectedLabel = rgResults.DetectedLabel;
-                        int nExpectedLabel = sd.Label;
-
-                        if (!dfThreshold.HasValue || rgResults.DetectedLabelOutput >= dfThreshold.Value)
+                        if (layerAccuracy != null && layerAccuracy.layer_param.type == LayerParameter.LayerType.ACCURACY_REGRESSION)
                         {
-                            if (rgResults.ResultsOriginal.Count % 2 != 0)
-                                nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
+                            if (iAccuracyTest == null)
+                                throw new Exception("All ACCURACY_REGRESSION layers should implement the IXAccuracyTest interface.");
 
+                            if (i == 0)
+                                iAccuracyTest.ResetTesting();
 
-                            if (labelMapping != null)
-                            {
-                                if (m_dataTransformer.param.label_mapping.Active)
-                                    m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
-
-                                nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
-                            }
-
-                            if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                                rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                            if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                                rgLabelTotals.Add(nExpectedLabel, 1);
-                            else
-                                rgLabelTotals[nExpectedLabel]++;
-
-                            if (nExpectedLabel == nDetectedLabel)
-                            {
-                                nCorrectCount++;
-                                rgCorrectCounts[nExpectedLabel]++;
-                            }
-
-                            if (!rgDetectedCounts.ContainsKey(nExpectedLabel))
-                                rgDetectedCounts.Add(nExpectedLabel, new Dictionary<int, int>());
-
-                            if (!rgDetectedCounts[nExpectedLabel].ContainsKey(nDetectedLabel))
-                                rgDetectedCounts[nExpectedLabel].Add(nDetectedLabel, 0);
-
-                            rgDetectedCounts[nExpectedLabel][nDetectedLabel]++;
-
-                            nTotalCount++;
+                            iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, (float)sd.Score.Value);
                         }
                         else
                         {
-                            if (!rgMissedThreshold.ContainsKey(nExpectedLabel))
-                                rgMissedThreshold.Add(nExpectedLabel, 0);
+                            int nDetectedLabel = rgResults.DetectedLabel;
+                            int nExpectedLabel = sd.Label;
 
-                            rgMissedThreshold[nExpectedLabel]++;
+                            if (!dfThreshold.HasValue || rgResults.DetectedLabelOutput >= dfThreshold.Value)
+                            {
+                                if (rgResults.ResultsOriginal.Count % 2 != 0)
+                                    nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
+
+
+                                if (labelMapping != null)
+                                {
+                                    if (m_dataTransformer.param.label_mapping.Active)
+                                        m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+
+                                    nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                                }
+
+                                if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                                    rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                                if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                                    rgLabelTotals.Add(nExpectedLabel, 1);
+                                else
+                                    rgLabelTotals[nExpectedLabel]++;
+
+                                if (nExpectedLabel == nDetectedLabel)
+                                {
+                                    nCorrectCount++;
+                                    rgCorrectCounts[nExpectedLabel]++;
+                                }
+
+                                if (!rgDetectedCounts.ContainsKey(nExpectedLabel))
+                                    rgDetectedCounts.Add(nExpectedLabel, new Dictionary<int, int>());
+
+                                if (!rgDetectedCounts[nExpectedLabel].ContainsKey(nDetectedLabel))
+                                    rgDetectedCounts[nExpectedLabel].Add(nDetectedLabel, 0);
+
+                                rgDetectedCounts[nExpectedLabel][nDetectedLabel]++;
+
+                                nTotalCount++;
+                            }
+                            else
+                            {
+                                if (!rgMissedThreshold.ContainsKey(nExpectedLabel))
+                                    rgMissedThreshold.Add(nExpectedLabel, 0);
+
+                                rgMissedThreshold[nExpectedLabel]++;
+                            }
                         }
                     }
 
@@ -2354,6 +2369,12 @@ namespace MyCaffe
             }
 
             double dfCorrectPct = (nTotalCount == 0) ? 0 : ((double)nCorrectCount / (double)nTotalCount);
+
+            if (iAccuracyTest != null)
+            {
+                dfCorrectPct = iAccuracyTest.CalculateTestingAccuracy();
+                nCorrectCount = (int)(nTotalCount * dfCorrectPct);
+            }
 
             m_log.WriteLine("Test Many Completed.");
             m_log.WriteLine(" " + dfCorrectPct.ToString("P") + " correct detections.");
