@@ -666,7 +666,19 @@ namespace MyCaffe.db.image
 
             lock (m_syncObj)
             {
-                return m_rgImages.Where(p => p != null && rgIdx.Contains(p.Index)).ToList();
+                List<SimpleDatum> rg = m_rgImages.Where(p => p != null && rgIdx.Contains(p.Index)).ToList();
+                if (rg.Count < nQueryCount)
+                {
+                    for (int i = 0; i < rgIdx.Count; i++)
+                    {
+                        int nIdx = rgIdx[i];
+                        if (m_rgImages[nIdx] == null)
+                            m_rgImages[nIdx] = directLoadImage(nIdx);
+                        rg.Add(m_rgImages[nIdx]);  
+                    }
+                }
+
+                return rg;
             }
         }
 
