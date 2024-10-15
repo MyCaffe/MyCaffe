@@ -1019,10 +1019,10 @@ namespace MyCaffe.db.image
         /// <param name="bActivateBeforeDate">Specifies to change the activation of all images before the date.</param>
         /// <param name="bActivateAfterDate">Specifies to change the activation of all images after the date.</param>
         /// <param name="dt">Specifies the activation date.</param>
-        /// <returns></returns>
-        public void ActivateAllRawImagesByDate(bool bActive, bool bActivateBeforeDate, bool bActivateAfterDate, DateTime dt)
+        /// <param name="rgSrcId">Specifies the source ID's.</param>
+        public void ActivateAllRawImagesByDate(bool bActive, bool bActivateBeforeDate, bool bActivateAfterDate, DateTime dt, params int[] rgSrcId)
         {
-            m_db.ActivateAllRawImagesByDate(bActive, bActivateBeforeDate, bActivateAfterDate, dt);
+            m_db.ActivateAllRawImagesByDate(bActive, bActivateBeforeDate, bActivateAfterDate, dt, rgSrcId);
         }
 
         /// <summary>
