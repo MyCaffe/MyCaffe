@@ -95,8 +95,11 @@ namespace MyCaffe.layers.beta
             if (colTop[0] != colBottom[0])
                 colTop[0].CopyFrom(colBottom[0], false, true);
 
-            m_cuda.add_scalar(colTop[0].count(), -m_fMean, colTop[0].mutable_gpu_data);
-            m_cuda.mul_scalar(colTop[0].count(), 1.0f / m_fStdev, colTop[0].mutable_gpu_data);
+            if (m_param.z_score_param.enabled)
+            {
+                m_cuda.add_scalar(colTop[0].count(), -m_fMean, colTop[0].mutable_gpu_data);
+                m_cuda.mul_scalar(colTop[0].count(), 1.0f / m_fStdev, colTop[0].mutable_gpu_data);
+            }
         }
 
         /// <summary>
@@ -123,7 +126,10 @@ namespace MyCaffe.layers.beta
             if (colTop[0] != colBottom[0])
                 colBottom[0].CopyFrom(colTop[0], true, true);
 
-            m_cuda.mul_scalar(colBottom[0].count(), m_fStdev, colBottom[0].mutable_gpu_diff);
+            if (m_param.z_score_param.enabled)
+            {
+                m_cuda.mul_scalar(colBottom[0].count(), m_fStdev, colBottom[0].mutable_gpu_diff);
+            }
         }
     }
 }

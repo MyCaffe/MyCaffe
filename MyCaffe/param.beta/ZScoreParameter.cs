@@ -17,6 +17,7 @@ namespace MyCaffe.param.beta
         string m_strSource = "Data";
         string m_strMeanParam = "Mean";
         string m_strStdParam = "Stdev";
+        bool m_bEnabled = true;
 
         /** @copydoc LayerParameterBase */
         public ZScoreParameter()
@@ -41,6 +42,16 @@ namespace MyCaffe.param.beta
         public bool useCudnn()
         {
             return false;
+        }
+
+        /// <summary>
+        /// Specifies whether or not the z-score normalization is enabled.
+        /// </summary>
+        [Description("Specifies whether or not the z-score normalization is enabled.")]
+        public bool enabled
+        {
+            get { return m_bEnabled; }
+            set { m_bEnabled = value; }
         }
 
         /// <summary>
@@ -94,6 +105,7 @@ namespace MyCaffe.param.beta
                 m_strSource = p.m_strSource;
                 m_strMeanParam = p.m_strMeanParam;
                 m_strStdParam = p.m_strStdParam;
+                m_bEnabled = p.m_bEnabled;
             }
         }
 
@@ -110,6 +122,7 @@ namespace MyCaffe.param.beta
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("enabled", enabled.ToString());
             rgChildren.Add("source", source);
             rgChildren.Add("mean_param", mean_param);
             rgChildren.Add("stdev_param", stdev_param);
@@ -126,6 +139,9 @@ namespace MyCaffe.param.beta
         {
             string strVal;
             ZScoreParameter p = new ZScoreParameter();
+
+            if ((strVal = rp.FindValue("enabled")) != null)
+                p.enabled = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("source")) != null)
                 p.source = strVal;
