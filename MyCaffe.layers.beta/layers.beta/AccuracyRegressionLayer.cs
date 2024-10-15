@@ -64,9 +64,13 @@ namespace MyCaffe.layers.beta
 
                 m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
                 m_testingAccuracy = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
-                LayerParameter pzs = new LayerParameter(LayerParameter.LayerType.Z_SCORE);
-                pzs.z_score_param = p.z_score_param;
-                m_zscore = Layer<T>.Create(cuda, log, pzs, null, db) as ZScoreLayer<T>;
+
+                if (p.z_score_param != null && p.z_score_param.enabled)
+                {
+                    LayerParameter pzs = new LayerParameter(LayerParameter.LayerType.Z_SCORE);
+                    pzs.z_score_param = p.z_score_param;
+                    m_zscore = Layer<T>.Create(cuda, log, pzs, null, db) as ZScoreLayer<T>;
+                }
             }
         }
 
