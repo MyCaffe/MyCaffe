@@ -3117,6 +3117,39 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Activate all raw images based on the image dates.
+        /// </summary>
+        /// <param name="bActive">Specifies to activate (true) or deactivate (false) the images.</param>
+        /// <param name="bActivateBeforeDate">Specifies to change the activation of all images before the date.</param>
+        /// <param name="bActivateAfterDate">Specifies to change the activation of all images after the date.</param>
+        /// <param name="dt">Specifies the activation date.</param>
+        /// <returns></returns>
+        public void ActivateAllRawImagesByDate(bool bActive, bool bActivateBeforeDate, bool bActivateAfterDate, DateTime dt)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strActive = (bActive) ? "1" : "0";
+                string strCmd = "UPDATE RawImages SET [Active] = " + strActive + "  WHERE (";
+
+                if (bActivateBeforeDate)
+                    strCmd += "TimeStamp < '" + dt.ToString() + "'";
+
+                if (bActivateAfterDate)
+                {
+                    if (bActivateBeforeDate)
+                        strCmd += " OR ";
+
+                    strCmd += "TimeStamp > '" + dt.ToString() + "'";
+                }
+
+                strCmd += ")";
+
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+
+        /// <summary>
         /// Update the annotations of a given raw image.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>

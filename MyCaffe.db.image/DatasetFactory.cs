@@ -1013,6 +1013,19 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Activate all raw images based on the image dates.
+        /// </summary>
+        /// <param name="bActive">Specifies to activate (true) or deactivate (false) the images.</param>
+        /// <param name="bActivateBeforeDate">Specifies to change the activation of all images before the date.</param>
+        /// <param name="bActivateAfterDate">Specifies to change the activation of all images after the date.</param>
+        /// <param name="dt">Specifies the activation date.</param>
+        /// <returns></returns>
+        public void ActivateAllRawImagesByDate(bool bActive, bool bActivateBeforeDate, bool bActivateAfterDate, DateTime dt)
+        {
+            m_db.ActivateAllRawImagesByDate(bActive, bActivateBeforeDate, bActivateAfterDate, dt);
+        }
+
+        /// <summary>
         /// The FixupRawImageCopy function is used to fix errors in the copy source ID of a copied
         /// raw image.  For original images, this function does nothing.
         /// </summary>
