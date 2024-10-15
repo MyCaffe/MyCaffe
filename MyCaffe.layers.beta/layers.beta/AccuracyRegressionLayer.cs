@@ -31,13 +31,15 @@ namespace MyCaffe.layers.beta
         AccuracyRegressionParameter.ALGORITHM m_alg = AccuracyRegressionParameter.ALGORITHM.MAPE;
         RollingBucketAccuracy m_rgBucketAccuracy = null;
         BucketAccuracy m_testingAccuracy = null;
+        ZScoreLayer<T> m_zscore = null;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="cuda">Cuda engine.</param>
         /// <param name="log">General log.</param>
-        public AccuracyRegressionLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        /// <param name="db">Specifies the database.</param>
+        public AccuracyRegressionLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db)
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.ACCURACY_REGRESSION;
@@ -62,6 +64,9 @@ namespace MyCaffe.layers.beta
 
                 m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
                 m_testingAccuracy = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
+                LayerParameter pzs = new LayerParameter(LayerParameter.LayerType.Z_SCORE);
+                pzs.z_score_param = p.z_score_param;
+                m_zscore = Layer<T>.Create(cuda, log, pzs, null, db) as ZScoreLayer<T>;
             }
         }
 
@@ -70,6 +75,13 @@ namespace MyCaffe.layers.beta
         {
             dispose(ref m_blobWork);
             dispose(ref m_blobWork2);
+
+            if (m_zscore != null)
+            {
+                m_zscore.Dispose();
+                m_zscore = null;
+            }
+
             base.dispose();
         }
 
@@ -93,7 +105,12 @@ namespace MyCaffe.layers.beta
         public void AddTesting(float fPredicted, float fGroundTruth)
         {
             if (m_testingAccuracy != null)
+            {
+                if (m_zscore != null)
+                    fGroundTruth = m_zscore.Normalize(fGroundTruth);
+
                 m_testingAccuracy.Add(new float[] { fPredicted }, new float[] { fGroundTruth });
+            }
         }
 
         /// <summary>

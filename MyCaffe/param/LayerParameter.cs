@@ -1032,6 +1032,7 @@ namespace MyCaffe.param
                     expected_top.Add("accuracy");
                     m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
                     m_rgLayerParameters[lt] = new AccuracyRegressionParameter();
+                    m_rgLayerParameters[LayerType.Z_SCORE] = new ZScoreParameter();
                     break;
 
                 case LayerType.ANNOTATED_DATA:

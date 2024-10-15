@@ -32,7 +32,7 @@ namespace MyCaffe.layers.beta
                     return new AccuracyEncodingLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.ACCURACY_REGRESSION:
-                    return new AccuracyRegressionLayer<double>(cuda, log, p);
+                    return new AccuracyRegressionLayer<double>(cuda, log, p, db);
 
                 case LayerParameter.LayerType.ATTENTION:
                     return new AttentionLayer<double>(cuda, log, p);
@@ -137,7 +137,7 @@ namespace MyCaffe.layers.beta
                     return new AccuracyEncodingLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.ACCURACY_REGRESSION:
-                    return new AccuracyRegressionLayer<float>(cuda, log, p);
+                    return new AccuracyRegressionLayer<float>(cuda, log, p, db);
 
                 case LayerParameter.LayerType.ATTENTION:
                     return new AttentionLayer<float>(cuda, log, p);

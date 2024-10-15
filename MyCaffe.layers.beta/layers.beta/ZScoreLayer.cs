@@ -58,6 +58,26 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
+        /// Z-score normalize the input value.
+        /// </summary>
+        /// <param name="fVal">Specifies the un-normalized value.</param>
+        /// <returns>The normalized value is returned.</returns>
+        public float Normalize(float fVal)
+        {
+            return (fVal - m_fMean) / m_fStdev;
+        }
+
+        /// <summary>
+        /// UnNormalize a normalized input value.
+        /// </summary>
+        /// <param name="fVal">Specifies the normalized value.</param>
+        /// <returns>The un-normalized value is returned.</returns>
+        public float UnNormalize(float fVal)
+        {
+            return (fVal * m_fStdev) + m_fMean;
+        }
+
+        /// <summary>
         /// Forward computation
         /// </summary>
         /// <param name="colBottom">inpub Blob vector (length 1)
