@@ -1601,8 +1601,10 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Calculate and return the accuracy.
         /// </summary>
+        /// <param name="bGetDetails">Specifies to get the details.</param>
+        /// <param name="strDetails">Specifies details on the testing.</param>
         /// <returns>The accuracy value is returned as a percentage.</returns>
-        double CalculateTestingAccuracy();
+        double CalculateTestingAccuracy(bool bGetDetails, out string strDetails);
     }
 
 #pragma warning disable 1591

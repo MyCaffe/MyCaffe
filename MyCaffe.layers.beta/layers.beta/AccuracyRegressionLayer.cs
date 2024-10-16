@@ -120,13 +120,17 @@ namespace MyCaffe.layers.beta
         /// <summary>
         /// Calculate the accuracy using the testing accuracy bucket collection.
         /// </summary>
+        /// <param name="bGetDetails">Specifies to retrieve the details.</param>
+        /// <param name="strDetails">Specifies details on the testing.</param>
         /// <returns>The accuracy value is returned.</returns>
-        public double CalculateTestingAccuracy()
+        public double CalculateTestingAccuracy(bool bGetDetails, out string strDetails)
         {
+            strDetails = "";
+
             if (m_testingAccuracy == null)
                 return 0;
 
-            return m_testingAccuracy.CalculateAccuracy();
+            return m_testingAccuracy.CalculateAccuracy(bGetDetails, out strDetails);
         }
 
         /// <summary>
@@ -307,7 +311,8 @@ namespace MyCaffe.layers.beta
             if (m_rgItems.Count == 0 || m_nIteration < m_nMinIterations)
                 return 0;
 
-            return m_rgItems[0].CalculateAccuracy();
+            string strTmp;
+            return m_rgItems[0].CalculateAccuracy(false, out strTmp);
         }
     }
 
@@ -317,6 +322,7 @@ namespace MyCaffe.layers.beta
         BucketCollection m_colPredNeg = null;
         BucketCollection m_colTgtPos = null;
         BucketCollection m_colTgtNeg = null;
+        Dictionary<Bucket, int> m_rgBucketCorrectHits = new Dictionary<Bucket, int>();
 
         public BucketAccuracy(double dfMin, double dfMax, int nCount)
         {
@@ -336,46 +342,59 @@ namespace MyCaffe.layers.beta
         {
             for (int i = 0; i < rgPred.Length; i++)
             {
-                if (rgPred[i] < 0 && m_colPredNeg != null)
-                    m_colPredNeg.Add(rgPred[i]);
-                else
-                    m_colPredPos.Add(rgPred[i]);
+                int nTgtIdxNeg = -1;
+                int nTgtIdxPos = -1;
+                int nPredIdxNeg = -1;
+                int nPredIdxPos = -1;
 
                 if (rgTgt[i] < 0 && m_colTgtNeg != null)
-                    m_colTgtNeg.Add(rgTgt[i]);
+                    nTgtIdxNeg = m_colTgtNeg.Add(rgTgt[i]);
                 else
-                    m_colTgtPos.Add(rgTgt[i]);
+                    nTgtIdxPos = m_colTgtPos.Add(rgTgt[i]);
+
+                if (rgPred[i] < 0 && m_colPredNeg != null)
+                    nPredIdxNeg = m_colPredNeg.Add(rgPred[i]);
+                else
+                    nPredIdxPos = m_colPredPos.Add(rgPred[i]);
+
+                if (nTgtIdxNeg >= 0)
+                {
+                    if (nTgtIdxNeg == nPredIdxNeg)
+                    {
+                        Bucket b = m_colTgtNeg[nTgtIdxNeg];
+                        if (!m_rgBucketCorrectHits.ContainsKey(b))
+                            m_rgBucketCorrectHits.Add(b, 0);
+                        m_rgBucketCorrectHits[b]++;
+                    }
+                }
+                else if (nTgtIdxPos >= 0)
+                {
+                    if (nTgtIdxPos == nPredIdxPos)
+                    {
+                        Bucket b = m_colTgtPos[nTgtIdxPos];
+                        if (!m_rgBucketCorrectHits.ContainsKey(b))
+                            m_rgBucketCorrectHits.Add(b, 0);
+                        m_rgBucketCorrectHits[b]++;
+                    }
+                }
             }
         }
 
-        public double CalculateAccuracy()
+        public double CalculateAccuracy(bool bGetDetails, out string strDetails)
         {
-            int nTotalCorrect = 0;
-            int nTotalPredictions = 0;
+            strDetails = (bGetDetails) ? "" : null;
 
-            // Calculate for negative predictions
-            if (m_colPredNeg != null)
+            int nTotalCorrect = m_rgBucketCorrectHits.Sum(p => p.Value);
+            int nTotalPredictions = m_rgBucketCorrectHits.Sum(p => p.Key.Count);
+
+            if (bGetDetails)
             {
-                for (int i = 0; i < m_colPredNeg.Count; i++)
+                List<KeyValuePair<Bucket, int>> rgBuckets = m_rgBucketCorrectHits.OrderBy(p => p.Key.MidPoint).ToList();
+                foreach (KeyValuePair<Bucket, int> kv in rgBuckets)
                 {
-                    int nGroundTruthCount = m_colTgtNeg[i].Count;
-                    int nPredictedCount = m_colPredNeg[i].Count;
-
-                    // Assuming correct predictions are when counts match
-                    nTotalCorrect += Math.Min(nGroundTruthCount, nPredictedCount);
-                    nTotalPredictions += nGroundTruthCount;
+                    double dfPct = kv.Value / (double)kv.Key.Count;
+                    strDetails += "Bucket: " + kv.Key.ToString() + " Accuracy: " + dfPct.ToString("P2") + Environment.NewLine;
                 }
-            }
-
-            // Calculate for positive predictions
-            for (int i = 0; i < m_colPredPos.Count; i++)
-            {
-                int nGroundTruthCount = m_colTgtPos[i].Count;
-                int nPredictedCount = m_colPredPos[i].Count;
-
-                // Assuming correct predictions are when counts match
-                nTotalCorrect += Math.Min(nGroundTruthCount, nPredictedCount);
-                nTotalPredictions += nGroundTruthCount;
             }
 
             // Calculate accuracy as a percentage

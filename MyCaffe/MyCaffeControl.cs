@@ -2286,6 +2286,7 @@ namespace MyCaffe
                                 iAccuracyTest.ResetTesting();
 
                             iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, (float)sd.Score.Value);
+                            nTotalCount++;
                         }
                         else
                         {
@@ -2370,15 +2371,19 @@ namespace MyCaffe
 
             double dfCorrectPct = (nTotalCount == 0) ? 0 : ((double)nCorrectCount / (double)nTotalCount);
 
+            string strDetails = "";
             if (iAccuracyTest != null)
             {
-                dfCorrectPct = iAccuracyTest.CalculateTestingAccuracy();
+                dfCorrectPct = iAccuracyTest.CalculateTestingAccuracy(true, out strDetails);
                 nCorrectCount = (int)(nTotalCount * dfCorrectPct);
             }
 
             m_log.WriteLine("Test Many Completed.");
             m_log.WriteLine(" " + dfCorrectPct.ToString("P") + " correct detections.");
             m_log.WriteLine(" " + (nTotalCount - nCorrectCount).ToString("N") + " incorrect detections.");
+
+            if (!string.IsNullOrEmpty(strDetails))
+                m_log.WriteLine(strDetails);
 
             foreach (KeyValuePair<int, int> kv in rgCorrectCounts.OrderBy(p => p.Key).ToList())
             {
