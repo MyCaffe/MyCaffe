@@ -568,6 +568,19 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score2&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score2] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable2 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueItems&apos;, &apos;EndTime&apos;) IS NULL
         ///BEGIN
         ///    ALTER TABLE [dbo].[ValueItems] ADD 

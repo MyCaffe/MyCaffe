@@ -39,5 +39,6 @@ namespace MyCaffe.db.image
         public Nullable<byte> DataCriteriaFormatID { get; set; }
         public Nullable<int> OriginalSourceID { get; set; }
         public Nullable<decimal> Score { get; set; }
+        public Nullable<decimal> Score2 { get; set; }
     }
 }

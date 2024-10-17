@@ -524,6 +524,13 @@ BEGIN
 	    [Score] [numeric](18,10) NULL
 END</value>
   </data>
+  <data name="UpdateRawImagesTable2" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score2') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score2] [numeric](18,10) NULL
+END</value>
+  </data>
   <data name="UpdateValueItemsTable1" xml:space="preserve">
     <value>IF COL_LENGTH('dbo.ValueItems', 'EndTime') IS NULL
 BEGIN

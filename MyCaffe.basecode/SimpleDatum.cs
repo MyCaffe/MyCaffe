@@ -186,6 +186,7 @@ namespace MyCaffe.basecode
         int m_nOriginalLabel = 0;
         int m_nLabel = 0;
         decimal? m_dfScore = null;
+        decimal? m_dfScore2 = null;
         int m_nHeight = 0;
         int m_nWidth = 0;
         int m_nChannels = 0;
@@ -1375,6 +1376,7 @@ namespace MyCaffe.basecode
             m_bIsRealData = d.m_bIsRealData;
             m_nLabel = d.m_nLabel;
             m_dfScore = d.m_dfScore;
+            m_dfScore2 = d.m_dfScore2;
             m_nOriginalLabel = d.m_nOriginalLabel;
             m_nChannels = d.m_nChannels;
             m_nHeight = nHeight.GetValueOrDefault(d.m_nHeight);
@@ -1668,6 +1670,15 @@ namespace MyCaffe.basecode
         public void SetScore(decimal dfScore)
         {
             m_dfScore = dfScore;
+        }
+
+        /// <summary>
+        /// Set the secondary, optional score value for the datum.
+        /// </summary>
+        /// <param name="dfScore2">Specifies the secondary score.</param>
+        public void SetScore2(decimal dfScore2)
+        {
+            m_dfScore2 = dfScore2;
         }
 
         /// <summary>
@@ -2409,6 +2420,14 @@ namespace MyCaffe.basecode
         public decimal? Score
         {
             get { return m_dfScore; }
+        }
+
+        /// <summary>
+        /// Returns the secondary, optional score for the data.
+        /// </summary>
+        public decimal? Score2
+        {
+            get { return m_dfScore2; }
         }
 
         /// <summary>

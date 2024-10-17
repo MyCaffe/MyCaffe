@@ -30,7 +30,8 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobWork2 = null;
         AccuracyRegressionParameter.ALGORITHM m_alg = AccuracyRegressionParameter.ALGORITHM.MAPE;
         RollingBucketAccuracy m_rgBucketAccuracy = null;
-        BucketAccuracy m_testingAccuracy = null;
+        BucketAccuracy m_testingAccuracy1 = null;
+        BucketAccuracy m_testingAccuracy2 = null;
         ZScoreLayer<T> m_zscore = null;
 
         /// <summary>
@@ -63,7 +64,8 @@ namespace MyCaffe.layers.beta
                     throw new Exception("The accuracy regression bucket count must be > 1.");
 
                 m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
-                m_testingAccuracy = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
+                m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
+                m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
 
                 if (p.z_score_param != null && p.z_score_param.enabled)
                 {
@@ -98,7 +100,8 @@ namespace MyCaffe.layers.beta
             if (layer_param.accuracy_regression_param.algorithm != AccuracyRegressionParameter.ALGORITHM.BUCKETING)
                 throw new Exception("The 'ResetTesting' is only supported when using the 'BUCKETING' algorithm.");
 
-            m_testingAccuracy = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+            m_testingAccuracy1 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+            m_testingAccuracy2 = null;
         }
 
         /// <summary>
@@ -106,14 +109,22 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="fPredicted">Specifies the predicted value.</param>
         /// <param name="fGroundTruth">Specifies the ground truth target value.</param>
-        public void AddTesting(float fPredicted, float fGroundTruth)
+        /// <param name="fGroundTruth2">Optional, secondary ground truth value.</param>
+        public void AddTesting(float fPredicted, float fGroundTruth, float? fGroundTruth2 = null)
         {
-            if (m_testingAccuracy != null)
+            if (m_testingAccuracy1 != null)
             {
                 if (m_zscore != null)
                     fGroundTruth = m_zscore.Normalize(fGroundTruth);
 
-                m_testingAccuracy.Add(new float[] { fPredicted }, new float[] { fGroundTruth });
+                m_testingAccuracy1.Add(new float[] { fPredicted }, new float[] { fGroundTruth });
+
+                if (fGroundTruth2.HasValue)
+                {
+                    if (m_testingAccuracy2 == null)
+                        m_testingAccuracy2 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+                    m_testingAccuracy2.Add(new float[] { fPredicted }, new float[] { fGroundTruth2.Value });
+                }
             }
         }
 
@@ -127,10 +138,24 @@ namespace MyCaffe.layers.beta
         {
             strDetails = "";
 
-            if (m_testingAccuracy == null)
+            if (m_testingAccuracy1 == null)
                 return 0;
 
-            return m_testingAccuracy.CalculateAccuracy(bGetDetails, out strDetails);
+            double dfAccuracy = m_testingAccuracy1.CalculateAccuracy(bGetDetails, out strDetails);
+
+            if (m_testingAccuracy2 != null)
+            {
+                string strDetails2;
+                double dfAccuracy2 = m_testingAccuracy2.CalculateAccuracy(bGetDetails, out strDetails2);
+
+                strDetails += Environment.NewLine;
+                strDetails += "Secondary Ground Truth" + Environment.NewLine;
+                strDetails += "Accuracy = " + dfAccuracy2.ToString("P3");
+                strDetails += Environment.NewLine;
+                strDetails += strDetails2;
+            }
+
+            return dfAccuracy;
         }
 
         /// <summary>

@@ -1597,7 +1597,8 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="fPredicted">Specifies the predicted value.</param>
         /// <param name="fGroundTruth">Specifies the ground truth value.</param>
-        void AddTesting(float fPredicted, float fGroundTruth);
+        /// <param name="fSecondaryGroundTruth">Optionally, specifies a secondary ground truth value.</param>
+        void AddTesting(float fPredicted, float fGroundTruth, float? fSecondaryGroundTruth = null);
         /// <summary>
         /// Calculate and return the accuracy.
         /// </summary>

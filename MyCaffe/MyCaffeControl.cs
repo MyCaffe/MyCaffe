@@ -2285,7 +2285,11 @@ namespace MyCaffe
                             if (i == 0)
                                 iAccuracyTest.ResetTesting();
 
-                            iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, (float)sd.Score.Value);
+                            float? fScore2 = null;
+                            if (sd.Score2.HasValue)
+                                fScore2 = (float)sd.Score2.Value;
+
+                            iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, (float)sd.Score.Value, fScore2);
                             nTotalCount++;
                         }
                         else

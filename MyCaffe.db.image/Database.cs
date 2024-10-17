@@ -2019,6 +2019,7 @@ namespace MyCaffe.db.image
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
             img.Score = d.Score;
+            img.Score2 = d.Score2;
 
             if (nOriginalSourceID.HasValue)
                 img.OriginalSourceID = nOriginalSourceID.Value;
@@ -5962,6 +5963,19 @@ namespace MyCaffe.db.image
         /// Specifies the image score used within the lambda statement.
         /// </summary>
         public decimal? score { get; set; }
+
+        /// <summary>
+        /// Specifies the image score.
+        /// </summary>
+        public decimal Score2
+        {
+            get { return score2.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score used within the lambda statement.
+        /// </summary>
+        public decimal? score2 { get; set; }
 
         /// <summary>
         /// Specifies the image boost.
