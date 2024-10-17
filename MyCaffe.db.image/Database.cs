@@ -3048,6 +3048,7 @@ namespace MyCaffe.db.image
                     strCmd += " AND (Convert(varbinary(8), [DataCriteria]) != 0x00000000)";
                 }
 
+                entities.Database.CommandTimeout = 600;
                 entities.Database.ExecuteSqlCommand(strCmd);
             }
         }
@@ -3112,6 +3113,7 @@ namespace MyCaffe.db.image
                     strCmd += nTgtBoost.Value.ToString() + ")";
                 }
 
+                entities.Database.CommandTimeout = 600;
                 entities.Database.ExecuteSqlCommand(strCmd);
             }
         }
