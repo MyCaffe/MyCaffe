@@ -5,6 +5,7 @@ using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using static MyCaffe.param.beta.DecodeParameter;
 
 namespace MyCaffe.layers.beta
 {
@@ -341,6 +342,9 @@ namespace MyCaffe.layers.beta
         }
     }
 
+    /// <summary>
+    /// The BucketAccuracy layer tracks the accuracy across both positive and negative bucket collections between the target and predicted values.
+    /// </summary>
     public class BucketAccuracy
     {
         BucketCollection m_colPredPos = null;
@@ -348,7 +352,14 @@ namespace MyCaffe.layers.beta
         BucketCollection m_colTgtPos = null;
         BucketCollection m_colTgtNeg = null;
         Dictionary<Bucket, int> m_rgBucketCorrectHits = new Dictionary<Bucket, int>();
+        Dictionary<Bucket, Dictionary<int, int>> m_rgBucketIncorrectHits = new Dictionary<Bucket, Dictionary<int, int>>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="dfMin">Specifies the minimum of all values.</param>
+        /// <param name="dfMax">Specifies the maximum of all values.</param>
+        /// <param name="nCount">Specifies the number of buckets.</param>
         public BucketAccuracy(double dfMin, double dfMax, int nCount)
         {
             int nBucketCount = nCount;
@@ -363,6 +374,11 @@ namespace MyCaffe.layers.beta
             m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
         }
 
+        /// <summary>
+        /// Add an array of predicted and target values.
+        /// </summary>
+        /// <param name="rgPred">Specifies the predicted values.</param>
+        /// <param name="rgTgt">Specifies the target values.</param>
         public void Add(float[] rgPred, float[] rgTgt)
         {
             for (int i = 0; i < rgPred.Length; i++)
@@ -384,27 +400,70 @@ namespace MyCaffe.layers.beta
 
                 if (nTgtIdxNeg >= 0)
                 {
+                    Bucket b = m_colTgtNeg[nTgtIdxNeg];
+
                     if (nTgtIdxNeg == nPredIdxNeg)
                     {
-                        Bucket b = m_colTgtNeg[nTgtIdxNeg];
                         if (!m_rgBucketCorrectHits.ContainsKey(b))
                             m_rgBucketCorrectHits.Add(b, 0);
                         m_rgBucketCorrectHits[b]++;
                     }
+                    else
+                    {
+                        if (!m_rgBucketIncorrectHits.ContainsKey(b))
+                            m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
+
+                        if (nPredIdxNeg >= 0)
+                        {
+                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxNeg))
+                                m_rgBucketIncorrectHits[b].Add(nPredIdxNeg, 0);
+                            m_rgBucketIncorrectHits[b][nPredIdxNeg]++;
+                        }
+                        else if (nPredIdxPos >= 0)
+                        {
+                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxPos))
+                                m_rgBucketIncorrectHits[b].Add(nPredIdxPos, 0);
+                            m_rgBucketIncorrectHits[b][nPredIdxPos]++;
+                        }
+                    }
                 }
                 else if (nTgtIdxPos >= 0)
                 {
+                    Bucket b = m_colTgtPos[nTgtIdxPos];
                     if (nTgtIdxPos == nPredIdxPos)
                     {
-                        Bucket b = m_colTgtPos[nTgtIdxPos];
                         if (!m_rgBucketCorrectHits.ContainsKey(b))
                             m_rgBucketCorrectHits.Add(b, 0);
                         m_rgBucketCorrectHits[b]++;
+                    }
+                    else
+                    {
+                        if (!m_rgBucketIncorrectHits.ContainsKey(b))
+                            m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
+
+                        if (nPredIdxPos >= 0)
+                        {
+                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxPos))
+                                m_rgBucketIncorrectHits[b].Add(nPredIdxPos, 0);
+                            m_rgBucketIncorrectHits[b][nPredIdxPos]++;
+                        }
+                        else if (nPredIdxNeg >= 0)
+                        {
+                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxNeg))
+                                m_rgBucketIncorrectHits[b].Add(nPredIdxNeg, 0);
+                            m_rgBucketIncorrectHits[b][nPredIdxNeg]++;
+                        }
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Calculates the overall accuracy.
+        /// </summary>
+        /// <param name="bGetDetails">Specifies to fill out the details string.</param>
+        /// <param name="strDetails">Specifies the string to receive the details, when specified.</param>
+        /// <returns>The accuracy is returned.</returns>
         public double CalculateAccuracy(bool bGetDetails, out string strDetails)
         {
             strDetails = (bGetDetails) ? "" : null;
@@ -422,9 +481,166 @@ namespace MyCaffe.layers.beta
                 }
             }
 
+            strDetails += CreateConfusionMatrix();
+
             // Calculate accuracy as a percentage
             double accuracy = nTotalPredictions > 0 ? (nTotalCorrect / (double)nTotalPredictions) : 0;
             return accuracy;
+        }
+
+        private int[,] createConfusionMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTargets)
+        {
+            int[,] confusionMatrix = new int[rgstrTargetLabels.Count, rgstrPredLabels.Count];
+
+            for (int i = 0; i < rgstrTargetLabels.Count; i++)
+            {
+                Bucket bTarget = rgTargets[i]; // Current target bucket
+
+                for (int j = 0; j < rgstrPredLabels.Count; j++)
+                {
+                    // Assuming m_rgBucketCorrectHits stores hits per target, indexed by prediction label
+                    if (m_rgBucketCorrectHits.ContainsKey(bTarget))
+                    {
+                        int nPredCount = m_rgBucketCorrectHits[bTarget]; // Fetch prediction count for this target-prediction pair
+                        int nVal = 0;
+
+                        if (i == j) // Diagonal: correct predictions
+                        {
+                            nVal = Math.Min(bTarget.Count, nPredCount);
+                        }
+                        else
+                        {
+                            if (m_rgBucketIncorrectHits.ContainsKey(bTarget))
+                            {
+                                if (j > i)
+                                {
+                                    if (m_rgBucketIncorrectHits[bTarget].ContainsKey(i))
+                                        nVal = m_rgBucketIncorrectHits[bTarget][i];
+                                }
+                                else if (j < i)
+                                {
+                                    if (m_rgBucketIncorrectHits[bTarget].ContainsKey(j))
+                                        nVal = m_rgBucketIncorrectHits[bTarget][j];
+                                }
+                            }
+                        }
+
+                        confusionMatrix[i, j] = nVal;
+                    }
+                }
+            }
+
+            return confusionMatrix;
+        }
+
+        private double[,] createPercentMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTarget, int[,] confusionMatrix)
+        {
+            double[,] percentageMatrix = new double[rgstrTargetLabels.Count, rgstrPredLabels.Count];
+
+            // Calculate percentages for the confusion matrix
+            for (int i = 0; i < rgstrTargetLabels.Count; i++)
+            {
+                int total = rgTarget[i].Count;
+                for (int j = 0; j < rgstrPredLabels.Count; j++)
+                {
+                    percentageMatrix[i, j] = total > 0 ? (double)confusionMatrix[i, j] / total * 100 : 0;
+                }
+            }
+
+            return percentageMatrix;
+        }
+
+        /// <summary>
+        /// Prints a matrix with labels and values, formatted as counts or percentages.
+        /// </summary>
+        private void printMatrix(StringBuilder sb, string[] labels, dynamic matrix, int maxLabelWidth, int maxCellWidth, bool isPercentage)
+        {
+            // Print the matrix title and determine if it's showing percentages
+            sb.Append("Confusion Matrix");
+            if (isPercentage)
+                sb.Append(" (Percentages)");
+            sb.AppendLine(":");
+
+            // Print the header row with labels
+            sb.Append(new string('_', maxLabelWidth + 1));  // Adjusted space to align with the data rows
+            foreach (string label in labels)
+            {
+                sb.Append($"| {label.PadRight(maxCellWidth)} ");
+            }
+            sb.AppendLine();
+
+            // Print each row of the matrix
+            for (int i = 0; i < labels.Length; i++)
+            {
+                // Pad the row label to align with the header row
+                sb.Append($"{labels[i].PadRight(maxLabelWidth)} ");
+
+                // Print each cell in the row
+                for (int j = 0; j < labels.Length; j++)
+                {
+                    // Determine formatting based on whether values are percentages
+                    string value = isPercentage ? $"{matrix[i, j]:F2}%" : $"{matrix[i, j]}";
+                    sb.Append($"| {value.PadLeft(maxCellWidth + 2)} ");
+                }
+                sb.AppendLine();
+            }
+        }
+
+
+        /// <summary>
+        /// Create a confusion matrix of the values.
+        /// </summary>
+        /// <returns>The confusion matrix is returned as a pretty-print string.</returns>
+        public string CreateConfusionMatrix()
+        {
+            List<string> rgstrPredLabels = new List<string>();
+            List<string> rgstrTargetLabels = new List<string>();
+            List<Bucket> rgTargetLabels = new List<Bucket>();
+
+            foreach (Bucket b in m_colTgtNeg)
+            {
+                rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                rgTargetLabels.Add(b);
+            }
+
+            foreach (Bucket b in m_colPredNeg)
+            {
+                rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+            }
+
+            foreach (Bucket b in m_colTgtPos)
+            {
+                rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                rgTargetLabels.Add(b);
+            }
+
+            foreach (Bucket b in m_colPredPos)
+            {
+                rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+            }
+
+            // Create the confusion matrix
+            int[,] confusionMatrix = createConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels);
+            double[,] percentageMatrix = createPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
+            StringBuilder sb = new StringBuilder();
+
+            string[] labels = rgstrTargetLabels.ToArray();
+            int maxLabelWidth = labels.Max(label => label.Length);
+            int maxCellWidth = 10;
+
+            printMatrix(sb, labels, confusionMatrix, maxLabelWidth, maxCellWidth, false);
+            sb.AppendLine();
+            printMatrix(sb, labels, percentageMatrix, maxLabelWidth, maxCellWidth, true);
+
+            int nTotal = m_colTgtPos.Sum(p => p.Count) + m_colTgtNeg.Sum(p => p.Count);
+            double dfGtPercentPos = (double)m_colTgtPos.Sum(p => p.Count) / nTotal;
+            double dfGtPercentNeg = (double)m_colTgtNeg.Sum(p => p.Count) / nTotal;
+            sb.AppendLine();
+            sb.AppendLine("Ground Truth Sample Size = " + nTotal.ToString("N0"));
+            sb.AppendLine("Ground Truth % Positive = " + dfGtPercentPos.ToString("P2"));
+            sb.AppendLine("Ground Truth % Negative = " + dfGtPercentNeg.ToString("P2"));
+
+            return sb.ToString();
         }
     }
 }
