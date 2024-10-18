@@ -19,7 +19,7 @@ namespace MyCaffe.layers.beta
     ///  - stdev_param: Specifies the name of the RawImage parameter that has the stdev value.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class ZScoreLayer<T> : NeuronLayer<T>
+    public class ZScoreLayer<T> : NeuronLayer<T>, IXNormalize<T>
     {
         float m_fMean;
         float m_fStdev;
@@ -55,6 +55,30 @@ namespace MyCaffe.layers.beta
                 throw new Exception("Layer: '" + layer_param.name + "' - Could not find the stdev parameter '" + p.z_score_param.stdev_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item stdev is created for this dataset.");
 
             m_fStdev = fVal.Value;
+        }
+
+        /// <summary>
+        /// Normalize the un-normalized value.
+        /// </summary>
+        /// <param name="val">Specifies the un-normalized value.</param>
+        /// <returns>The normalized value is returned.</returns>
+        public T Normalize(T val)
+        {
+            float fVal = Utility.ConvertValF<T>(val);
+            float fNormVal = Normalize(fVal);
+            return Utility.ConvertVal<T>(fNormVal);
+        }
+
+        /// <summary>
+        /// Unnormalize the normalized value.
+        /// </summary>
+        /// <param name="val">Specifies normalized value.</param>
+        /// <returns>The un-normalized value is returned.</returns>
+        public T Unnormalize(T val)
+        {
+            float fVal = Utility.ConvertValF<T>(val);
+            float fUnnormVal = UnNormalize(fVal);
+            return Utility.ConvertVal<T>(fUnnormVal);
         }
 
         /// <summary>
