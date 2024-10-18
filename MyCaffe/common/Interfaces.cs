@@ -591,7 +591,8 @@ namespace MyCaffe.common
         /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
         /// that matches the transformation used during training.</param>
         /// <param name="bConvertToRunNet">When <i>true</i>, the 'strModel' is converted from a training model to a run model, otherwise the model is used unaltered (default = <i>true</i>)</param>
-        void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true);
+        /// <param name="db">Optionally, specifies the database for data.</param>
+        void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true, IXDatabaseBase db = null);
         /// <summary>
         /// Create a data blob from a SimpleDatum by transforming the data and placing the results in the blob returned.
         /// </summary>
