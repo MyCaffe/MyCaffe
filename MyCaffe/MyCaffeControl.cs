@@ -1700,7 +1700,8 @@ namespace MyCaffe
         /// <param name="bForceBackward">Optionally, specifies to force backward propagation in the event that a backward pass is to be run on the Run net - The DeepDraw functionality
         /// uses this setting so that it can view what the trained weights actually see.</param>
         /// <param name="bConvertToRunNet">When <i>true</i>, the 'strModel' is converted from a training model to a run model, otherwise the model is used unaltered (default = <i>true</i>)</param>
-        public void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true)
+        /// <param name="db">Optionally, specifies the database for data.</param>
+        public void LoadToRun(string strModel, byte[] rgWeights, byte[] rgLoRaWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true, IXDatabaseBase db = null)
         {
             try
             {
@@ -1754,7 +1755,7 @@ namespace MyCaffe
                 }
 
                 m_log.WriteLine("Creating run net...", true);
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN);
+                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, db, Phase.RUN);
 
                 m_log.WriteLine("Loading weights...", true);
                 loadWeights(m_net, rgWeights, rgLoRaWeights);

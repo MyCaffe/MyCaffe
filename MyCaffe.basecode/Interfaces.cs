@@ -1608,6 +1608,25 @@ namespace MyCaffe.basecode
         double CalculateTestingAccuracy(bool bGetDetails, out string strDetails);
     }
 
+    /// <summary>
+    /// Specifies the normalize interface implemented by some normalizing layers.
+    /// </summary>
+    public interface IXNormalize<T>
+    {
+        /// <summary>
+        /// Specifies to normalize the value.
+        /// </summary>
+        /// <param name="fVal">Specifies the unormalized value.</param>
+        /// <returns>The normalized value is returned.</returns>
+        T Normalize(T fVal);
+        /// <summary>
+        /// Specifies to unnormalize a normalized value.
+        /// </summary>
+        /// <param name="fVal">Specifies the normalized value.</param>
+        /// <returns>The unormalized value is returned.</returns>
+        T Unnormalize(T fVal);
+    }
+
 #pragma warning disable 1591
 
     [DataContract]
