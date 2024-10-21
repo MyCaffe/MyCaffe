@@ -66,6 +66,21 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// Defines the side where the threshold is applied.
+    /// </summary>
+    public enum SIDE
+    {
+        /// <summary>
+        /// Specifies values above the threshold value.
+        /// </summary>
+        BELOW = 0,
+        /// <summary>
+        /// Specifies values below the threshold value.
+        /// </summary>
+        ABOVE = 1
+    }
+
+    /// <summary>
     /// Defines the type of Mean Error to use.
     /// </summary>
     public enum MEAN_ERROR
@@ -1392,6 +1407,7 @@ namespace MyCaffe.common
 
             CUDA_MAX_BWD2 = 272,
             CUDA_INVERT = 273,
+            CUDA_THRESHOLD = 274,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -8394,6 +8410,22 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, m_param.AsDouble(dfScaleNumerator, dfScaleDenom), m_param.AsLong(n, hX, hY, nXOff, nYOff));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, m_param.AsFloat((float)dfScaleNumerator, (float)dfScaleDenom), m_param.AsLong(n, hX, hY, nXOff, nYOff));
+        }
+
+        /// <summary>
+        /// Computes the threshold, setting all values above (or below, depending on the side) the threshold value to 0.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="fThreshold">Specifies the threshold value.</param>
+        /// <param name="side">Specifies the side of the threshold.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void threshold(int n, long hX, float fThreshold, SIDE side, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD, m_param.AsDouble(fThreshold), m_param.AsLong(n, hX, (int)side, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD, m_param.AsFloat(fThreshold), m_param.AsLong(n, hX, (int)side, hY));
         }
 
 #pragma warning disable 1591
