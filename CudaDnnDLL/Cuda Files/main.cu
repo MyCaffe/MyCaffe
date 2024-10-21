@@ -617,6 +617,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_INVERT:
 			return m_device.cuda_invert(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_THRESHOLD:
+			return m_device.cuda_threshold(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SQRT:
 			return m_device.cuda_sqrt(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1860,6 +1863,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_INVERT:
 		return "CUDA_FN_INVERT";
+
+	case CUDA_FN_THRESHOLD:
+		return "CUDA_FN_THRESHOLD";
 
 	case CUDA_FN_SQRT:
 		return "CUDA_FN_SQRT";

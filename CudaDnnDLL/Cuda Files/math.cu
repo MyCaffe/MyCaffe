@@ -5934,6 +5934,52 @@ template long Math<float>::invert(int n, long hA, long hY, int nXOff, int nYOff,
 
 
 template <typename T>
+__global__ void threshold_below_kernel(const int n, const T* x, T* y, const T fT)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] < fT) ? 0 : x[i];
+	}
+}
+
+template <typename T>
+__global__ void threshold_above_kernel(const int n, const T* x, T* y, const T fT)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] > fT) ? 0 : x[i];
+	}
+}
+
+template <typename T>
+long Math<T>::threshold(int n, long hX, T fThreshold, int nSide, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	if (nSide == 0)
+		threshold_below_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fThreshold);
+	else
+		threshold_above_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fThreshold);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::threshold(int n, long hA, double dfThreshold, int nSide, long hY);
+template long Math<float>::threshold(int n, long hA, float fThreshold, int nSide, long hY);
+
+
+template <typename T>
 __global__ void sign_kernel(const int n, T* x, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)

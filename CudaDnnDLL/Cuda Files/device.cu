@@ -2597,6 +2597,29 @@ template long Device<float>::cuda_invert(long lInput, float* pfInput, long llInp
 
 
 template <class T>
+long Device<T>::cuda_threshold(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	int nSide = (int)plInput[2];
+	long hY = (long)plInput[3];
+	T fThreshold = pfInput[0];
+
+	return m_math.threshold(n, hX, fThreshold, nSide, hY);
+}
+
+template long Device<double>::cuda_threshold(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_threshold(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_sign(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
