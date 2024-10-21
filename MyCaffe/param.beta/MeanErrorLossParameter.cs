@@ -24,6 +24,11 @@ namespace MyCaffe.param
         int m_nAxis = 1; // Axis used to calculate the loss normalization.
         MEAN_ERROR m_meanErrorType = MEAN_ERROR.MAE; // default to the Mean Absolute Error.
 
+        float m_fAbovePenaltyPortionLambda = 1.0f;
+        float? m_fPenalizeValuesAboveThreshold = null;
+        float m_fBelowPenaltyPortionLambda = 1.0f;
+        float? m_fPenalizeValuesBelowThreshold = null;
+
 
         /** @copydoc LayerParameterBase */
         public MeanErrorLossParameter()
@@ -49,6 +54,42 @@ namespace MyCaffe.param
             set { m_meanErrorType = value; }
         }
 
+        /// <summary>
+        /// Specifies the portion of the penalty to apply to values above the threshold.  Only used when penalize_values_above_threshold is set.
+        /// </summary>
+        public float above_penalty_portion_lambda
+        {
+            get { return m_fAbovePenaltyPortionLambda; }
+            set { m_fAbovePenaltyPortionLambda = value; }
+        }
+
+        /// <summary>
+        /// Specifies the threshold above which to penalize values.  If set, the above_penalty_portion_lambda is used to determine the portion of the penalty to apply.
+        /// </summary>
+        public float? penalize_values_above_threshold
+        {
+            get { return m_fPenalizeValuesAboveThreshold; }
+            set { m_fPenalizeValuesAboveThreshold = value; }
+        }
+
+        /// <summary>
+        /// Specifies the portion of the penalty to apply to values below the threshold.  Only used when penalize_values_below_threshold is set.
+        /// </summary>
+        public float below_penalty_portion_lambda
+        {
+            get { return m_fBelowPenaltyPortionLambda; }
+            set { m_fBelowPenaltyPortionLambda = value; }
+        }
+
+        /// <summary>
+        /// Specifies the threshold below which to penalize values.  If set, the below_penalty_portion_lambda is used to determine the portion of the penalty to apply.
+        /// </summary>
+        public float? penalize_values_below_threshold
+        {
+            get { return m_fPenalizeValuesBelowThreshold; }
+            set { m_fPenalizeValuesBelowThreshold = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -67,6 +108,10 @@ namespace MyCaffe.param
             MeanErrorLossParameter p = (MeanErrorLossParameter)src;
             m_nAxis = p.m_nAxis;
             m_meanErrorType = p.m_meanErrorType;
+            m_fAbovePenaltyPortionLambda = p.m_fAbovePenaltyPortionLambda;
+            m_fPenalizeValuesAboveThreshold = p.m_fPenalizeValuesAboveThreshold;
+            m_fBelowPenaltyPortionLambda = p.m_fBelowPenaltyPortionLambda;
+            m_fPenalizeValuesBelowThreshold = p.m_fPenalizeValuesBelowThreshold;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -88,6 +133,18 @@ namespace MyCaffe.param
 
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("mean_error_type", mean_error_type.ToString());
+
+            if (penalize_values_above_threshold.HasValue)
+            {
+                rgChildren.Add("penalize_values_above_threshold", penalize_values_above_threshold.Value.ToString());
+                rgChildren.Add("above_penalty_portion_lambda", above_penalty_portion_lambda.ToString());
+            }
+
+            if (penalize_values_below_threshold.HasValue)
+            {
+                rgChildren.Add("penalize_values_below_threshold", penalize_values_below_threshold.Value.ToString());
+                rgChildren.Add("below_penalty_portion_lambda", below_penalty_portion_lambda.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -119,6 +176,18 @@ namespace MyCaffe.param
                         throw new Exception("The mean _error_type parameter must be one of the following: MSE, MAE");
                 }
             }
+
+            if ((strVal = rp.FindValue("above_penalty_portion_lambda")) != null)
+                p.above_penalty_portion_lambda = BaseParameter.ParseFloat(strVal);
+
+            if ((strVal = rp.FindValue("penalize_values_above_threshold")) != null)
+                p.penalize_values_above_threshold = BaseParameter.ParseFloat(strVal);
+
+            if ((strVal = rp.FindValue("below_penalty_portion_lambda")) != null)
+                p.below_penalty_portion_lambda = BaseParameter.ParseFloat(strVal);
+
+            if ((strVal = rp.FindValue("penalize_values_below_threshold")) != null)
+                p.penalize_values_below_threshold = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

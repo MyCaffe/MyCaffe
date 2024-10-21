@@ -64,9 +64,9 @@ namespace MyCaffe.layers.beta
                 if (p.accuracy_regression_param.bucket_count <= 1)
                     throw new Exception("The accuracy regression bucket count must be > 1.");
 
-                m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200);
-                m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
-                m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count);
+                m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200, p.accuracy_regression_param.bucket_ignore_below, p.accuracy_regression_param.bucket_ignore_above);
+                m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_below, p.accuracy_regression_param.bucket_ignore_above);
+                m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_below, p.accuracy_regression_param.bucket_ignore_above);
 
                 if (p.z_score_param != null && p.z_score_param.enabled)
                 {
@@ -101,7 +101,7 @@ namespace MyCaffe.layers.beta
             if (layer_param.accuracy_regression_param.algorithm != AccuracyRegressionParameter.ALGORITHM.BUCKETING)
                 throw new Exception("The 'ResetTesting' is only supported when using the 'BUCKETING' algorithm.");
 
-            m_testingAccuracy1 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+            m_testingAccuracy1 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_below, layer_param.accuracy_regression_param.bucket_ignore_above);
             m_testingAccuracy2 = null;
         }
 
@@ -123,7 +123,7 @@ namespace MyCaffe.layers.beta
                 if (fGroundTruth2.HasValue)
                 {
                     if (m_testingAccuracy2 == null)
-                        m_testingAccuracy2 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count);
+                        m_testingAccuracy2 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_below, layer_param.accuracy_regression_param.bucket_ignore_above);
                     m_testingAccuracy2.Add(new float[] { fPredicted }, new float[] { fGroundTruth2.Value });
                 }
             }
@@ -302,9 +302,11 @@ namespace MyCaffe.layers.beta
         int m_nIteration = 0;
         int m_nMinIterations;
         int m_nMaxIterations;
+        double? m_dfIgnoreBelow;
+        double? m_dfIgnoreAbove;
         List<BucketAccuracy> m_rgItems = new List<BucketAccuracy>();
 
-        public RollingBucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations)
+        public RollingBucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations, double? dfIgnoreBelow, double? dfIgnoreAbove)
         {
             m_dfMin = dfMin;
             m_dfMax = dfMax;
@@ -312,15 +314,17 @@ namespace MyCaffe.layers.beta
             m_nIteration = 0;
             m_nMinIterations = nMinIterations;
             m_nMaxIterations = nMaxIterations;
+            m_dfIgnoreBelow = dfIgnoreBelow;
+            m_dfIgnoreAbove = dfIgnoreAbove;
 
-            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount));
+            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount, dfIgnoreBelow, dfIgnoreAbove));
         }
 
         public void Add(float[] rgPred, float[] rgTgt)
         {
             m_nIteration++;
 
-            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount);
+            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount, m_dfIgnoreBelow, m_dfIgnoreAbove);
             m_rgItems.Add(b);
 
             foreach (BucketAccuracy b1 in m_rgItems)
@@ -351,6 +355,8 @@ namespace MyCaffe.layers.beta
         BucketCollection m_colPredNeg = null;
         BucketCollection m_colTgtPos = null;
         BucketCollection m_colTgtNeg = null;
+        double? m_dfIgnoreAbove = double.MaxValue;
+        double? m_dfIgnoreBelow = -double.MaxValue;
         Dictionary<Bucket, int> m_rgBucketCorrectHits = new Dictionary<Bucket, int>();
         Dictionary<Bucket, Dictionary<int, int>> m_rgBucketIncorrectHits = new Dictionary<Bucket, Dictionary<int, int>>();
 
@@ -360,8 +366,13 @@ namespace MyCaffe.layers.beta
         /// <param name="dfMin">Specifies the minimum of all values.</param>
         /// <param name="dfMax">Specifies the maximum of all values.</param>
         /// <param name="nCount">Specifies the number of buckets.</param>
-        public BucketAccuracy(double dfMin, double dfMax, int nCount)
+        /// <param name="dfIgnoreBelow">Specifies to ignore all target scores below this value (default = -double.MaxValue).</param>
+        /// <param name="dfIgnoreAbove">Specifies to ignore all target scores above this value (default = double.MaxValue).</param>
+        public BucketAccuracy(double dfMin, double dfMax, int nCount, double? dfIgnoreBelow, double? dfIgnoreAbove)
         {
+            m_dfIgnoreAbove = dfIgnoreAbove;
+            m_dfIgnoreBelow = dfIgnoreBelow;
+
             int nBucketCount = nCount;
             if (dfMin < 0)
             {
@@ -387,6 +398,10 @@ namespace MyCaffe.layers.beta
                 int nTgtIdxPos = -1;
                 int nPredIdxNeg = -1;
                 int nPredIdxPos = -1;
+
+                if ((m_dfIgnoreBelow.HasValue && rgTgt[i] < m_dfIgnoreBelow.Value) || 
+                    (m_dfIgnoreAbove.HasValue && rgTgt[i] > m_dfIgnoreAbove.Value))
+                    continue;
 
                 if (rgTgt[i] < 0 && m_colTgtNeg != null)
                     nTgtIdxNeg = m_colTgtNeg.Add(rgTgt[i]);

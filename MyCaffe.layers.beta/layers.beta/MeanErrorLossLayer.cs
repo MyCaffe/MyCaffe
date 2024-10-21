@@ -154,6 +154,27 @@ namespace MyCaffe.layers.beta
                 case MEAN_ERROR.MSE:
                     m_cuda.sub(nCount, hTarget, hPredicted, colBottom[0].mutable_gpu_diff);
                     m_cuda.powx(nCount, colBottom[0].gpu_diff, 2.0, colBottom[0].mutable_gpu_diff);
+
+                    if (m_param.mean_error_loss_param.penalize_values_below_threshold.HasValue)
+                    {
+                        float fPenalty = m_param.mean_error_loss_param.penalize_values_below_threshold.Value;
+                        float fLambda = m_param.mean_error_loss_param.below_penalty_portion_lambda;
+                        m_cuda.copy(nCount, colBottom[0].gpu_diff, m_blobWork.mutable_gpu_data);
+                        m_cuda.threshold(nCount, m_blobWork.gpu_data, fPenalty, SIDE.BELOW, m_blobWork.mutable_gpu_data);
+                        m_cuda.powx(nCount, m_blobWork.gpu_data, 2.0, m_blobWork.mutable_gpu_data);
+                        m_cuda.axpy(nCount, fLambda, m_blobWork.gpu_data, colBottom[0].mutable_gpu_diff);
+                    }
+
+                    if (m_param.mean_error_loss_param.penalize_values_above_threshold.HasValue)
+                    {
+                        float fPenalty = m_param.mean_error_loss_param.penalize_values_above_threshold.Value;
+                        float fLambda = m_param.mean_error_loss_param.above_penalty_portion_lambda;
+                        m_cuda.copy(nCount, colBottom[0].gpu_diff, m_blobWork.mutable_gpu_data);
+                        m_cuda.threshold(nCount, m_blobWork.gpu_data, fPenalty, SIDE.ABOVE, m_blobWork.mutable_gpu_data);
+                        m_cuda.powx(nCount, m_blobWork.gpu_data, 2.0, m_blobWork.mutable_gpu_data);
+                        m_cuda.axpy(nCount, fLambda, m_blobWork.gpu_data, colBottom[0].mutable_gpu_diff);
+                    }
+
                     dfLoss = m_cuda.asum_double(nCount, colBottom[0].gpu_diff);
                     break;
 

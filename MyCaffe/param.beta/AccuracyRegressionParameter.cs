@@ -20,6 +20,8 @@ namespace MyCaffe.param
         double m_dfBucketMin = -2.0;
         double m_dfBucketMax = 2.0;
         int m_nBucketCount = 10;
+        double? m_dfIgnoreAbove = null;
+        double? m_dfIgnoreBelow = null;
 
         /// <summary>
         /// Defines the MAPE algorithm to use.
@@ -53,6 +55,24 @@ namespace MyCaffe.param
         {
             get { return m_alg; }
             set { m_alg = value; }
+        }
+
+        /// <summary>
+        /// Ignore all scores above this value (default = null).
+        /// </summary>
+        public double? bucket_ignore_above
+        {
+            get { return m_dfIgnoreAbove; }
+            set { m_dfIgnoreAbove = value; }
+        }
+
+        /// <summary>
+        /// Ignore all scores below this value (default = null).
+        /// </summary>
+        public double? bucket_ignore_below
+        {
+            get { return m_dfIgnoreBelow; }
+            set { m_dfIgnoreBelow = value; }
         }
 
         /// <summary>
@@ -106,6 +126,8 @@ namespace MyCaffe.param
             m_dfBucketMin = p.m_dfBucketMin;
             m_dfBucketMax = p.m_dfBucketMax;
             m_nBucketCount = p.m_nBucketCount;
+            m_dfIgnoreAbove = p.m_dfIgnoreAbove;
+            m_dfIgnoreBelow = p.m_dfIgnoreBelow;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -129,6 +151,11 @@ namespace MyCaffe.param
             rgChildren.Add("bucket_min", bucket_min.ToString());
             rgChildren.Add("bucket_max", bucket_max.ToString());
             rgChildren.Add("bucket_count", bucket_count.ToString());
+
+            if (bucket_ignore_below.HasValue)
+                rgChildren.Add("bucket_ignore_below", bucket_ignore_below.Value.ToString());
+            if (bucket_ignore_above.HasValue)
+                rgChildren.Add("bucket_ignore_above", bucket_ignore_above.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -154,6 +181,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("bucket_count")) != null)
                 p.bucket_count = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("bucket_ignore_above")) != null)
+                p.bucket_ignore_above = BaseParameter.ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("bucket_ignore_below")) != null)
+                p.bucket_ignore_below = BaseParameter.ParseDouble(strVal);
 
             return p;
         }
