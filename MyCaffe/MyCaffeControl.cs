@@ -2195,7 +2195,9 @@ namespace MyCaffe
                         return null;
                     }
 
-                    sd = (rgImg != null) ? rgImg[i] : m_db.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
+                    sd = (rgImg != null) ? rgImg[i] : m_db.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData, false);
+                    if (sd == null)
+                        continue;
 
                     if (sd.Height != m_dataSet.TrainingSource.Height || sd.Width != m_dataSet.TestingSource.Width)
                     {
