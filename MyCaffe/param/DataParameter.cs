@@ -33,6 +33,25 @@ namespace MyCaffe.param
             IMAGEDB = 1
         }
 
+        /// <summary>
+        /// Defines the type of score normalization to perform when using the score as the label.
+        /// </summary>
+        public enum SCORE_AS_LABEL_NORMALIZATION
+        {
+            /// <summary>
+            /// Specifies to not do any normalization.
+            /// </summary>
+            NONE = 0,
+            /// <summary>
+            /// Specifies to run z-score normalization on all values usng the 'Mean' and 'StdDev' values from the mean image.
+            /// </summary>
+            Z_SCORE = 1,
+            /// <summary>
+            /// Specifies to run pos/neg z-score normalization on all values using the 'PosMean' and 'PosStdDev' for all positive values, and 'NegMean' and 'NegStdDev' for all negative values..
+            /// </summary>
+            Z_SCORE_POSNEG = 2
+        }
+
         string m_strSource = null;
         uint m_nBatchSize;
         DB m_backend = DB.IMAGEDB;
@@ -54,8 +73,7 @@ namespace MyCaffe.param
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
-        bool m_bUseScoreAsLabel = false;
-        bool m_bEnableScoreAsLabelNormalization = false;
+        SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -303,34 +321,30 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// When enabled the score is used as the label, which is useful in regression models (default = false).
-        /// </summary>
-        [Category("Labels"), Description("When enabled the score is used as the label, which is useful in regression models (default = false).")]
-        public bool use_score_as_label
-        {
-            get { return m_bUseScoreAsLabel; }
-            set { m_bUseScoreAsLabel = value; }
-        }
-
-        /// <summary>
         /// When enabled, score as label normalization is attempted (default = false).
         /// </summary>
         /// <remarks>
         /// Score as label normalization requires that a Mean image exist in the dataset with the following
         /// image parameters set in the database.
+        /// Z_SCORE
         ///     'Mean' - specifies the mean score.
         ///     'StdDev' - specifies the standard deviation of the score.
+        /// Z_SCORE_POSNEG
+        ///     'PosMean' - specifies the mean score used with positive numbers.
+        ///     'PosStdDev' - specifies the stddev score used with positive numbers.
+        ///     'NegMean' - specifies the mean score used with negative numbers.
+        ///     'NegStdDev' - specifies the stddev score used with negative numbers.
         /// During normalization, these values are used to perform Z-score normalization where the mean score is
         /// subtracted from each score then divided by the score standard deviation.
         /// 
         /// If these parameters or the mean image do not exist, a warning is produced and no normalization
         /// takes place.
         /// </remarks>
-        [Category("Labels"), Description("When enabled, score as label normalization is attempted using z-score normalization (default = false).")]
-        public bool enable_score_as_label_normalization
+        [Category("Labels"), Description("When enabled, score as label normalization is run using z-score normalization method specified (default = NONE).")]
+        public SCORE_AS_LABEL_NORMALIZATION score_as_label_normalization
         {
-            get { return m_bEnableScoreAsLabelNormalization; }
-            set { m_bEnableScoreAsLabelNormalization = value; }
+            get { return m_zscoreNormalization; }
+            set { m_zscoreNormalization = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -370,8 +384,7 @@ namespace MyCaffe.param
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
-            m_bUseScoreAsLabel = p.m_bUseScoreAsLabel;
-            m_bEnableScoreAsLabelNormalization = p.m_bEnableScoreAsLabelNormalization;
+            m_zscoreNormalization = p.m_zscoreNormalization;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -446,13 +459,8 @@ namespace MyCaffe.param
             if (one_hot_label_size > 0)
                 rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
 
-            if (use_score_as_label)
-            {
-                rgChildren.Add("use_score_as_label", use_score_as_label.ToString());
-
-                if (enable_score_as_label_normalization)
-                    rgChildren.Add("enable_score_as_label_normalization", enable_score_as_label_normalization.ToString());
-            }
+            if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
+                rgChildren.Add("score_as_label_normalization", m_zscoreNormalization.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -521,6 +529,18 @@ namespace MyCaffe.param
                         p.label_type = LABEL_TYPE.MULTIPLE;
                         break;
 
+                    case "ONLY_ONE":
+                        p.label_type = LABEL_TYPE.ONLY_ONE;
+                        break;
+
+                    case "SCORE1":
+                        p.label_type = LABEL_TYPE.SCORE1;
+                        break;
+
+                    case "SCORE2":
+                        p.label_type = LABEL_TYPE.SCORE2;
+                        break;
+
                     default:
                         throw new Exception("Unknown 'label_type' value " + strVal);
                 }
@@ -566,11 +586,26 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("one_hot_label_size")) != null)
                 p.one_hot_label_size = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("use_score_as_label")) != null)
-                p.use_score_as_label = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("score_as_label_normalization")) != null)
+            {
+                switch (strVal)
+                {
+                    case "NONE":
+                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
+                        break;
 
-            if ((strVal = rp.FindValue("enable_score_as_label_normalization")) != null)
-                p.enable_score_as_label_normalization = bool.Parse(strVal);
+                    case "Z_SCORE":
+                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE;
+                        break;
+
+                    case "Z_SCORE_POSNEG":
+                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG;
+                        break;
+
+                    default:
+                        throw new Exception("Unknown 'score_as_label_normalization' value " + strVal);
+                }
+            }
 
             return p;
         }

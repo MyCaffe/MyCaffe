@@ -37,7 +37,15 @@ namespace MyCaffe.param
             /// <summary>
             /// Specifies to force the label to a single value regardless of the batch size, so if the batch size is 8, the label count remains only 1.
             /// </summary>
-            ONLY_ONE
+            ONLY_ONE,
+            /// <summary>
+            /// Specifies to use score1 as the label.
+            /// </summary>
+            SCORE1,
+            /// <summary>
+            /// Specifies to use score2 as the label.
+            /// </summary>
+            SCORE2
         }
 
         /** @copydoc BaseParameter */
