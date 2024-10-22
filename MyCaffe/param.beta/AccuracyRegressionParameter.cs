@@ -20,8 +20,8 @@ namespace MyCaffe.param
         double m_dfBucketMin = -2.0;
         double m_dfBucketMax = 2.0;
         int m_nBucketCount = 10;
-        double? m_dfIgnoreAbove = null;
-        double? m_dfIgnoreBelow = null;
+        double? m_dfIgnoreMin = null;
+        double? m_dfIgnoreMax = null;
 
         /// <summary>
         /// Defines the MAPE algorithm to use.
@@ -58,21 +58,23 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Ignore all scores above this value (default = null).
+        /// Ignore all scores below this value (default = null).  Note when using ignore ranges both min and max must be specified.
         /// </summary>
-        public double? bucket_ignore_above
+        [Description("Ignore all scores below this value (default = null).  Note when using ignore ranges both min and max must be specified.")]
+        public double? bucket_ignore_max
         {
-            get { return m_dfIgnoreAbove; }
-            set { m_dfIgnoreAbove = value; }
+            get { return m_dfIgnoreMin; }
+            set { m_dfIgnoreMin = value; }
         }
 
         /// <summary>
-        /// Ignore all scores below this value (default = null).
+        /// Ignore all scores above this value (default = null).  Note when using ignore ranges both min and max must be specified.
         /// </summary>
-        public double? bucket_ignore_below
+        [Description("Ignore all scores above this value (default = null).  Note when using ignore ranges both min and max must be specified.")]
+        public double? bucket_ignore_min
         {
-            get { return m_dfIgnoreBelow; }
-            set { m_dfIgnoreBelow = value; }
+            get { return m_dfIgnoreMax; }
+            set { m_dfIgnoreMax = value; }
         }
 
         /// <summary>
@@ -126,8 +128,8 @@ namespace MyCaffe.param
             m_dfBucketMin = p.m_dfBucketMin;
             m_dfBucketMax = p.m_dfBucketMax;
             m_nBucketCount = p.m_nBucketCount;
-            m_dfIgnoreAbove = p.m_dfIgnoreAbove;
-            m_dfIgnoreBelow = p.m_dfIgnoreBelow;
+            m_dfIgnoreMin = p.m_dfIgnoreMin;
+            m_dfIgnoreMax = p.m_dfIgnoreMax;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -152,10 +154,10 @@ namespace MyCaffe.param
             rgChildren.Add("bucket_max", bucket_max.ToString());
             rgChildren.Add("bucket_count", bucket_count.ToString());
 
-            if (bucket_ignore_below.HasValue)
-                rgChildren.Add("bucket_ignore_below", bucket_ignore_below.Value.ToString());
-            if (bucket_ignore_above.HasValue)
-                rgChildren.Add("bucket_ignore_above", bucket_ignore_above.Value.ToString());
+            if (bucket_ignore_min.HasValue)
+                rgChildren.Add("bucket_ignore_min", bucket_ignore_min.Value.ToString());
+            if (bucket_ignore_max.HasValue)
+                rgChildren.Add("bucket_ignore_max", bucket_ignore_max.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -182,11 +184,11 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("bucket_count")) != null)
                 p.bucket_count = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("bucket_ignore_above")) != null)
-                p.bucket_ignore_above = BaseParameter.ParseDouble(strVal);
+            if ((strVal = rp.FindValue("bucket_ignore_min")) != null)
+                p.bucket_ignore_min = BaseParameter.ParseDouble(strVal);
 
-            if ((strVal = rp.FindValue("bucket_ignore_below")) != null)
-                p.bucket_ignore_below = BaseParameter.ParseDouble(strVal);
+            if ((strVal = rp.FindValue("bucket_ignore_max")) != null)
+                p.bucket_ignore_max = BaseParameter.ParseDouble(strVal);
 
             return p;
         }
