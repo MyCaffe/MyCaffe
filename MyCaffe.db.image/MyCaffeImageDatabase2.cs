@@ -1247,8 +1247,9 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        public SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait == 0)
@@ -1269,7 +1270,7 @@ namespace MyCaffe.db.image
             QueryState qstate = m_colDatasets[m_nStrIDHashCode].FindQueryState(lQueryState, nSrcId);
             ImageSet2 imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
 
-            return imgSet.GetImage(qstate, labelSelectionMethod, imageSelectionMethod, m_log, nLabel, nIdx, bLoadDataCriteria, bLoadDataCriteria);
+            return imgSet.GetImage(qstate, labelSelectionMethod, imageSelectionMethod, m_log, nLabel, nIdx, bLoadDataCriteria, bLoadDataCriteria, bThrowExceptions);
         }
 
         /// <summary>
@@ -1282,10 +1283,11 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true)
         {
-            return QueryImage(0, nSrcId, nIdx, labelSelectionOverride, imageSelectionOverride, nLabel, bLoadDataCriteria, bLoadDebugData);
+            return QueryImage(0, nSrcId, nIdx, labelSelectionOverride, imageSelectionOverride, nLabel, bLoadDataCriteria, bLoadDebugData, bThrowExceptions);
         }
 
         /// <summary>

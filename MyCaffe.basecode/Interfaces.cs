@@ -724,9 +724,10 @@ namespace MyCaffe.basecode
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
+        SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true);
 
         /// <summary>
         /// Returns the array of items (e.g., images or temporal items) in the item set, possibly filtered with the filtering parameters.
@@ -1395,9 +1396,10 @@ namespace MyCaffe.basecode
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
+        SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true);
 
         #endregion // Image Acquisition
 

@@ -367,8 +367,9 @@ namespace MyCaffe.db.image
         /// <param name="nDirectIdx">Optionally, specifies the image index to use when loading a specific index (default = -1).</param>
         /// <param name="bLoadDataCriteria">Optionally, specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Optionally, specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The SimpleDatum containing the image is returned.</returns>
-        public SimpleDatum GetImage(QueryState state, DB_LABEL_SELECTION_METHOD labelSelectionMethod, DB_ITEM_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum GetImage(QueryState state, DB_LABEL_SELECTION_METHOD labelSelectionMethod, DB_ITEM_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true)
         {
             if ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST &&
                 (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
@@ -384,6 +385,9 @@ namespace MyCaffe.db.image
                 nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
                 if (!nIdx.HasValue || nIdx.Value < 0)
                 {
+                    if (!bThrowExceptions)
+                        return null;
+
                     string strBoosted = ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST) ? "Boosted" : "";
                     string strLabel = (nLabel.HasValue) ? " for label '" + nLabel.Value.ToString() + "'." : ".";
                     throw new Exception("Failed to find the image index! The data source '" + m_src.Name + "' has no " + strBoosted + " images" + strLabel + ". You may need to re-index the dataset.");

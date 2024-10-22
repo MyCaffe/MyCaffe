@@ -752,8 +752,9 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
