@@ -40,6 +40,7 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="cuda">Cuda engine.</param>
         /// <param name="log">General log.</param>
+        /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="db">Specifies the database.</param>
         public AccuracyRegressionLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db)
             : base(cuda, log, p)
