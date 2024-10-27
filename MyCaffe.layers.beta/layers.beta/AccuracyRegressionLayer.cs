@@ -297,7 +297,10 @@ namespace MyCaffe.layers.beta
         }
     }
 
-    class RollingBucketAccuracy
+    /// <summary>
+    /// The RollingBucketAccuracy provides rolling accuracy.
+    /// </summary>
+    public class RollingBucketAccuracy
     {
         double m_dfMin;
         double m_dfMax;
@@ -309,6 +312,16 @@ namespace MyCaffe.layers.beta
         double? m_dfIgnoreMin;
         List<BucketAccuracy> m_rgItems = new List<BucketAccuracy>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="dfMin">Specifies the minimum value.</param>
+        /// <param name="dfMax">Specifies the maximum value.</param>
+        /// <param name="nCount">Specfies the number of buckets.</param>
+        /// <param name="nMinIterations">Specifies the minimum number of iterations.</param>
+        /// <param name="nMaxIterations">Specifies the maximum number of iterations.</param>
+        /// <param name="dfIgnoreMin">Specifies the minimum ignore value.</param>
+        /// <param name="dfIgnoreMax">Specifies the maximum ignore value.</param>
         public RollingBucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations, double? dfIgnoreMin, double? dfIgnoreMax)
         {
             m_dfMin = dfMin;
@@ -323,6 +336,11 @@ namespace MyCaffe.layers.beta
             m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount, dfIgnoreMin, dfIgnoreMax));
         }
 
+        /// <summary>
+        /// Add a set of predictions and target values.
+        /// </summary>
+        /// <param name="rgPred">Specifies the predictions.</param>
+        /// <param name="rgTgt">Specifies the targets.</param>
         public void Add(float[] rgPred, float[] rgTgt)
         {
             m_nIteration++;
@@ -339,6 +357,10 @@ namespace MyCaffe.layers.beta
                 m_rgItems.RemoveAt(0);
         }
 
+        /// <summary>
+        /// Calculates the accuracy.
+        /// </summary>
+        /// <returns>The accuracy value is returned.</returns>
         public double CalculateAccuracy()
         {
             if (m_rgItems.Count == 0 || m_nIteration < m_nMinIterations)
