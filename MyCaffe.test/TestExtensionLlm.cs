@@ -211,6 +211,11 @@ namespace MyCaffe.test
                     strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 }
 
+                if (!File.Exists(strModelFile))
+                    throw new Exception("You must first download the model file '" + strModelFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
+                if (!File.Exists(strTokenizerFile))
+                    throw new Exception("You must first download the tokenization file '" + strTokenizerFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
+
                 string strInput = strModelFile + ";" + strTokenizerFile;
 
                 T[] rgParam = new T[3];
@@ -254,6 +259,11 @@ namespace MyCaffe.test
                     strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                     strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 }
+
+                if (!File.Exists(strModelFile))
+                    throw new Exception("You must first download the model file '" + strModelFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
+                if (!File.Exists(strTokenizerFile))
+                    throw new Exception("You must first download the tokenization file '" + strTokenizerFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
 
                 string strInput = strModelFile + ";" + strTokenizerFile;
 
@@ -318,6 +328,11 @@ namespace MyCaffe.test
                     strModelFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\llama2_7b_chat.bin";
                     strTokenizerFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\llama\\test\\llama7b\\tokenizer.bin";
                 }
+
+                if (!File.Exists(strModelFile))
+                    throw new Exception("You must first download the model file '" + strModelFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
+                if (!File.Exists(strTokenizerFile))
+                    throw new Exception("You must first download the tokenization file '" + strTokenizerFile + "'!  To download, select the 'Test | Download Test Data | LLAMA' menu from the MyCaffe Test Application.");
 
                 llm.LoadAsync(strModelFile, strTokenizerFile);
                 m_evtLoaded.WaitOne();
