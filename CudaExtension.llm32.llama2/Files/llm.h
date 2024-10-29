@@ -14,7 +14,9 @@
 
 const long ERROR_LLM_RENDERED_PROMPT_TO_LONG = 10000;
 const long ERROR_LLM_LOAD_MODEL = 10001;
-const long ERROR_LLM_GENERATE = 10002;
+const long ERROR_LLM_LOAD_MODEL_MISSING_MODEL_FILE = 10002;
+const long ERROR_LLM_LOAD_MODEL_MISSING_TOKENIZER_FILE = 10003;
+const long ERROR_LLM_GENERATE = 10004;
 
 
 //=============================================================================

@@ -123,6 +123,16 @@ long LLMData<T>::Load(LPTSTR szInput)
 		std::string strTokenizerPath;
 		split(szInput, strModelPath, strTokenizerPath);
 
+		FILE* file = fopen(strModelPath.c_str(), "r");
+		if (file == NULL)
+			return ERROR_LLM_LOAD_MODEL_MISSING_MODEL_FILE;
+		fclose(file);
+
+		file = fopen(strTokenizerPath.c_str(), "r");
+		if (file == NULL)
+			return ERROR_LLM_LOAD_MODEL_MISSING_TOKENIZER_FILE;
+		fclose(file);
+
 		m_transformer = new TransformerGpu();
 		m_transformer->build(strModelPath.c_str());
 
