@@ -205,6 +205,9 @@ namespace MyCaffe.test.automated
             int nProgressCount = 0;
             MethodInfoEx miLast = null;
 
+            if (lstTests == null || lstTests.Items == null)
+                return;
+
             foreach (ListViewItem lvi in lstTests.Items)
             {
                 KeyValuePair<TestClass, MethodInfoEx> kvTc = (KeyValuePair<TestClass, MethodInfoEx>)lvi.Tag;
