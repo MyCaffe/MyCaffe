@@ -646,9 +646,21 @@ namespace MyCaffe.app
             if (!verifyDatabase())
                 return;
 
-            openFileDialogAutoTests.InitialDirectory = initialDirectory;
+            string strLastPath = Properties.Settings.Default.LastTestDLLPath;
+            string strInitialDir = initialDirectory;
+
+            if (!string.IsNullOrEmpty(strLastPath))
+            {
+                strInitialDir = Path.GetDirectoryName(strLastPath);
+                openFileDialogAutoTests.FileName = strLastPath;
+            }
+
+            openFileDialogAutoTests.InitialDirectory = strInitialDir;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
+                Properties.Settings.Default.LastTestDLLPath = openFileDialogAutoTests.FileName;
+                Properties.Settings.Default.Save();
+
                 FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion(), getCulture(), m_strDllPath);
 
                 setStatus("Running automatic tests.");
