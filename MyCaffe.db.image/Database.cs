@@ -49,6 +49,7 @@ namespace MyCaffe.db.image
         Dictionary<string, string> m_rgstrDatabaseFilePath = new Dictionary<string, string>();
         object m_objRemoteSync = new object();
         FileWriter m_fileWriter = null;
+        StringBuilder m_sb = new StringBuilder();
 
         /// <summary>
         /// Defines the force load type.
@@ -1759,10 +1760,18 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the new label value.</param>
         public void UpdateActiveLabelByID(int nID, int nLabel)
         {
-            string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1";
-            strCmd += " WHERE ([ID] = " + nID.ToString() + ")";
+            lock (m_sb)
+            {
+                m_sb.Clear();
+                m_sb.Append("UPDATE [dbo].[RawImages] SET [ActiveLabel] = ");
+                m_sb.Append(nLabel.ToString());
+                m_sb.Append(",[Active] = 1");
+                m_sb.Append(" WHERE ([ID] = ");
+                m_sb.Append(nID.ToString());
+                m_sb.Append(")");
 
-            m_entities.Database.ExecuteSqlCommand(strCmd);
+                m_entities.Database.ExecuteSqlCommand(m_sb.ToString());
+            }
         }
 
         /// <summary>
@@ -1773,10 +1782,20 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the new label value.</param>
         public void UpdateActiveLabelByIndex(int nSrcId, int nIdx, int nLabel)
         {
-            string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1";
-            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ") AND ([Idx] = " + nIdx.ToString() + ")";
+            lock (m_sb)
+            {
+                m_sb.Clear();
+                m_sb.Append("UPDATE [dbo].[RawImages] SET [ActiveLabel] = ");
+                m_sb.Append(nLabel.ToString());
+                m_sb.Append(",[Active] = 1");
+                m_sb.Append(" WHERE ([SourceID] = ");
+                m_sb.Append(nSrcId.ToString());
+                m_sb.Append(") AND ([Idx] = ");
+                m_sb.Append(nIdx.ToString());
+                m_sb.Append(")");
 
-            m_entities.Database.ExecuteSqlCommand(strCmd);
+                m_entities.Database.ExecuteSqlCommand(m_sb.ToString());
+            }
         }
 
         /// <summary>
