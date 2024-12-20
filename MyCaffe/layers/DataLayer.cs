@@ -12,6 +12,8 @@ using MyCaffe.data;
 using MyCaffe.fillers;
 using System.IO;
 using System.Drawing;
+using System.Runtime.Remoting.Activation;
+using System.Security.Cryptography;
 
 namespace MyCaffe.layers
 {
@@ -790,7 +792,17 @@ namespace MyCaffe.layers
 
                 if (rgTargetLabels == null)
                 {
-                    datum = m_cursor.GetValue(null, bLoadDataCriteria);
+                    int nRetry = 0;
+                    bool bThrowExceptions = false;
+
+                    datum = m_cursor.GetValue(null, bLoadDataCriteria, null, false);
+                    while (datum == null && nRetry < 10)
+                    {
+                        if (nRetry == 9)
+                            bThrowExceptions = true;
+                        datum = m_cursor.GetValue(null, bLoadDataCriteria, null,bThrowExceptions);
+                        nRetry++;
+                    }
 
                     if (m_param.data_param.images_per_blob > 1)
                     {
