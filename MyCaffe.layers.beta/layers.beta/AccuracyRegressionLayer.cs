@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 using MyCaffe.param;
 using static MyCaffe.param.beta.DecodeParameter;
@@ -33,6 +34,7 @@ namespace MyCaffe.layers.beta
         RollingBucketAccuracy m_rgBucketAccuracy = null;
         BucketAccuracy m_testingAccuracy1 = null;
         BucketAccuracy m_testingAccuracy2 = null;
+        BucketCollection m_colLabel = null;
         ZScoreLayer<T> m_zscore = null;
 
         /// <summary>
@@ -65,16 +67,55 @@ namespace MyCaffe.layers.beta
                 if (p.accuracy_regression_param.bucket_count <= 1)
                     throw new Exception("The accuracy regression bucket count must be > 1.");
 
-                m_rgBucketAccuracy = new RollingBucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
-                m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
-                m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
-
                 if (p.z_score_param != null && p.z_score_param.enabled)
                 {
                     LayerParameter pzs = new LayerParameter(LayerParameter.LayerType.Z_SCORE);
                     pzs.z_score_param = p.z_score_param;
                     m_zscore = Layer<T>.Create(cuda, log, pzs, null, db) as ZScoreLayer<T>;
+
+                    SourceDescriptor src = db.GetSourceByName(p.z_score_param.source);
+                    if (src != null)
+                    {
+                        int nPos = src.Name.IndexOf('.');
+                        string strDs = src.Name.Substring(0, nPos);
+                        DatasetDescriptor ds = db.GetDatasetByName(strDs);
+
+                        if (ds != null)
+                        {
+                            ParameterDescriptor p1 = ds.Parameters.Find("LabelBucketConfig");
+                            if (p1 != null && !string.IsNullOrEmpty(p1.Value))
+                                m_colLabel = new BucketCollection(p1.Value);
+                        }
+                    }
+
+                    if (m_colLabel == null || m_colLabel.Count == 0)
+                    {
+                        m_log.WriteLine("WARNING: The source '" + p.z_score_param.source + "' was not found, the ZScoreLayer will not be used.");
+                    }
+                    else
+                    {
+                        // Normalize the label buckets.
+                        foreach (Bucket b in m_colLabel)
+                        {
+                            float fMin = m_zscore.Normalize((float)b.Minimum);
+                            if (b.Minimum == 0)
+                                fMin = 0;
+
+                            float fMax = m_zscore.Normalize((float)b.Maximum);
+                            if (b.Maximum == 0)
+                                fMax = 0;
+
+                            b.Update(fMin, fMax);
+                        }
+                    }
                 }
+
+                if (m_colLabel != null)
+                    m_log.WriteLine("INFO: Using Label Bucket Collection from 'LabelBucketConfig' dataset parameter instead of accuraccy regression parameters.");
+
+                m_rgBucketAccuracy = new RollingBucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
+                m_testingAccuracy1 = new BucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
+                m_testingAccuracy2 = new BucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
             }
         }
 
@@ -102,7 +143,7 @@ namespace MyCaffe.layers.beta
             if (layer_param.accuracy_regression_param.algorithm != AccuracyRegressionParameter.ALGORITHM.BUCKETING)
                 throw new Exception("The 'ResetTesting' is only supported when using the 'BUCKETING' algorithm.");
 
-            m_testingAccuracy1 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
+            m_testingAccuracy1 = new BucketAccuracy(m_colLabel, layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
             m_testingAccuracy2 = null;
         }
 
@@ -127,7 +168,7 @@ namespace MyCaffe.layers.beta
                         fGroundTruth2 = m_zscore.Normalize(fGroundTruth2.Value);
 
                     if (m_testingAccuracy2 == null)
-                        m_testingAccuracy2 = new BucketAccuracy(layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
+                        m_testingAccuracy2 = new BucketAccuracy(m_colLabel, layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
                     m_testingAccuracy2.Add(new float[] { fPredicted }, new float[] { fGroundTruth2.Value });
                 }
             }
@@ -312,10 +353,12 @@ namespace MyCaffe.layers.beta
         double? m_dfIgnoreMax;
         double? m_dfIgnoreMin;
         List<BucketAccuracy> m_rgItems = new List<BucketAccuracy>();
+        BucketCollection m_colOverride = null;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="colOverride">Optional bucket collection override that when specified is used instead of the other fixed buckets.</param>
         /// <param name="dfMin">Specifies the minimum value.</param>
         /// <param name="dfMax">Specifies the maximum value.</param>
         /// <param name="nCount">Specfies the number of buckets.</param>
@@ -323,8 +366,9 @@ namespace MyCaffe.layers.beta
         /// <param name="nMaxIterations">Specifies the maximum number of iterations.</param>
         /// <param name="dfIgnoreMin">Specifies the minimum ignore value.</param>
         /// <param name="dfIgnoreMax">Specifies the maximum ignore value.</param>
-        public RollingBucketAccuracy(double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations, double? dfIgnoreMin, double? dfIgnoreMax)
+        public RollingBucketAccuracy(BucketCollection colOverride, double dfMin, double dfMax, int nCount, int nMinIterations, int nMaxIterations, double? dfIgnoreMin, double? dfIgnoreMax)
         {
+            m_colOverride = colOverride;
             m_dfMin = dfMin;
             m_dfMax = dfMax;
             m_nCount = nCount;
@@ -334,7 +378,7 @@ namespace MyCaffe.layers.beta
             m_dfIgnoreMax = dfIgnoreMax;
             m_dfIgnoreMin = dfIgnoreMin;
 
-            m_rgItems.Add(new BucketAccuracy(dfMin, dfMax, nCount, dfIgnoreMin, dfIgnoreMax));
+            m_rgItems.Add(new BucketAccuracy(colOverride, dfMin, dfMax, nCount, dfIgnoreMin, dfIgnoreMax));
         }
 
         /// <summary>
@@ -346,7 +390,7 @@ namespace MyCaffe.layers.beta
         {
             m_nIteration++;
 
-            BucketAccuracy b = new BucketAccuracy(m_dfMin, m_dfMax, m_nCount, m_dfIgnoreMax, m_dfIgnoreMin);
+            BucketAccuracy b = new BucketAccuracy(m_colOverride, m_dfMin, m_dfMax, m_nCount, m_dfIgnoreMax, m_dfIgnoreMin);
             m_rgItems.Add(b);
 
             foreach (BucketAccuracy b1 in m_rgItems)
@@ -385,30 +429,80 @@ namespace MyCaffe.layers.beta
         double? m_dfIgnoreMin = null;
         Dictionary<Bucket, int> m_rgBucketCorrectHits = new Dictionary<Bucket, int>();
         Dictionary<Bucket, Dictionary<int, int>> m_rgBucketIncorrectHits = new Dictionary<Bucket, Dictionary<int, int>>();
+        BucketCollection m_colOverride = null;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="colOverride">Optional bucket collection override that when specified is used instead of the other fixed buckets.</param>
         /// <param name="dfMin">Specifies the minimum of all values.</param>
         /// <param name="dfMax">Specifies the maximum of all values.</param>
         /// <param name="nCount">Specifies the number of buckets.</param>
         /// <param name="dfIgnoreMin">Specifies to the minimum ignore range (default = -double.MaxValue).</param>
         /// <param name="dfIgnoreMax">Specifies to the maximum ignore range (default = double.MaxValue).</param>
-        public BucketAccuracy(double dfMin, double dfMax, int nCount, double? dfIgnoreMin, double? dfIgnoreMax)
+        public BucketAccuracy(BucketCollection colOverride, double dfMin, double dfMax, int nCount, double? dfIgnoreMin, double? dfIgnoreMax)
         {
+            m_colOverride = colOverride;
             m_dfIgnoreMax = dfIgnoreMax;
             m_dfIgnoreMin = dfIgnoreMin;
 
-            int nBucketCount = nCount;
-            if (dfMin < 0)
+            if (m_colOverride != null)
             {
-                nBucketCount /= 2;
-                m_colPredNeg = new BucketCollection(dfMin, 0, nBucketCount);
-                m_colTgtNeg = new BucketCollection(dfMin, 0, nBucketCount);
-            }
+                string strCfg = m_colOverride.ToConfigString();
+                string[] rgstr = strCfg.Split(';');
+                List<string> rgstrNeg = new List<string>();
+                List<string> rgstrPos = new List<string>();
 
-            m_colPredPos = new BucketCollection(0, dfMax, nBucketCount);
-            m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
+                for (int i = 1; i < rgstr.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(rgstr[i]))
+                        continue;
+
+                    string str = rgstr[i].Trim('[', ']');
+                    string[] rgstr1 = str.Split(',');
+                    double dfMin1 = double.Parse(rgstr1[0]);
+                    double dfMax1 = double.Parse(rgstr1[1]);
+
+                    if (dfMin1 < 0)
+                        rgstrNeg.Add(rgstr[i]);
+                    else
+                        rgstrPos.Add(rgstr[i]);
+                }
+
+                string strNegConfig = "Count=" + rgstrNeg.Count.ToString() + ";";
+                for (int i = 0; i < rgstrNeg.Count; i++)
+                {
+                    strNegConfig += rgstrNeg[i];
+                    if (i < rgstrNeg.Count - 1)
+                        strNegConfig += ";";
+                }
+
+                string strPosConfig = "Count=" + rgstrPos.Count.ToString() + ";";
+                for (int i = 0; i < rgstrPos.Count; i++)
+                {
+                    strPosConfig += rgstrPos[i];
+                    if (i < rgstrPos.Count - 1)
+                        strPosConfig += ";";
+                }
+
+                m_colPredNeg = new BucketCollection(strNegConfig);
+                m_colTgtNeg = new BucketCollection(strNegConfig);
+                m_colPredPos = new BucketCollection(strPosConfig);
+                m_colTgtPos = new BucketCollection(strPosConfig);
+            }
+            else
+            {
+                int nBucketCount = nCount;
+                if (dfMin < 0)
+                {
+                    nBucketCount /= 2;
+                    m_colPredNeg = new BucketCollection(dfMin, 0, nBucketCount);
+                    m_colTgtNeg = new BucketCollection(dfMin, 0, nBucketCount);
+                }
+
+                m_colPredPos = new BucketCollection(0, dfMax, nBucketCount);
+                m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
+            }
         }
 
         /// <summary>
@@ -416,14 +510,17 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="rgPred">Specifies the predicted values.</param>
         /// <param name="rgTgt">Specifies the target values.</param>
-        public void Add(float[] rgPred, float[] rgTgt)
+        public int Add(float[] rgPred, float[] rgTgt)
         {
+            int nPredIdxNeg = -1;
+            int nPredIdxPos = -1;
+
             for (int i = 0; i < rgPred.Length; i++)
             {
                 int nTgtIdxNeg = -1;
                 int nTgtIdxPos = -1;
-                int nPredIdxNeg = -1;
-                int nPredIdxPos = -1;
+                nPredIdxNeg = -1;
+                nPredIdxPos = -1;
 
                 if (m_dfIgnoreMin.HasValue && m_dfIgnoreMax.HasValue)
                 {
@@ -499,6 +596,13 @@ namespace MyCaffe.layers.beta
                     }
                 }
             }
+
+            if (nPredIdxNeg >= 0)
+                return -nPredIdxNeg;
+            else if (nPredIdxPos >= 0)
+                return nPredIdxPos;
+            else
+                return 0;
         }
 
         /// <summary>
