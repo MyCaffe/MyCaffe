@@ -32,6 +32,19 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Create a copy of the bucket.
+        /// </summary>
+        /// <returns>The copy is returned.</returns>
+        public Bucket Clone()
+        {
+            Bucket b = new Bucket(m_fMin, m_fMax);
+            b.m_fSum = m_fSum;
+            b.m_nCount = m_nCount;
+            b.m_tag = m_tag;
+            return b;
+        }
+
+        /// <summary>
         /// Tests to see if the Bucket range contains the value.
         /// </summary>
         /// <param name="fVal">Specifies the value to test.</param>
@@ -239,12 +252,68 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// The constructor used to build a bucket collection from a configuration string.
+        /// </summary>
+        /// <param name="strConfigString">Specifies the configuration string created when calling ToConfigString()</param>
+        public BucketCollection(string strConfigString)
+        {
+            string[] rgstr = strConfigString.Split(';');
+            int nCount = 0;
+            foreach (string str in rgstr)
+            {
+                string strVal = str.Trim();
+                if (strVal.Length == 0)
+                    continue;
+                if (strVal.StartsWith("Count="))
+                {
+                    string strCount = strVal.Substring(6);
+                    nCount = int.Parse(strCount);
+                }
+                else
+                {
+                    string strMin = strVal.Substring(1, strVal.IndexOf(',') - 1);
+                    string strMax = strVal.Substring(strVal.IndexOf(',') + 1, strVal.Length - strVal.IndexOf(',') - 2);
+                    Bucket b = new Bucket(double.Parse(strMin), double.Parse(strMax));
+                    m_rgBuckets.Add(b);
+                }
+            }
+
+            m_bIsDataReal = true;
+        }
+
+        /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="bIsReal">Specifies that the Buckets are to hold Real values.</param>
         public BucketCollection(bool bIsReal)
         {
             m_bIsDataReal = bIsReal;
+        }
+
+        /// <summary>
+        /// Return the configuration string that can be used to recreate the BucketCollection.
+        /// </summary>
+        /// <returns>Returns the configuration string.</returns>
+        public string ToConfigString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("Count=" + m_rgBuckets.Count.ToString() + ";");
+            for (int i = 0; i < m_rgBuckets.Count; i++)
+            {
+                sb.Append("[" + m_rgBuckets[i].Minimum.ToString("N10") + "," + m_rgBuckets[i].Maximum.ToString("N10") + "];");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Remove a given bucket at a certain index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        public void RemoveAt(int nIdx)
+        {
+            m_rgBuckets.RemoveAt(nIdx);
         }
 
         /// <summary>
