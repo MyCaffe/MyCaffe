@@ -1172,6 +1172,27 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the list of raw images that have a source ID from a selected list.
+        /// </summary>
+        /// <param name="nLastCount">Specifies the number of last images to query from each source ID.</param>
+        /// <param name="rgSrcId">Specifies the list of source ID.</param>
+        /// <returns>The list of RawImage's is returned.</returns>
+        public List<RawImage> QueryLastRawImages(int nLastCount, params int[] rgSrcId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<int?> rgSrcId1 = new List<int?>();
+
+                foreach (int id in rgSrcId)
+                {
+                    rgSrcId1.Add(id);
+                }
+
+                return entities.RawImages.AsNoTracking().Where(p => rgSrcId1.Contains(p.SourceID)).OrderByDescending(p => p.ID).Take(nLastCount).ToList();
+            }
+        }
+
+        /// <summary>
         /// Query a list of all raw image parameters of a give name stored with a given source ID.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
@@ -1253,7 +1274,13 @@ namespace MyCaffe.db.image
 
             strCmd += " ORDER BY Idx";
 
-            return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            if (m_entities != null)
+                return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                return entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            }
         }
 
         /// <summary>
