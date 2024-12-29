@@ -941,7 +941,7 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returnn all parameter names as a string.
+        /// Return all parameter names as a string.
         /// </summary>
         /// <returns>The list of all parameters is returned.</returns>
         public string GetParameterNames()
