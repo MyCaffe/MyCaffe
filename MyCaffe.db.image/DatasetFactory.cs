@@ -44,6 +44,7 @@ namespace MyCaffe.db.image
 
         ImageCache m_imageCache = null;
         ParamCache m_paramCache = null;
+        Stopwatch m_sw = new Stopwatch();
 
 
         /// <summary>
@@ -397,10 +398,15 @@ namespace MyCaffe.db.image
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <param name="log">Optionally, specifies an output log.</param>
         /// <returns>The list of RawImage items is returned.</returns>
-        public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null, Log log = null)
         {
             List<RawImage> rgImg = new List<RawImage>();
+
+            m_sw.Restart();
+
+            int nCount = rgImageIdx.Count;
 
             while (rgImageIdx.Count > 0)
             {
@@ -417,10 +423,20 @@ namespace MyCaffe.db.image
                 for (int i = 0; i < rgIdx.Count; i++)
                 {
                     rgImageIdx.RemoveAt(0);
-                }
+                }                
 
                 if (evtCancel.WaitOne(0))
                     return null;
+
+                if (log != null)
+                {
+                    if (m_sw.Elapsed.TotalMilliseconds >= 1000)
+                    {
+                        double dfPct = 1.0 - ((double)rgImageIdx.Count / (double)nCount);
+                        log.WriteLine("Loading image block of " + rgIdx.Count.ToString() + " images, remaining = " + rgImageIdx.Count.ToString() + " (" + dfPct.ToString("P") + ")...");
+                        m_sw.Restart();
+                    }
+                }
             }
 
             return rgImg;
