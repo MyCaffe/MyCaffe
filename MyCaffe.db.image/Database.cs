@@ -1261,7 +1261,7 @@ namespace MyCaffe.db.image
         /// <param name="nCount">Specifies the number of images to retrieve from the starting index <i>nIdx</i>.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
-        /// <returns></returns>
+        /// <returns>The raw images are returned.</returns>
         public List<RawImage> GetRawImagesAt(int nIdx, int nCount, int nSrcId = 0, string strDescription = null)
         {
             if (nSrcId == 0)
@@ -1289,7 +1289,7 @@ namespace MyCaffe.db.image
         /// <param name="rgImageIdx">Specifies the list of image indexes to query (maximum of 100).</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
-        /// <returns></returns>
+        /// <returns>The raw images are returned.</returns>
         public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null)
         {
             if (nSrcId == 0)
@@ -1298,24 +1298,17 @@ namespace MyCaffe.db.image
             if (rgImageIdx.Count > 100)
                 throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
 
-            string strCmd = "SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
+            // Build the base query - using proper nullable comparisons
+            var query = m_entities.RawImages.AsNoTracking()
+                .Where(r => (r.SourceID ?? 0) == nSrcId && r.Active == true)
+                .Where(r => rgImageIdx.Contains(r.Idx ?? 0));
 
-            for (int i = 0; i < rgImageIdx.Count; i++)
-            {
-                strCmd += "Idx = " + rgImageIdx[i].ToString();
+            // Add description filter if provided
+            if (!string.IsNullOrEmpty(strDescription))
+                query = query.Where(r => r.Description == strDescription);
 
-                if (i < rgImageIdx.Count-1)
-                    strCmd += " OR ";
-            }
-
-            strCmd += ") AND (Active = 1)";
-
-            if (!String.IsNullOrEmpty(strDescription))
-                strCmd += " AND (Description = " + strDescription + ")";
-
-            return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            return query.ToList();
         }
-
 
         /// <summary>
         /// Returns a list of RawImages from the database for a data source.
@@ -1323,7 +1316,7 @@ namespace MyCaffe.db.image
         /// <param name="rgImageID">Specifies the list of image IDs to query (maximum of 100).</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
-        /// <returns></returns>
+        /// <returns>The list of raw images is returned.</returns>
         public List<RawImage> GetRawImagesAtID(List<int> rgImageID, int nSrcId = 0, string strDescription = null)
         {
             if (nSrcId == 0)
@@ -1332,24 +1325,29 @@ namespace MyCaffe.db.image
             if (rgImageID.Count > 100)
                 throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
 
-            string strCmd = "SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = ");
+            sb.Append(nSrcId.ToString());
+            sb.Append(") AND (");
 
             for (int i = 0; i < rgImageID.Count; i++)
             {
-                strCmd += "ID = " + rgImageID[i].ToString();
+                sb.Append("ID = ");
+                sb.Append(rgImageID[i].ToString());
 
                 if (i < rgImageID.Count - 1)
-                    strCmd += " OR ";
+                    sb.Append(" OR ");
             }
 
-            strCmd += ") AND (Active = 1)";
+            sb.Append(") AND (Active = 1)");
 
             if (!String.IsNullOrEmpty(strDescription))
-                strCmd += " AND (Description = " + strDescription + ")";
+                sb.Append(" AND (Description = " + strDescription + ")");
 
             lock (m_objRemoteSync)
             {
-                return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+                return m_entities.Database.SqlQuery<RawImage>(sb.ToString()).ToList();
             }
         }
 
