@@ -214,6 +214,14 @@ namespace MyCaffe.db.image
         {
             return m_stat.GetQueryLabelEpochAsText();
         }
+
+        /// <summary>
+        /// Returns the load limit, or 0 if none specified.
+        /// </summary>
+        public int LoadLimit
+        {
+            get { return m_master.LoadLimit; }
+        }
     }
 
     /// <summary>
