@@ -2651,8 +2651,9 @@ namespace MyCaffe.db.image
         /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="bAddParam">Optionally, specifies to add all SimpleDatum parameters (if they exist, default = false).</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0, ConnectInfo ci = null)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0, ConnectInfo ci = null, bool bAddParam = false)
         {
             if (sd == null)
                 return 0;
@@ -2689,6 +2690,42 @@ namespace MyCaffe.db.image
 
                     if (rgMean.Count == 0)
                         entities.RawImageMeans.Add(im);
+
+                    if (bAddParam)
+                    {
+                        string strNames = sd.GetParameterNames();
+                        if (!string.IsNullOrEmpty(strNames))
+                        {
+                            strNames = strNames.Trim('{', '}');
+                            string[] rgstrNames = strNames.Split(',');
+                            for (int i = 0; i < rgstrNames.Length; i++)
+                            {
+                                string strParamName = rgstrNames[i].Trim('\'');
+                                float? fParamVal = sd.GetParameter(strParamName);
+
+                                if (fParamVal.HasValue)
+                                {
+                                    List<RawImageParameter> rgParam = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.RawImageID == im.ID && p.Name == strParamName).ToList();
+                                    RawImageParameter param1 = null;
+
+                                    if (rgParam.Count == 0)
+                                    {
+                                        param1 = new RawImageParameter();
+                                        param1.Name = strParamName;
+                                        param1.SourceID = nSrcId;
+                                        param1.RawImageID = im.ID;
+                                        entities.RawImageParameters.Add(param1);
+                                    }
+                                    else
+                                    {
+                                        param1 = rgParam[0];
+                                    }
+
+                                    param1.NumericValue2 = fParamVal.Value;
+                                }
+                            }
+                        }
+                    }
 
                     if (rgMean.Count == 0 || bUpdate)
                         entities.SaveChanges();

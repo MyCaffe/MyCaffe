@@ -642,10 +642,11 @@ namespace MyCaffe.db.image
         /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <param name="nSrcID">Optionally, specifies the source ID.</param>
+        /// <param name="bAddParam">Optionally, add the SimpleDatum parameters.</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, ConnectInfo ci = null, int nSrcID = 0)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, ConnectInfo ci = null, int nSrcID = 0, bool bAddParam = false)
         {
-            return m_db.PutRawImageMean(sd, bUpdate, nSrcID, ci);
+            return m_db.PutRawImageMean(sd, bUpdate, nSrcID, ci, bAddParam);
         }
 
         /// <summary>
