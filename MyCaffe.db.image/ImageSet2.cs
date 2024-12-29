@@ -380,7 +380,7 @@ namespace MyCaffe.db.image
 
             int? nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
 
-            if (!nIdx.HasValue || nIdx.Value < 0)
+            if (state.LoadLimit == 0 && (!nIdx.HasValue || nIdx.Value < 0))
             {
                 nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
                 if (!nIdx.HasValue || nIdx.Value < 0)
@@ -394,7 +394,7 @@ namespace MyCaffe.db.image
                 }
             }
 
-            SimpleDatum sd = m_masterList.GetImage(nIdx.Value, bLoadDataCriteria, bLoadDebugData, m_loadMethod);
+            SimpleDatum sd = m_masterList.GetImage(nIdx, bLoadDataCriteria, bLoadDebugData, m_loadMethod, nLabel);
             state.UpdateStats(sd);
 
             return sd;

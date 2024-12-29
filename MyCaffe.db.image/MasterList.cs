@@ -74,6 +74,7 @@ namespace MyCaffe.db.image
 
             if (m_nLoadCount < m_src.ImageCount)
                 m_refreshManager = new RefreshManager(random, m_src, m_factory);
+
         }
 
         /// <summary>
@@ -546,46 +547,63 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Get the image with a specific image index.
         /// </summary>
-        /// <param name="nIdx">Specifies the image index.</param>
+        /// <param name="nIdx1">Specifies the image index or null when using LoadLimit.</param>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria along with the image.</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
         /// <param name="loadMethod">Specifies the image loading method used.</param>
+        /// <param name="nLabel">Optionally, specifies the label of the image to randomly load (only used whent LoadLimit > 0, default = null).</param>
         /// <returns>If found, the image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
+        public SimpleDatum GetImage(int? nIdx1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod, int? nLabel = null)
         {
-            SimpleDatum sd = m_rgImages[nIdx];
+            SimpleDatum sd = null;
 
-            if (sd == null)
+            if (!nIdx1.HasValue)
             {
-                if (m_refreshManager != null)
-                {
-                    while (nIdx > 0 && m_rgImages[nIdx] == null)
-                    {
-                        nIdx--;
-                    }
+                if (m_nLoadCount == 0)
+                    throw new Exception("The image index must be specified when NOT using LoadLimit.");
 
-                    sd = m_rgImages[nIdx];
+                if (!nLabel.HasValue)
+                    throw new Exception("You must specify a label when using a NULL index.");
 
-                    if (sd == null)
-                        throw new Exception("No images should be null when using LoadLimit loading!");
-                }
-                else
-                {
-                    if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
-                        Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
-
-                    sd = directLoadImage(nIdx);
-                    if (sd == null)
-                        throw new Exception("The image is still null yet should have loaded!");
-
-                    if (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND)
-                        m_rgImages[nIdx] = sd;
-                }
+                return m_refreshManager.GetNextDatum(nLabel.Value);
             }
+            else
+            {
+                int nIdx = nIdx1.Value;
+                sd = m_rgImages[nIdx];
 
-            // Double check that the conditional data has loaded (if needed).
-            if (bLoadDataCriteria || bLoadDebugData)
-                m_factory.LoadRawData(sd, bLoadDataCriteria, bLoadDebugData);
+                if (sd == null)
+                {
+                    if (m_refreshManager != null)
+                    {
+                        while (nIdx > 0 && m_rgImages[nIdx] == null)
+                        {
+                            nIdx--;
+                        }
+
+                        sd = m_rgImages[nIdx];
+
+                        if (sd == null)
+                            throw new Exception("No images should be null when using LoadLimit loading!");
+                    }
+                    else
+                    {
+                        if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
+                            Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
+
+                        sd = directLoadImage(nIdx);
+                        if (sd == null)
+                            throw new Exception("The image is still null yet should have loaded!");
+
+                        if (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND)
+                            m_rgImages[nIdx] = sd;
+                    }
+                }
+
+                // Double check that the conditional data has loaded (if needed).
+                if (bLoadDataCriteria || bLoadDebugData)
+                    m_factory.LoadRawData(sd, bLoadDataCriteria, bLoadDebugData);
+            }
 
             return sd;
         }
@@ -798,7 +816,7 @@ namespace MyCaffe.db.image
                         if (m_refreshManager == null)
                             rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
                         else                        
-                            rgImg = factory.GetRawImagesAt(rgIdxBatch, m_evtCancel);
+                            rgImg = factory.GetRawImagesAt(rgIdxBatch, m_evtCancel, 0, null, m_log);
 
                         if (rgImg == null)
                             break;
@@ -930,7 +948,13 @@ namespace MyCaffe.db.image
                         if (m_rgImages[nIdx] != null && m_rgImages[nIdx].Label != rgReplace[i].Item2.Label)
                             nMismatchCount++;
                         else
-                            m_rgImages[nIdx] = rgReplace[i].Item2;
+                        {
+                            SimpleDatum sdOld = m_rgImages[nIdx];
+                            SimpleDatum sdNew = rgReplace[i].Item2;
+
+                            m_rgImages[nIdx] = sdNew;
+                            m_refreshManager.Replace(sdOld, sdNew);
+                        }
                     }
 
                     if (nMismatchCount > 0)
@@ -1062,11 +1086,13 @@ namespace MyCaffe.db.image
 
     public class RefreshManager /** @private */
     {
+        object m_syncObj = new object();
         CryptoRandom m_random;
         List<DbItem> m_rgItems;
         Dictionary<int, List<DbItem>> m_rgItemsByLabel = null;
         Dictionary<int, List<int>> m_rgLoadedIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> m_rgNotLoadedIdx = new Dictionary<int, List<int>>();
+        Dictionary<int, List<SimpleDatum>> m_rgDynamicLoadItems = new Dictionary<int, List<SimpleDatum>>();
 
         public RefreshManager(CryptoRandom random, SourceDescriptor src, DatasetFactory factory)
         {
@@ -1108,6 +1134,38 @@ namespace MyCaffe.db.image
             }
         }
 
+        public void Replace(SimpleDatum sdOld, SimpleDatum sdNew)
+        {
+            lock (m_syncObj)
+            {
+                if (sdOld != null)
+                {
+                    if (m_rgDynamicLoadItems.ContainsKey(sdOld.Label))
+                        m_rgDynamicLoadItems[sdOld.Label].Remove(sdOld);
+                }
+
+                if (!m_rgDynamicLoadItems.ContainsKey(sdNew.Label))
+                    m_rgDynamicLoadItems.Add(sdNew.Label, new List<SimpleDatum>());
+
+                m_rgDynamicLoadItems[sdNew.Label].Add(sdNew);
+            }
+        }
+
+        public SimpleDatum GetNextDatum(int nLabel)
+        {
+            lock (m_syncObj)
+            {
+                if (!m_rgDynamicLoadItems.ContainsKey(nLabel))
+                    return null;
+
+                if (m_rgDynamicLoadItems[nLabel].Count == 0)
+                    return null;
+
+                int nIdx = m_random.Next(m_rgDynamicLoadItems[nLabel].Count);
+                return m_rgDynamicLoadItems[nLabel][nIdx];
+            }
+        }
+
         public void AddLoaded(SimpleDatum sd)
         {
             if (!m_rgLoadedIdx.ContainsKey(sd.Label))
@@ -1117,9 +1175,14 @@ namespace MyCaffe.db.image
             m_rgLoadedIdx[sd.Label].Add((int)item.Tag);
 
             m_rgNotLoadedIdx[sd.Label].Remove((int)item.Tag);
+
+            if (!m_rgDynamicLoadItems.ContainsKey(sd.Label))
+                m_rgDynamicLoadItems.Add(sd.Label, new List<SimpleDatum>());
+
+            m_rgDynamicLoadItems[sd.Label].Add(sd);
         }
 
-        public DbItem GetNextImageId(int? nLabel)
+        public DbItem GetNextImageId(int? nLabel, bool bUseLoadedOnly = false)
         {
             if (!nLabel.HasValue)
             {
@@ -1131,6 +1194,14 @@ namespace MyCaffe.db.image
                 m_rgLoadedIdx.Add(nLabel.Value, new List<int>());
 
             List<int> rgLoadedIdx = m_rgLoadedIdx[nLabel.Value];
+
+            if (bUseLoadedOnly)
+            {
+                int nIdx1 = m_random.Next(rgLoadedIdx.Count);
+                int nMainIdx1 = rgLoadedIdx[nIdx1];
+                return m_rgItems[nMainIdx1];
+            }
+
             List<int> rgNotLoadedIdx = m_rgNotLoadedIdx[nLabel.Value];
 
             if (rgNotLoadedIdx.Count == 0)
