@@ -271,7 +271,7 @@ namespace MyCaffe.db.image
                     throw new Exception("Only RANDOM selections are valid when using LoadLimit > 0.");
 
                 if (nLabel.HasValue)
-                    throw new Exception("Label selections are not valid when using LoadLimit > 0");
+                    return null;
 
                 if (bBoosted != false)
                     throw new Exception("Boosted queries are not valid when using LoadLimit > 0.");
