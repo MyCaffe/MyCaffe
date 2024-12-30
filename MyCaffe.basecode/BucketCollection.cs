@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -257,7 +258,41 @@ namespace MyCaffe.basecode
         /// <param name="strConfigString">Specifies the configuration string created when calling ToConfigString()</param>
         public BucketCollection(string strConfigString)
         {
-            string[] rgstr = strConfigString.Split(';');
+            List<Tuple<double, double>> rgVal = Parse(strConfigString);
+            foreach (Tuple<double, double> val in rgVal)
+            {
+                Bucket b = new Bucket(val.Item1, val.Item2);
+                m_rgBuckets.Add(b);
+            }
+
+            m_bIsDataReal = true;
+        }
+
+        /// <summary>
+        /// The constructor used to build a bucket collection from a list of tuples.
+        /// </summary>
+        /// <param name="rgVal">Specifies the list of min/max values.</param>
+        public BucketCollection(List<Tuple<double, double>> rgVal)
+        {
+            foreach (Tuple<double, double> val in rgVal)
+            {
+                Bucket b = new Bucket(val.Item1, val.Item2);
+                m_rgBuckets.Add(b);
+            }
+
+            m_bIsDataReal = true;
+        }
+
+        /// <summary>
+        /// Parse a configuration string and return the list of tuples containing the min,max values.
+        /// </summary>
+        /// <param name="strCfg"></param>
+        /// <returns></returns>
+        public static List<Tuple<double, double>> Parse(string strCfg)
+        {
+            List<Tuple<double, double>> rgVal = new List<Tuple<double, double>>();
+
+            string[] rgstr = strCfg.Split(';');
             int nCount = 0;
             foreach (string str in rgstr)
             {
@@ -273,12 +308,12 @@ namespace MyCaffe.basecode
                 {
                     string strMin = strVal.Substring(1, strVal.IndexOf(',') - 1);
                     string strMax = strVal.Substring(strVal.IndexOf(',') + 1, strVal.Length - strVal.IndexOf(',') - 2);
-                    Bucket b = new Bucket(double.Parse(strMin), double.Parse(strMax));
-                    m_rgBuckets.Add(b);
+
+                    rgVal.Add(new Tuple<double, double>(double.Parse(strMin), double.Parse(strMax)));
                 }
             }
 
-            m_bIsDataReal = true;
+            return rgVal;
         }
 
         /// <summary>

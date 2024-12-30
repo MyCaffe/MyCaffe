@@ -58,6 +58,30 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
+        /// Normalize a bucket collection configuration string.
+        /// </summary>
+        /// <param name="strConfig">Specifies the configuration string.</param>
+        /// <returns>The list of normalized tuples is returned.</returns>
+        public List<Tuple<double, double>> Normalize(string strConfig)
+        {
+            List<Tuple<double, double>> rgVal = BucketCollection.Parse(strConfig);
+            List<Tuple<double, double>> rgNorm = new List<Tuple<double, double>>();
+
+            foreach (Tuple<double, double> tuple in rgVal)
+            {
+                double fMin = tuple.Item1;
+                double fMax = tuple.Item2;
+
+                double fMinNorm = (fMin == 0) ? 0 : Normalize((float)fMin);
+                double fMaxNorm = (fMax == 0) ? 0 : Normalize((float)fMax);
+
+                rgNorm.Add(new Tuple<double, double>(fMinNorm, fMaxNorm));
+            }
+
+            return rgNorm;
+        }
+
+        /// <summary>
         /// Normalize the un-normalized value.
         /// </summary>
         /// <param name="val">Specifies the un-normalized value.</param>
