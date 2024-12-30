@@ -526,8 +526,9 @@ namespace MyCaffe.common
         /// <param name="phase">Specifies whether to select images from the training set or testing set.</param>
         /// <param name="nLabel">Returns the expected label for the image.</param>
         /// <param name="strLabel">Returns the expected label name for the image.</param>
+        /// <param name="sd">Returns the simple datum.</param>
         /// <returns>The image queried is returned.</returns>
-        Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel);
+        Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel, out SimpleDatum sd);
         /// <summary>
         /// Retrieves a random image from either the training or test set depending on the Phase specified.
         /// </summary>

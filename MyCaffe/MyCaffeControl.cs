@@ -3354,14 +3354,15 @@ namespace MyCaffe
         /// <param name="phase">Specifies whether to select images from the training set or testing set.</param>
         /// <param name="nLabel">Returns the expected label for the image.</param>
         /// <param name="strLabel">Returns the expected label name for the image.</param>
+        /// <param name="sd">Returns the simple datum.</param>
         /// <returns>The image queried is returned.</returns>
-        public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
+        public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel, out SimpleDatum sd)
         {
             if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
                 throw new Exception("The GetTestImage only works with non-temporal databases.");
 
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_db.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
+            sd = m_db.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
