@@ -154,18 +154,19 @@ namespace MyCaffe.layers.beta
         /// <param name="fPredicted">Specifies the predicted value.</param>
         /// <param name="fGroundTruth">Specifies the ground truth target value.</param>
         /// <param name="fGroundTruth2">Optional, secondary ground truth value.</param>
-        public void AddTesting(float fPredicted, float fGroundTruth, float? fGroundTruth2 = null)
+        /// <param name="bNormalize">Optionally, specifies to normalize the ground truth (default = true).</param>
+        public void AddTesting(float fPredicted, float fGroundTruth, float? fGroundTruth2 = null, bool bNormalize = true)
         {
             if (m_testingAccuracy1 != null)
             {
-                if (m_zscore != null)
+                if (m_zscore != null && bNormalize)
                     fGroundTruth = m_zscore.Normalize(fGroundTruth);
 
                 m_testingAccuracy1.Add(new float[] { fPredicted }, new float[] { fGroundTruth });
 
                 if (fGroundTruth2.HasValue)
                 {
-                    if (m_zscore != null)
+                    if (m_zscore != null && bNormalize)
                         fGroundTruth2 = m_zscore.Normalize(fGroundTruth2.Value);
 
                     if (m_testingAccuracy2 == null)
