@@ -478,9 +478,10 @@ namespace MyCaffe.test
             int nLabel2;
             string strLabel;
             string strLabel2;
+            SimpleDatum sd;
 
-            Bitmap bmp1 = ctrl.GetTestImage(Phase.TEST, out nLabel, out strLabel);
-            Bitmap bmp2 = ctrl.GetTestImage(Phase.TRAIN, out nLabel2, out strLabel2);
+            Bitmap bmp1 = ctrl.GetTestImage(Phase.TEST, out nLabel, out strLabel, out sd);
+            Bitmap bmp2 = ctrl.GetTestImage(Phase.TRAIN, out nLabel2, out strLabel2, out sd);
 
             Assert.AreEqual(bmp1.Width, bmp2.Width);
             Assert.AreEqual(bmp1.Height, bmp2.Height);
