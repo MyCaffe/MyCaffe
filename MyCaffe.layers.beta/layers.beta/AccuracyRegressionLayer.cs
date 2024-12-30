@@ -80,7 +80,7 @@ namespace MyCaffe.layers.beta
                         string strDs = src.Name.Substring(0, nPos);
                         DatasetDescriptor ds = db.GetDatasetByName(strDs);
 
-                        if (ds != null)
+                        if (ds != null && m_param.accuracy_regression_param.enable_override)
                         {
                             ParameterDescriptor p1 = ds.Parameters.Find("LabelBucketConfig");
                             if (p1 != null && !string.IsNullOrEmpty(p1.Value))
@@ -90,7 +90,8 @@ namespace MyCaffe.layers.beta
 
                     if (m_colLabel == null || m_colLabel.Count == 0)
                     {
-                        m_log.WriteLine("WARNING: The source '" + p.z_score_param.source + "' was not found, the ZScoreLayer will not be used.");
+                        if (m_param.accuracy_regression_param.enable_override)
+                            m_log.WriteLine("WARNING: The source '" + p.z_score_param.source + "' was not found, the ZScoreLayer will not be used.");
                     }
                     else
                     {

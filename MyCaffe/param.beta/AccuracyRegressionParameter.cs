@@ -22,6 +22,7 @@ namespace MyCaffe.param
         int m_nBucketCount = 10;
         double? m_dfIgnoreMin = null;
         double? m_dfIgnoreMax = null;
+        bool m_bEnableOverride = false;
 
         /// <summary>
         /// Defines the MAPE algorithm to use.
@@ -45,6 +46,15 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase */
         public AccuracyRegressionParameter()
         {
+        }
+
+        /// <summary>
+        /// When enabled, and when the 'LabelBucketConfig' dataset parameter exists (set with the Dataset Creator), the bucketing values are set from the 'LabelBucketConfig' dataset parameter.
+        /// </summary>
+        public bool enable_override
+        {
+            get { return m_bEnableOverride; }
+            set { m_bEnableOverride = value; }
         }
 
         /// <summary>
@@ -130,6 +140,7 @@ namespace MyCaffe.param
             m_nBucketCount = p.m_nBucketCount;
             m_dfIgnoreMin = p.m_dfIgnoreMin;
             m_dfIgnoreMax = p.m_dfIgnoreMax;
+            m_bEnableOverride = p.m_bEnableOverride;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -153,6 +164,7 @@ namespace MyCaffe.param
             rgChildren.Add("bucket_min", bucket_min.ToString());
             rgChildren.Add("bucket_max", bucket_max.ToString());
             rgChildren.Add("bucket_count", bucket_count.ToString());
+            rgChildren.Add("enable_override", enable_override.ToString().ToLower());
 
             if (bucket_ignore_min.HasValue)
                 rgChildren.Add("bucket_ignore_min", bucket_ignore_min.Value.ToString());
@@ -189,6 +201,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("bucket_ignore_max")) != null)
                 p.bucket_ignore_max = BaseParameter.ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("enable_override")) != null)
+                p.enable_override = bool.Parse(strVal);
 
             return p;
         }
