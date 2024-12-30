@@ -19,6 +19,7 @@ namespace MyCaffe.common
         List<Result> m_rgResultsOriginal = new List<Result>();
         List<Result> m_rgResultsSorted = new List<Result>();
         RESULT_TYPE m_resultType = RESULT_TYPE.NONE;
+        int? m_nDetectedLabelOverride = null;
 
         /// <summary>
         /// Defines the type of result.
@@ -86,6 +87,23 @@ namespace MyCaffe.common
                 default:
                     return RESULT_TYPE.NONE;
             }
+        }
+
+        /// <summary>
+        /// Set an overrided detected label.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        public void SetDetectedLabelOverride(int nLabel)
+        {
+            m_nDetectedLabelOverride = nLabel;
+        }
+
+        /// <summary>
+        /// Clear the detected label override.
+        /// </summary>
+        public void ClearDetectedLabelOverride()
+        {
+            m_nDetectedLabelOverride = null;
         }
 
         /// <summary>
@@ -182,10 +200,16 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the detected label depending on the result type (distance or probability) with a default type of probability (max label signal) used.
         /// </summary>
+        /// <remarks>
+        /// Note, if a detected label override is set, it will be returned.
+        /// </remarks>
         public int DetectedLabel
         {
             get
             {
+                if (m_nDetectedLabelOverride.HasValue)
+                    return m_nDetectedLabelOverride.Value;
+
                 if (m_resultType == RESULT_TYPE.DISTANCES)
                     return DetectedLabelMinSignal;
                 else
