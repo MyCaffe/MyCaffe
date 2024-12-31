@@ -1147,7 +1147,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, score2 = p.Score2, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
             }
         }
 
