@@ -94,6 +94,17 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Combine the dst bucket with this one.
+        /// </summary>
+        public void Combine(Bucket b)
+        {
+            m_nCount += b.Count;
+            m_fSum += b.m_fSum;
+            m_fMin = Math.Min(m_fMin, b.Minimum);
+            m_fMax = Math.Max(m_fMax, b.Maximum);
+        }
+
+        /// <summary>
         /// Returns the number of items added to the Bucket.
         /// </summary>
         public int Count
@@ -281,6 +292,32 @@ namespace MyCaffe.basecode
             }
 
             m_bIsDataReal = true;
+        }
+
+        /// <summary>
+        /// Combine the bucket at the source index with the bucket at the destination index.
+        /// </summary>
+        /// <param name="nIdxSrc">Specifies the source bucket index.</param>
+        /// <param name="nIdxDst">Specifies the destination bucket index.</param>
+        /// <returns>true is returned on successful combining and removing of the src bucket.</returns>
+        public bool Combine(int nIdxSrc, int nIdxDst)
+        {
+            if (nIdxSrc < 0 || nIdxSrc >= m_rgBuckets.Count)
+                return false;
+
+            if (nIdxDst < 0 || nIdxDst >= m_rgBuckets.Count)
+                return false;
+
+            if (nIdxSrc == nIdxDst)
+                return false;
+
+            Bucket bSrc = m_rgBuckets[nIdxSrc];
+            Bucket bDst = m_rgBuckets[nIdxDst];
+            bDst.Combine(bSrc);
+
+            m_rgBuckets.RemoveAt(nIdxSrc);
+
+            return true;
         }
 
         /// <summary>
