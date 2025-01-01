@@ -6,6 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 using MyCaffe.param;
+using static MyCaffe.basecode.ConfusionMatrixStats;
 using static MyCaffe.param.beta.DecodeParameter;
 
 namespace MyCaffe.layers.beta
@@ -777,6 +778,8 @@ namespace MyCaffe.layers.beta
             int maxLabelWidth = labels.Max(label => label.Length);
             int maxCellWidth = 10;
 
+            sb.AppendLine("=================================");
+            sb.AppendLine("CONFUSION MATRIX");
             printMatrix(sb, labels, confusionMatrix, maxLabelWidth, maxCellWidth, false);
             sb.AppendLine();
             printMatrix(sb, labels, percentageMatrix, maxLabelWidth, maxCellWidth, true);
@@ -788,6 +791,11 @@ namespace MyCaffe.layers.beta
             sb.AppendLine("Ground Truth Sample Size = " + nTotal.ToString("N0"));
             sb.AppendLine("Ground Truth % Positive = " + dfGtPercentPos.ToString("P2"));
             sb.AppendLine("Ground Truth % Negative = " + dfGtPercentNeg.ToString("P2"));
+
+            StatisticalResults stats = ConfusionMatrixStats.Analyze(confusionMatrix);
+            sb.AppendLine("---------------------------------");
+            sb.AppendLine("Confusion Matrix Statistics:");
+            sb.AppendLine(stats.ToString());
 
             return sb.ToString();
         }
