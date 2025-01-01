@@ -2427,6 +2427,39 @@ template long Device<float>::cuda_mul(long lInput, float* pfInput, long llInput,
 
 
 template <class T>
+long Device<T>::cuda_muladd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 7))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hA = (long)plInput[2];
+	long hY = (long)plInput[3];
+	int nDir = (int)plInput[4];
+
+	long hdX = 0;
+	long hdA = 0;
+
+	if (nDir == 1)
+	{
+		if (llInput != 7)
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		hdX = (long)plInput[5];
+		hdA = (long)plInput[6];
+	}
+
+	return m_math.muladd(n, hX, hA, hY, hdX, hdA, nDir);
+}
+
+template long Device<double>::cuda_muladd(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_muladd(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

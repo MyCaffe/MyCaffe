@@ -116,6 +116,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestSpatialAttentionLayer.cs" />
     <Compile Include="TestExtensionLlm.cs" />
     <Compile Include="TestNhitsStackLayer.cs" />
     <Compile Include="TestNhitsBlockLayer.cs" />

@@ -1042,6 +1042,7 @@ namespace MyCaffe.common
         void mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
         void mul_scalar(int n, double fAlpha, long hY);
         void mul_scalar(int n, float fAlpha, long hY);
+        void muladd(int n, long hX, long hA, long hY, DIR dir, long hdX = 0, long hdA = 0);
         void div(int n, long hA, long hB, long hY);
         void abs(int n, long hA, long hY);
         void exp(int n, long hA, long hY);
@@ -1408,6 +1409,8 @@ namespace MyCaffe.common
             CUDA_MAX_BWD2 = 272,
             CUDA_INVERT = 273,
             CUDA_THRESHOLD = 274,
+            
+            CUDA_MULADD = 275,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -8152,6 +8155,27 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MUL, null, m_param.AsLong(n, hA, hB, hY, nAOff, nBOff, nYOff));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MUL, null, m_param.AsLong(n, hA, hB, hY, nAOff, nBOff, nYOff));
+        }
+
+        /// <summary>
+        /// Multiplies each element of X with A, and adds to X and places the result in Y.
+        /// </summary>
+        /// <remarks>
+        /// Y = X * A + X (element by element, when FWD)
+        /// </remarks>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A, B and Y.</param>
+        /// <param name="hX">Specifies a handle to the input vector X in GPU memory.</param>
+        /// <param name="hA">Specifies a handle to the attention vector A in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the output vector Y in GPU memory.</param>
+        /// <param name="dir">Specifies the direction where FWD outputs to hY, and BWD outputs to hX.</param>
+        /// <param name="hdA">When BWD, specifies the gradient output for X, expects hY to contain the gradient for Y.</param>
+        /// <param name="hdX">When BWD, specifies the gradient output for A, expects hY to contain the gradient for Y.</param>
+        public void muladd(int n, long hX, long hA, long hY, DIR dir, long hdX = 0, long hdA = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hA, hY, (int)dir, hdX, hdA));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hA, hY, (int)dir, hdX, hdA));
         }
 
         /// <summary>

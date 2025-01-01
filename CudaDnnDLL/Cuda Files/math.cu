@@ -5521,6 +5521,73 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 	return cudaStreamSynchronize(0);
 }
 
+template <typename T>
+__global__ void muladd_kernel_fwd(const int n, const T* x, const T* a, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = x[i] * a[i] + x[i];
+	}
+}
+
+template <typename T>
+__global__ void muladd_kernel_bwd(const int n, const T* x, const T* a, const T* dy, T* dx, T* da)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		dx[i] = dy[i] * (a[i] + 1);
+		da[i] = dy[i] * x[i];
+	}
+}
+
+template <class T>
+long Math<T>::muladd(int n, long hX, long hA, long hY, long hdX, long hdA, int nDir)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pA;
+	MemoryItem* pY;
+	MemoryItem* pdA;
+	MemoryItem* pdX;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* a = (T*)pA->Data();
+	T* y = (T*)pY->Data();
+	T* dx = NULL;
+	T* da = NULL;
+
+	if (nDir == 1)
+	{
+		if (lErr = m_pMemCol->GetData(hdX, &pdX))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hdA, &pdA))
+			return lErr;
+
+		dx = (T*)pdX->Data();
+		da = (T*)pdA->Data();
+	}
+
+	if (nDir == 0)
+		muladd_kernel_fwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, a, y);
+	else
+		muladd_kernel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, a, y, dx, da);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::muladd(int n, long hX, long hA, long hY, long hdX, long hdA, int nDir);
+template long Math<float>::muladd(int n, long hX, long hA, long hY, long hdX, long hdA, int nDir);
+
 
 template <typename T>
 __global__ void div_kernel(const int n, T* a, T* b, T* y)

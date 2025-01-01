@@ -60,6 +60,7 @@
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyRegressionLayer.cs" />
+    <Compile Include="layers.beta\SpatialAttentionLayer.cs" />
     <Compile Include="layers.beta\AttentionLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />

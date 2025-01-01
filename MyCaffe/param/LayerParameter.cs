@@ -690,6 +690,10 @@ namespace MyCaffe.param
             /// </summary>
             NORMALIZATION2,
             /// <summary>
+            /// Initializes a parameter for the SpaitalAttentionLayer.
+            /// </summary>
+            SPATIAL_ATTENTION,
+            /// <summary>
             /// Initializes a parameter for the TripletLossSimpleLayer.
             /// </summary>
             TRIPLET_LOSS_SIMPLE,
@@ -1922,6 +1926,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new PreTokenizedDataParameter();
                     break;
 
+                case LayerType.SPATIAL_ATTENTION:
+                    expected_bottom.Add("input");
+                    expected_top.Add("atten");
+                    m_rgLayerParameters[lt] = new SpatialAttentionParameter();
+                    break;
+
                 case LayerType.TOKENIZED_DATA_PAIRS:
                 case LayerType.TOKENIZED_DATA_PAIRS_PY:
                     expected_top.Add("enc");
@@ -3094,6 +3104,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SPATIAL_ATTENTION
+        /// </summary>
+        public SpatialAttentionParameter spatial_attention_param
+        {
+            get { return (SpatialAttentionParameter)m_rgLayerParameters[LayerType.SPATIAL_ATTENTION]; }
+            set { m_rgLayerParameters[LayerType.SPATIAL_ATTENTION] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TEXT_DATA
         /// </summary>
         public TextDataParameter text_data_param
@@ -3759,6 +3778,9 @@ namespace MyCaffe.param
                 case LayerType.TANH:
                     return "TanH";
 
+                case LayerType.SPATIAL_ATTENTION:
+                    return "SpatialAttention";
+
                 case LayerType.MODEL_DATA:
                     return "ModelData";
 
@@ -3961,6 +3983,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(spatial_attention_param, "spatial_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(z_score_param, "z_score_param"));
 
             // HDF5 layes.
@@ -4335,6 +4358,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("model_data_param")) != null)
                 p.model_data_param = ModelDataParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("spatial_attention_param")) != null)
+                p.spatial_attention_param = SpatialAttentionParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("text_data_param")) != null)
                 p.text_data_param = TextDataParameter.FromProto(rpp);
 
@@ -4354,6 +4380,7 @@ namespace MyCaffe.param
             // HDF5 layers.
             if ((rpp = rp.FindChild("hdf5_data_param")) != null)
                 p.hdf5_data_param = HDF5DataParameter.FromProto(rpp);
+
 
             // GPT layers.
             if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
@@ -4952,6 +4979,10 @@ namespace MyCaffe.param
 
                 case "swish":
                     return LayerType.SWISH;
+
+                case "spatialattention":
+                case "spatial_attention":
+                    return LayerType.SPATIAL_ATTENTION;
 
                 case "tanh":
                     return LayerType.TANH;
