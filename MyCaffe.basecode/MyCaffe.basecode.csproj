@@ -67,6 +67,7 @@
     <Compile Include="Annotation.cs" />
     <Compile Include="BinaryData.cs" />
     <Compile Include="BucketCollection.cs" />
+    <Compile Include="ConfusionMatrixStats.cs" />
     <Compile Include="ConnectInfo.cs" />
     <Compile Include="descriptors\TemporalDescriptor.cs" />
     <Compile Include="DictionaryMap.cs" />
