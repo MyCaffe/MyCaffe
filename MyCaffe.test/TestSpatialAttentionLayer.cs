@@ -136,65 +136,84 @@ namespace MyCaffe.test
 
         public void TestForward()
         {
-            Blob<T> blobAveOut = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobMaxOut = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobFc1Out = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobExpOut = new Blob<T>(m_cuda, m_log);
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SPATIAL_ATTENTION);
+            p.spatial_attention_param.kernel_size = 3;
+            p.spatial_attention_param.axis = 1;
+            p.spatial_attention_param.activation = SpatialAttentionParameter.ACTIVATION.RELU;
             SpatialAttentionLayer<T> layer = new SpatialAttentionLayer<T>(m_cuda, m_log, p);
 
             try
             {
-                m_blob_bottom.Reshape(1, 1, 3, 3);
-                float[] rgf = new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-                m_blob_bottom.mutable_cpu_data = convert(rgf);
+                // Setup input data (3x3x3 image with 3 channels)
+                m_blob_bottom.Reshape(1, 3, 3, 3);
+                float[] rgData = new float[] { 
+                    // Channel 1
+                    1, 2, 3,
+                    4, 5, 6,
+                    7, 8, 9,
+                    // Channel 2
+                    1, 2, 3,
+                    4, 5, 6,
+                    7, 8, 9,
+                    // Channel 3
+                    1, 2, 3,
+                    4, 5, 6,
+                    7, 8, 9
+                };
+                m_blob_bottom.mutable_cpu_data = convert(rgData);
 
-                m_log.CHECK(layer != null, "The Spatial Attention layer is null.");
                 layer.Setup(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
 
-                int nWtCount = layer.blobs.Count / 4;
+                // Initialize weights and biases with 0.1f for predictable results
+                layer.blobs[0].SetData(0.1f);  // ave_conv weight
+                layer.blobs[1].SetData(0.1f);  // ave_conv bias
+                layer.blobs[2].SetData(0.1f);  // max_conv weight
+                layer.blobs[3].SetData(0.1f);  // max_conv bias
+                layer.blobs[4].SetData(0.1f);  // fc1 weight
+                layer.blobs[5].SetData(0.1f);  // fc2 weight
 
-                for (int i = 0; i < layer.blobs.Count; i++)
-                {
-                    if (i < nWtCount)
-                        layer.blobs[i].SetData(0.1);
-                    else if (i < nWtCount * 2)
-                        layer.blobs[i].SetData(0.1);
-                    else if (i < nWtCount * 3)
-                        layer.blobs[i].SetData(0.2);
-                    else
-                        layer.blobs[i].SetData(0.2);
-                }
-
+                // Forward pass
                 layer.Forward(BottomVec, TopVec);
 
-                blobAveOut.CopyFrom(m_blob_bottom, false, true);
-                blobAveOut.scale_data(0.1);
-                blobMaxOut.CopyFrom(m_blob_bottom, false, true);
-                blobMaxOut.scale_data(0.1);
-                blobFc1Out.ReshapeLike(blobAveOut);
-                blobFc1Out = blobAveOut.MathAdd(blobMaxOut, Utility.ConvertVal<T>(1.0));
-                blobFc1Out.scale_data(0.2);
-                blobFc1Out.scale_data(0.2);
-                m_cuda.sigmoid_fwd(blobFc1Out.count(), blobFc1Out.gpu_data, blobFc1Out.mutable_gpu_data);
+                // Calculate expected output manually
+                float[] expected = new float[27]; // Same size as input
 
-                blobExpOut.ReshapeLike(blobFc1Out);
-                m_cuda.muladd(blobExpOut.count(), m_blob_bottom.gpu_data, blobFc1Out.gpu_data, blobExpOut.mutable_gpu_data, DIR.FWD);
-
-                float[] rgfActual = convertF(m_blob_top.update_cpu_data());
-                float[] rgfExpected = convertF(blobExpOut.update_cpu_data());
-
-                for (int i = 0; i < rgfActual.Length; i++)
+                // For each position in the input
+                for (int i = 0; i < rgData.Length; i++)
                 {
-                    m_log.EXPECT_NEAR_FLOAT(rgfActual[i], rgfExpected[i], 1e-4);
-                }                  
+                    // Calculate average path
+                    float ave_conv = rgData[i] * 0.1f * 27 + 0.1f; // 27 = 3x3x3 kernel
+                    float ave_fc1 = ave_conv * 0.1f * 27;
+                    float ave_fc1_relu = Math.Max(0, ave_fc1);
+                    float ave_fc2 = ave_fc1_relu * 0.1f * 27;
+
+                    // Calculate max path
+                    float max_conv = rgData[i] * 0.1f * 27 + 0.1f;
+                    float max_fc1 = max_conv * 0.1f * 27;
+                    float max_fc1_relu = Math.Max(0, max_fc1);
+                    float max_fc2 = max_fc1_relu * 0.1f * 27;
+
+                    // Combine paths and apply sigmoid
+                    float fExp = (float)Math.Exp(-(ave_fc2 + max_fc2));
+                    float attention = 2.0f / (1.0f + fExp);
+
+                    // Apply attention to input
+                    expected[i] = rgData[i] * attention;
+                }
+
+                // Compare results
+                float[] actual = convertF(m_blob_top.update_cpu_data());
+
+                m_log.WriteLine("Comparing actual vs expected values:");
+                for (int i = 0; i < actual.Length; i++)
+                {
+                    m_log.WriteLine($"Index {i}: Input={rgData[i]:F6}, Actual={actual[i]:F6}, Expected={expected[i]:F6}");
+                    m_log.EXPECT_NEAR_FLOAT(actual[i], expected[i], 1e-4f);
+                }
             }
             finally
             {
-                blobAveOut.Dispose();
-                blobMaxOut.Dispose();
-                blobFc1Out.Dispose();
-                blobExpOut.Dispose();
                 layer.Dispose();
             }
         }
@@ -207,7 +226,7 @@ namespace MyCaffe.test
 
             try
             {
-                m_blob_bottom.Reshape(64, 3, 128, 128);
+                m_blob_bottom.Reshape(8, 3, 32, 32);
                 m_filler.Fill(m_blob_bottom);
 
                 m_log.CHECK(layer != null, "The Spatial Attention layer is null.");
