@@ -1147,7 +1147,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, score2 = p.Score2, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, sourceid = p.SourceID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, score2 = p.Score2, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
             }
         }
 
@@ -3532,6 +3532,23 @@ namespace MyCaffe.db.image
         #region RawImage Parameters
 
         /// <summary>
+        /// Return the raw image parameter if it exists for a given name.
+        /// </summary>
+        /// <param name="nRawImageID">Specifies the image ID.</param>
+        /// <param name="strName">Specifies the name of the parameter.</param>
+        /// <returns>The RawImageParameter is returned.</returns>
+        public RawImageParameter GetRawImageParameter(int nRawImageID, string strName)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImageParameter> rgP = entities.RawImageParameters.AsNoTracking().Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
+                if (rgP.Count == 0)
+                    return null;
+                return rgP[0];
+            }
+        }
+
+        /// <summary>
         /// Return the string value of a RawImage parameter.
         /// </summary>
         /// <param name="nRawImageID">Specifies the ID of the RawImage.</param>
@@ -3860,6 +3877,25 @@ namespace MyCaffe.db.image
                 }
 
                 return rgstr1;
+            }
+        }
+
+        /// <summary>
+        /// Query all raw image parameters given an image ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the ID of the image.</param>
+        /// <returns>A list of the parameters is returned.</returns>
+        public List<string> GetRawImageParameterNames(int nImageID)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImageParameter> rgP = entities.RawImageParameters.Where(p => p.RawImageID == nImageID).ToList();
+                List<string> rgstr = new List<string>();
+                foreach (RawImageParameter p in rgP)
+                {
+                    rgstr.Add(p.Name);
+                }
+                return rgstr;
             }
         }
 
@@ -5959,6 +5995,7 @@ namespace MyCaffe.db.image
         {
             DbItem item = new DbItem();
             item.id = id;
+            item.sourceid = sourceid;
             item.virtualid = virtualid;
             item.index = index;
             item.label = label;
@@ -5992,6 +6029,19 @@ namespace MyCaffe.db.image
         /// Specifies the image ID used within the lambda statement.
         /// </summary>
         public int id { get; set; } 
+
+        /// <summary>
+        /// Specifies the image SourceID.
+        /// </summary>
+        public int? SourceID
+        {
+            get { return sourceid; }
+        }
+
+        /// <summary>
+        /// Specifies the source ID used within the lambda statement.
+        /// </summary>
+        public int? sourceid { get; set; }
 
         /// <summary>
         /// Specifies the image VirtualID (if any).
