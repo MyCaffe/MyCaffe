@@ -319,6 +319,18 @@ namespace MyCaffe.db.image
         {
             List<RawImageParameter> rg = null;
 
+            if (rgParams.Length == 0)
+            {
+                List<RawImageParameter> rgP = m_factory.QueryRawImageParameters(sd.ImageID);
+                List<string> rgstr = new List<string>();
+                for (int i = 0; i < rgP.Count; i++)
+                {
+                    if (!rgstr.Contains(rgP[i].Name))
+                        rgstr.Add(rgP[i].Name);
+                }
+                rgParams = rgstr.ToArray();
+            }
+
             foreach (string str in rgParams)
             {
                 float? fVal = sd.GetParameter(str);
