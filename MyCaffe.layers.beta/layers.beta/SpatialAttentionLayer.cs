@@ -151,17 +151,35 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_ave_conv = new ConvolutionLayer<T>(m_cuda, m_log, m_param);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+            p.convolution_param.kernel_size.Add(m_param.spatial_attention_param.kernel_size);
+            p.convolution_param.pad.Add(1);
+            p.convolution_param.stride.Add(1);
+            p.convolution_param.group = 1;
+            p.convolution_param.bias_term = true;
+            p.convolution_param.axis = m_param.spatial_attention_param.axis;
+            p.convolution_param.num_output = m_param.spatial_attention_param.kernel_size;
+
+            m_ave_conv = new ConvolutionLayer<T>(m_cuda, m_log, p);
             addInternal(colBottom[0], m_blobAve);
             m_ave_conv.Setup(m_colInternalBottom, m_colInternalTop);
             blobs.Add(m_ave_conv.blobs);
 
-            m_max_conv = new ConvolutionLayer<T>(m_cuda, m_log, m_param);
+            m_max_conv = new ConvolutionLayer<T>(m_cuda, m_log, p);
             addInternal(colBottom[0], m_blobMax);
             m_max_conv.Setup(m_colInternalBottom, m_colInternalTop);
             blobs.Add(m_max_conv.blobs);
 
-            m_fc1 = new ConvolutionLayer<T>(m_cuda, m_log, m_param);
+            LayerParameter pfc = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+            pfc.convolution_param.kernel_size.Add(m_param.spatial_attention_param.kernel_size);
+            pfc.convolution_param.pad.Add(1);
+            pfc.convolution_param.stride.Add(1);
+            pfc.convolution_param.group = 1;
+            pfc.convolution_param.bias_term = false;
+            pfc.convolution_param.axis = m_param.spatial_attention_param.axis;
+            pfc.convolution_param.num_output = m_param.spatial_attention_param.kernel_size;
+
+            m_fc1 = new ConvolutionLayer<T>(m_cuda, m_log, pfc);
             addInternal(m_blobAve, m_blobFc1Ave);
             m_fc1.Setup(m_colInternalBottom, m_colInternalTop);
             blobs.Add(m_fc1.blobs);
@@ -169,7 +187,8 @@ namespace MyCaffe.layers.beta
             switch (layer_param.spatial_attention_param.activation)
             {
                 case SpatialAttentionParameter.ACTIVATION.RELU:
-                    m_activation = new ReLULayer<T>(m_cuda, m_log, m_param);
+                    LayerParameter prel = new LayerParameter(LayerParameter.LayerType.RELU);
+                    m_activation = new ReLULayer<T>(m_cuda, m_log, prel);
                     break;
 
                 default:
@@ -179,12 +198,13 @@ namespace MyCaffe.layers.beta
             addInternal(m_blobFc1Ave, m_blobFc1Ave);
             m_activation.Setup(m_colInternalBottom, m_colInternalTop);
 
-            m_fc2 = new ConvolutionLayer<T>(m_cuda, m_log, m_param);
+            m_fc2 = new ConvolutionLayer<T>(m_cuda, m_log, pfc);
             addInternal(m_blobFc1Ave, m_blobFc2Ave);
             m_fc2.Setup(m_colInternalBottom, m_colInternalTop);
             blobs.Add(m_fc2.blobs); 
 
-            m_sigmoid = new SigmoidLayer<T>(m_cuda, m_log, m_param);
+            LayerParameter psig = new LayerParameter(LayerParameter.LayerType.SIGMOID);
+            m_sigmoid = new SigmoidLayer<T>(m_cuda, m_log, psig);
             addInternal(m_blobFc2Ave, m_blobAttention);
             m_sigmoid.Setup(m_colInternalBottom, m_colInternalTop);
         }
