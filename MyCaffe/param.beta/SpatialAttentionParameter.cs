@@ -17,7 +17,7 @@ namespace MyCaffe.param
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SpatialAttentionParameter : LayerParameterBase
     {
-        int m_nAxis = 2;
+        int m_nAxis = 1;
         uint m_nKernelSize = 3;
         ACTIVATION m_activation = ACTIVATION.RELU;
 
