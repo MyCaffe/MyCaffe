@@ -2116,8 +2116,9 @@ namespace MyCaffe.db.image
         /// <param name="img">Specifies the RawImageMean.</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
+        /// <param name="bLoadParameters">Optionally, specifies to load the parameters (default = false).</param>
         /// <returns>A new SimpleDatum is returned containing the image mean.</returns>
-        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0)
+        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0, bool bLoadParameters = false)
         {
             if (img == null)
                 return null;
@@ -2184,6 +2185,22 @@ namespace MyCaffe.db.image
                                               img.SourceID.GetValueOrDefault());
             }
 
+            if (bLoadParameters)
+            {
+                List<string> rgstrParam = m_db.GetRawImageParameterNames(img.ID);
+                for (int i = 0; i < rgstrParam.Count; i++)
+                {
+                    RawImageParameter rp = m_db.GetRawImageParameter(img.ID, rgstrParam[i]);
+                    if (rp != null)
+                    {
+                        if (rp.NumericValue2.HasValue)
+                            sd.SetParameter(rp.Name, rp.NumericValue2.Value);
+                        else if (rp.NumericValue.HasValue)
+                            sd.SetParameter(rp.Name, (float)rp.NumericValue.Value);
+                    }
+                }
+            }
+
             return sd;
         }
 
@@ -2202,7 +2219,10 @@ namespace MyCaffe.db.image
                 nSrcId = m_db.CurrentSource.ID;
 
             RawImage img = m_db.GetRawImage(nImageId);
-            if (img == null || img.SourceID != nSrcId)
+            if (img == null)
+                return null;
+
+            if (img.SourceID != nSrcId)
                 return null;
 
             return LoadDatum(img);
@@ -2213,14 +2233,15 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the source data ID.</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="bLoadParameters">Optionally, load the parameters (default = false)</param>
         /// <returns>The image mean is returned in a SimpleDatum.</returns>
-        public SimpleDatum LoadImageMean(int nSrcId, ConnectInfo ci = null)
+        public SimpleDatum LoadImageMean(int nSrcId, ConnectInfo ci = null, bool bLoadParameters = false)
         {
             RawImageMean imgMean = m_db.GetRawImageMean(nSrcId, ci);
             if (imgMean == null)
                 return null;
 
-            return LoadDatum(imgMean);
+            return LoadDatum(imgMean, 0, 0, bLoadParameters);
         }
 
         /// <summary>
