@@ -8173,9 +8173,9 @@ namespace MyCaffe.common
         public void muladd(int n, long hX, long hA, long hY, DIR dir, long hdX = 0, long hdA = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hA, hY, (int)dir, hdX, hdA));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hX, hA, hY, (int)dir, hdX, hdA));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hA, hY, (int)dir, hdX, hdA));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hX, hA, hY, (int)dir, hdX, hdA));
         }
 
         /// <summary>
