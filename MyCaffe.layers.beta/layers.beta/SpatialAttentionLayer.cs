@@ -158,7 +158,7 @@ namespace MyCaffe.layers.beta
             p.convolution_param.group = 1;
             p.convolution_param.bias_term = true;
             p.convolution_param.axis = m_param.spatial_attention_param.axis;
-            p.convolution_param.num_output = m_param.spatial_attention_param.kernel_size;
+            p.convolution_param.num_output = (uint)colBottom[0].shape(m_param.spatial_attention_param.axis);
 
             m_ave_conv = new ConvolutionLayer<T>(m_cuda, m_log, p);
             addInternal(colBottom[0], m_blobAve);
@@ -177,7 +177,7 @@ namespace MyCaffe.layers.beta
             pfc.convolution_param.group = 1;
             pfc.convolution_param.bias_term = false;
             pfc.convolution_param.axis = m_param.spatial_attention_param.axis;
-            pfc.convolution_param.num_output = m_param.spatial_attention_param.kernel_size;
+            pfc.convolution_param.num_output = (uint)colBottom[0].shape(m_param.spatial_attention_param.axis);
 
             m_fc1 = new ConvolutionLayer<T>(m_cuda, m_log, pfc);
             addInternal(m_blobAve, m_blobFc1Ave);
