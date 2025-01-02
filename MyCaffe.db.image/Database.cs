@@ -2687,7 +2687,10 @@ namespace MyCaffe.db.image
                     }
 
                     if (rgMean.Count == 0)
+                    {
                         entities.RawImageMeans.Add(im);
+                        entities.SaveChanges();
+                    }
 
                     if (bAddParam)
                     {
