@@ -1024,14 +1024,16 @@ namespace MyCaffe.layers
                                         fVal -= m_fPosScoreMean.Value;
                                         fVal /= m_fPosScoreStdev.Value;
                                         // Ensure all positive values.
-                                        fVal = (float)Math.Abs(fVal);
+                                        if (fVal < 0)
+                                            fVal = 0;
                                     }
                                     if (fVal < 0 && m_fNegScoreMean.HasValue && m_fNegScoreStdev.HasValue && m_fNegScoreStdev.Value != 0)
                                     {
                                         fVal -= m_fNegScoreMean.Value;
                                         fVal /= m_fNegScoreStdev.Value;
                                         // Ensure all negative values.
-                                        fVal = -1 * (float)Math.Abs(fVal);
+                                        if (fVal > 0)
+                                            fVal = 0;
                                     }
                                 }
 
