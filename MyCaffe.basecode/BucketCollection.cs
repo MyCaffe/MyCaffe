@@ -66,8 +66,9 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
         /// <param name="bForce">Optionally, forces adding the value to the Bucket.</param>
+        /// <param name="bPeekOnly">Optinoally, only peek to test if the value fits in the bucket.</param>
         /// <returns>Returns 0 if the value falls within the Buckets range and is added, -1 if the value is less than the Bucket range and 1 if the value is greater.</returns>
-        public int Add(double fVal, bool bForce = false)
+        public int Add(double fVal, bool bForce = false, bool bPeekOnly = false)
         {
             if (!bForce)
             {
@@ -76,8 +77,11 @@ namespace MyCaffe.basecode
                     return nVal;
             }
 
-            m_nCount++;
-            m_fSum += fVal;
+            if (!bPeekOnly)
+            {
+                m_nCount++;
+                m_fSum += fVal;
+            }
 
             return 0;
         }
@@ -110,6 +114,7 @@ namespace MyCaffe.basecode
         public int Count
         {
             get { return m_nCount; }
+            set { m_nCount = value; }
         }
 
         /// <summary>
@@ -452,27 +457,40 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Return the bucket at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <returns>The bucket is returned.</returns>
+        public Bucket GetBucketAt(int nIdx)
+        {
+            return m_rgBuckets[nIdx];
+        }
+
+        /// <summary>
         /// Finds the correct Bucket and adds the value to it.
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
+        /// <param name="bPeekOnly">When true, only return the bucket index but dont add the value (default = false).</param>
         /// <returns>The index of the bucket for which the value was added is returned.</returns>
-        public int Add(double fVal)
+        public int Add(double fVal, bool bPeekOnly = false)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
             {
-                int nVal = m_rgBuckets[i].Add(fVal);
+                int nVal = m_rgBuckets[i].Add(fVal, false, bPeekOnly);
                 if (nVal == 0)
                     return i;
 
                 if (nVal < 0 && i == 0)
                 {
-                    m_rgBuckets[i].Add(fVal, true);
+                    if (!bPeekOnly)
+                        m_rgBuckets[i].Add(fVal, true);
                     return i;
                 }
 
                 if (nVal == 1 && i == m_rgBuckets.Count - 1)
                 {
-                    m_rgBuckets[i].Add(fVal, true);
+                    if (!bPeekOnly)
+                        m_rgBuckets[i].Add(fVal, true);
                     return i;
                 }
             }
