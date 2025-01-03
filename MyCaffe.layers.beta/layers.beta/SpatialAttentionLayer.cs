@@ -204,7 +204,7 @@ namespace MyCaffe.layers.beta
             blobs.Add(m_fc2.blobs); 
 
             LayerParameter psmx = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-            psmx.softmax_param.axis = 2; // emphasize all color channels independently
+            psmx.softmax_param.axis = 1;
             psmx.softmax_param.algorithm = SOFTMAX_ALGORITHM.DEFAULT;
             psmx.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.DEFAULT;
             psmx.softmax_param.engine = EngineParameter.Engine.DEFAULT;
