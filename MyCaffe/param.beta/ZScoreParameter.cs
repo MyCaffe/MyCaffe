@@ -15,10 +15,10 @@ namespace MyCaffe.param.beta
     public class ZScoreParameter : LayerParameterBase
     {
         string m_strSource = "Data";
-        string m_strMeanParamPos = "Mean";
-        string m_strStdParamPos = "Stdev";
-        string m_strMeanParamNeg = "Mean";
-        string m_strStdParamNeg = "Stdev";
+        string m_strMeanParamPos = "Mean"; 
+        string m_strStdParamPos = "StdDev";
+        string m_strMeanParamNeg = "Mean"; // when using POSNEG, expected to be MeanNeg
+        string m_strStdParamNeg = "StdDev"; // when using POSNEG, epxected to be StdDevNeg
         bool m_bEnabled = true;
         SCORE_AS_LABEL_NORMALIZATION m_scoreMethod = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE;
 
