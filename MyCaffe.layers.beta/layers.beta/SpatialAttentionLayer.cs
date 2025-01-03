@@ -204,6 +204,7 @@ namespace MyCaffe.layers.beta
             blobs.Add(m_fc2.blobs); 
 
             LayerParameter psig = new LayerParameter(LayerParameter.LayerType.SIGMOID);
+            psig.sigmoid_param.engine = EngineParameter.Engine.CAFFE;
             m_sigmoid = new SigmoidLayer<T>(m_cuda, m_log, psig);
             addInternal(m_blobFc2Ave, m_blobAttention);
             m_sigmoid.Setup(m_colInternalBottom, m_colInternalTop);
