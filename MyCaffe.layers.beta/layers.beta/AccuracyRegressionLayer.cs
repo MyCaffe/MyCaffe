@@ -472,7 +472,7 @@ namespace MyCaffe.layers.beta
             for (int i = 0; i < m_rgBucketTotal.Count; i++)
             {
                 sb.Append(m_rgBucketTotal[0].ToString());
-                double dfAcc = (m_rgBucketCorrect[i].Count == 0) ? 0 : (double)m_rgBucketCorrect[i].Count / m_rgBucketTotal[i].Count;
+                double dfAcc = (m_rgBucketCorrect[i] == null) ? 0 : (double)m_rgBucketCorrect[i].Count / m_rgBucketTotal[i].Count;
                 sb.Append(" = ");
                 sb.Append(dfAcc.ToString("P"));
                 sb.AppendLine();
