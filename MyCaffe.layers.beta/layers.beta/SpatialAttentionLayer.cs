@@ -34,7 +34,7 @@ namespace MyCaffe.layers.beta
         Layer<T> m_fc1;
         Layer<T> m_fc2;
         Layer<T> m_activation;
-        Layer<T> m_sigmoid;
+        Layer<T> m_softmax;
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -86,7 +86,7 @@ namespace MyCaffe.layers.beta
             dispose(ref m_fc1);
             dispose(ref m_fc2);
             dispose(ref m_activation);
-            dispose(ref m_sigmoid);
+            dispose(ref m_softmax);
 
             base.dispose();
         }
@@ -203,11 +203,14 @@ namespace MyCaffe.layers.beta
             m_fc2.Setup(m_colInternalBottom, m_colInternalTop);
             blobs.Add(m_fc2.blobs); 
 
-            LayerParameter psig = new LayerParameter(LayerParameter.LayerType.SIGMOID);
-            psig.sigmoid_param.engine = EngineParameter.Engine.CAFFE;
-            m_sigmoid = new SigmoidLayer<T>(m_cuda, m_log, psig);
+            LayerParameter psmx = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            psmx.softmax_param.axis = 2; // emphasize all color channels independently
+            psmx.softmax_param.algorithm = SOFTMAX_ALGORITHM.DEFAULT;
+            psmx.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.DEFAULT;
+            psmx.softmax_param.engine = EngineParameter.Engine.DEFAULT;
+            m_softmax = Layer<T>.Create(m_cuda, m_log, psmx, null);
             addInternal(m_blobFc2Ave, m_blobAttention);
-            m_sigmoid.Setup(m_colInternalBottom, m_colInternalTop);
+            m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
         }
 
         /// <summary>
@@ -236,7 +239,7 @@ namespace MyCaffe.layers.beta
             m_fc2.Reshape(m_colInternalBottom, m_colInternalTop);
 
             addInternal(m_blobFc2Ave, m_blobAttention);
-            m_sigmoid.Reshape(m_colInternalBottom, m_colInternalTop);
+            m_softmax.Reshape(m_colInternalBottom, m_colInternalTop);
 
             m_blobFc1Max.ReshapeLike(m_blobFc1Ave);
             m_blobFc2Max.ReshapeLike(m_blobFc2Ave);
@@ -286,7 +289,7 @@ namespace MyCaffe.layers.beta
             // Attention
             m_cuda.add(m_blobAttention.count(), m_blobFc2Ave.gpu_data, m_blobFc2Max.gpu_data, m_blobAttention.mutable_gpu_data);
             addInternal(m_blobAttention, m_blobAttention);
-            m_sigmoid.Forward(m_colInternalBottom, m_colInternalTop);
+            m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Multiply
             m_cuda.muladd(colBottom[0].count(), colBottom[0].gpu_data, m_blobAttention.gpu_data, colTop[0].mutable_gpu_data, DIR.FWD);
@@ -313,7 +316,7 @@ namespace MyCaffe.layers.beta
 
                 // Attention
                 addInternal(m_blobAttention, m_blobAttention);
-                m_sigmoid.Backward(m_colInternalTop, rgbPropagateDown, m_colInternalBottom);
+                m_softmax.Backward(m_colInternalTop, rgbPropagateDown, m_colInternalBottom);
                 m_blobFc2Ave.CopyFrom(m_blobAttention, true, false);
                 m_blobFc2Max.CopyFrom(m_blobAttention, true, false);
 
