@@ -162,10 +162,10 @@ namespace MyCaffe.layers
                 else if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
                 {
                     int nSrcID = db.GetSourceID(m_param.data_param.source);
-                    string strPosMean = "PosMean" + strActiveScore;
-                    string strPosStdDev = "PosStdDev" + strActiveScore;
-                    string strNegMean = "NegMean" + strActiveScore;
-                    string strNegStdDev = "NegStdDev" + strActiveScore;
+                    string strPosMean = "Mean" + strActiveScore;
+                    string strPosStdDev = "StdDev" + strActiveScore;
+                    string strNegMean = "MeanNeg" + strActiveScore;
+                    string strNegStdDev = "StdDevNeg" + strActiveScore;
                     SimpleDatum sdMean = db.GetItemMean(nSrcID, strPosMean, strPosStdDev, strNegMean, strNegStdDev);
 
                     if (sdMean != null)
