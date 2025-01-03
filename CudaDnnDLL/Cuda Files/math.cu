@@ -5590,6 +5590,86 @@ template long Math<float>::muladd(int n, long hX, long hA, long hY, long hdX, lo
 
 
 template <typename T>
+__global__ void z_score_kernel_fwd(const int n, const T* x, T* y, const T fMean, const T fStdDev)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] - fMean) / fStdDev;
+	}
+}
+
+template <typename T>
+__global__ void z_score_kernel_bwd(const int n, T* dx, const T* dy, const T fMean, const T fStdDev)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		dx[i] = dy[i] / fStdDev;
+	}
+}
+
+template <typename T>
+__global__ void z_score_posneg_kernel_fwd(const int n, const T* x, T* y, const T fMeanPos, const T fStdDevPos, const T fMeanNeg, const T fStdDevNeg)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		if (x[i] >= 0)
+			y[i] = (x[i] - fMeanPos) / fStdDevPos;
+		else
+			y[i] = (x[i] - fMeanNeg) / fStdDevNeg;
+	}
+}
+
+template <typename T>
+__global__ void z_score_posneg_kernel_bwd(const int n, T* dx, const T* dy, const T fMeanPos, const T fStdDevPos, const T fMeanNeg, const T fStdDevNeg)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		if (dx[i] >= 0)
+			dx[i] = dy[i] / fStdDevPos;
+		else
+			dx[i] = dy[i] / fStdDevNeg;
+	}
+}
+
+template <class T>
+long Math<T>::z_score(int n, T fMeanPos, T fStdDevPos, T fMeanNeg, T fStdDevNeg, long hX, long hY, int nDir, int nMethod)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	if (nDir == 0)
+	{
+		if (nMethod == 1)
+			z_score_posneg_kernel_fwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fMeanPos, fStdDevPos, fMeanNeg, fStdDevNeg);
+		else
+			z_score_kernel_fwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fMeanPos, fStdDevPos);
+	}
+	else
+	{
+		if (nMethod == 1)
+			z_score_posneg_kernel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fMeanPos, fStdDevPos, fMeanNeg, fStdDevNeg);
+		else
+			z_score_kernel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fMeanPos, fStdDevPos);
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::z_score(int n, double fMeanPos, double fStdDevPos, double fMeanNeg, double fStdDevNeg, long hX, long hY, int nDir, int nMethod);
+template long Math<float>::z_score(int n, float fMeanPos, float fStdDevPos, float fMeanNeg, float fStdDevNeg, long hX, long hY, int nDir, int nMethod);
+
+
+template <typename T>
 __global__ void div_kernel(const int n, T* a, T* b, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)

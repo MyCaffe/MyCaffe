@@ -15,9 +15,12 @@ namespace MyCaffe.param.beta
     public class ZScoreParameter : LayerParameterBase
     {
         string m_strSource = "Data";
-        string m_strMeanParam = "Mean";
-        string m_strStdParam = "Stdev";
+        string m_strMeanParamPos = "Mean";
+        string m_strStdParamPos = "Stdev";
+        string m_strMeanParamNeg = "Mean";
+        string m_strStdParamNeg = "Stdev";
         bool m_bEnabled = true;
+        SCORE_AS_LABEL_NORMALIZATION m_scoreMethod = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE;
 
         /** @copydoc LayerParameterBase */
         public ZScoreParameter()
@@ -65,23 +68,52 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies the parameter used to query the data source for the mean value.
+        /// Specifies the method used to normalize the scores.
         /// </summary>
-        [Description("Specifies the parameter used to query the data source for the mean value.")] 
-        public string mean_param
+        public SCORE_AS_LABEL_NORMALIZATION score_method
         {
-            get { return m_strMeanParam; }
-            set { m_strMeanParam = value; }
+            get { return m_scoreMethod; }
+            set { m_scoreMethod = value; }
         }
 
         /// <summary>
-        /// Specifies the parameter used to query the data source for the stdev value.
+        /// Specifies the parameter used to query the data source for the mean value used to normalize positive values (or all values when method = Z_SCORE).
         /// </summary>
-        [Description("Specifies the parameter used to query the data source for the stdev value.")]
-        public string stdev_param
+        [Description("Specifies the parameter used to query the data source for the mean value used to normalize positive values (or all values when method = Z_SCORE).")] 
+        public string mean_pos_param
         {
-            get { return m_strStdParam; }
-            set { m_strStdParam = value; }
+            get { return m_strMeanParamPos; }
+            set { m_strMeanParamPos = value; }
+        }
+
+        /// <summary>
+        /// Specifies the parameter used to query the data source for the stdev value used to normalize positive values (or all values when method = Z_SCORE).
+        /// </summary>
+        [Description("Specifies the parameter used to query the data source for the stdev value used to normalize positive values (or all values when method = Z_SCORE).")]
+        public string stdev_pos_param
+        {
+            get { return m_strStdParamPos; }
+            set { m_strStdParamPos = value; }
+        }
+
+        /// <summary>
+        /// Specifies the parameter used to query the data source for the mean value used to normalize negative values.
+        /// </summary>
+        [Description("Specifies the parameter used to query the data source for the mean value used to normalize negative values.")]
+        public string mean_neg_param
+        {
+            get { return m_strMeanParamNeg; }
+            set { m_strMeanParamNeg = value; }
+        }
+
+        /// <summary>
+        /// Specifies the parameter used to query the data source for the stdev value used to normalize negative values.
+        /// </summary>
+        [Description("Specifies the parameter used to query the data source for the stdev value used to normalize negative values.")]
+        public string stdev_neg_param
+        {
+            get { return m_strStdParamNeg; }
+            set { m_strStdParamNeg = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -103,9 +135,12 @@ namespace MyCaffe.param.beta
             {
                 ZScoreParameter p = (ZScoreParameter)src;
                 m_strSource = p.m_strSource;
-                m_strMeanParam = p.m_strMeanParam;
-                m_strStdParam = p.m_strStdParam;
+                m_strMeanParamPos = p.m_strMeanParamPos;
+                m_strStdParamPos = p.m_strStdParamPos;
+                m_strMeanParamNeg = p.m_strMeanParamNeg;
+                m_strStdParamNeg = p.m_strStdParamNeg;
                 m_bEnabled = p.m_bEnabled;
+                m_scoreMethod = p.m_scoreMethod;
             }
         }
 
@@ -124,8 +159,11 @@ namespace MyCaffe.param.beta
 
             rgChildren.Add("enabled", enabled.ToString());
             rgChildren.Add("source", source);
-            rgChildren.Add("mean_param", mean_param);
-            rgChildren.Add("stdev_param", stdev_param);
+            rgChildren.Add("mean_pos_param", mean_pos_param);
+            rgChildren.Add("stdev_pos_param", stdev_pos_param);
+            rgChildren.Add("mean_neg_param", mean_neg_param);
+            rgChildren.Add("stdev_neg_param", stdev_neg_param);
+            rgChildren.Add("score_method", score_method.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -135,7 +173,7 @@ namespace MyCaffe.param.beta
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static new ZScoreParameter FromProto(RawProto rp)
+        public static ZScoreParameter FromProto(RawProto rp)
         {
             string strVal;
             ZScoreParameter p = new ZScoreParameter();
@@ -147,10 +185,25 @@ namespace MyCaffe.param.beta
                 p.source = strVal;
 
             if ((strVal = rp.FindValue("mean_param")) != null)
-                p.mean_param = strVal;
+                p.mean_pos_param = strVal;
 
             if ((strVal = rp.FindValue("stdev_param")) != null)
-                p.stdev_param = strVal;
+                p.stdev_pos_param = strVal;
+
+            if ((strVal = rp.FindValue("mean_pos_param")) != null)
+                p.mean_pos_param = strVal;
+
+            if ((strVal = rp.FindValue("stdev_pos_param")) != null)
+                p.stdev_pos_param = strVal;
+
+            if ((strVal = rp.FindValue("mean_neg_param")) != null)
+                p.mean_neg_param = strVal;
+
+            if ((strVal = rp.FindValue("stdev_neg_param")) != null)
+                p.stdev_neg_param = strVal;
+
+            if ((strVal = rp.FindValue("score_method")) != null)
+                p.score_method = (SCORE_AS_LABEL_NORMALIZATION)Enum.Parse(typeof(SCORE_AS_LABEL_NORMALIZATION), strVal, true);
 
             return p;
         }

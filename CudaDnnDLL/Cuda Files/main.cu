@@ -593,6 +593,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_MULADD:
 			return m_device.cuda_muladd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_Z_SCORE:
+			return m_device.cuda_z_score(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SUB_AND_DOT:
 			return m_device.cuda_sub_and_dot(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1842,6 +1845,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_MULADD:
 		return "CUDA_FN_MULADD";
+
+	case CUDA_FN_Z_SCORE:
+		return "CUDA_FN_Z_SCORE";
 
 	case CUDA_FN_SUB_AND_DOT:
 		return "CUDA_FN_SUB_AND_DOT";

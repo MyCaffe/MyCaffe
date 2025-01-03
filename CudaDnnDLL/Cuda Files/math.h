@@ -221,6 +221,7 @@ class Math
 		long mul_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
 		long muladd(int n, long hX, long hA, long hY, long hdX, long hDy, int nDir);
+		long z_score(int n, T fMeanPos, T fStdDevPos, T fMeanNeg, T fStdDevNeg, long hX, long hY, int nDir, int nMethod);
 		long div(int n, long hA, long hB, long hY);
 		long abs(int n, long hA, long hY);
 		long exp(int n, long hA, long hY, int nAOff = 0, int nYOff = 0, T fBeta = 1);

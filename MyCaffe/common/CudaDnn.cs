@@ -10,6 +10,7 @@ using MyCaffe.basecode;
 using System.ComponentModel;
 using System.Runtime.Remoting.Channels;
 using System.Xml.Linq;
+using System.Collections.Specialized;
 
 namespace MyCaffe.common
 {
@@ -1411,6 +1412,7 @@ namespace MyCaffe.common
             CUDA_THRESHOLD = 274,
             
             CUDA_MULADD = 275,
+            CUDA_Z_SCORE = 276,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -8176,6 +8178,26 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hX, hA, hY, (int)dir, hdX, hdA));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MULADD, null, m_param.AsLong(n, hX, hA, hY, (int)dir, hdX, hdA));
+        }
+
+        /// <summary>
+        /// Runs a z-score normalization on the data where the forward pass subtracts the mean and divides by the std deviation, and the backward pass computes the gradient.
+        /// </summary>
+        /// <param name="n">Specifies the number of items in vectors X and Y.</param>
+        /// <param name="hX">Specifies the GPU memory containing the input data (FWD) and output data (BWD).</param>
+        /// <param name="fMeanPos">Specifies the positive mean value.</param>
+        /// <param name="fStdDevPos">Specifies the positive stdev value.</param>
+        /// <param name="fMeanNeg">Specifies the negative mean value.</param>
+        /// <param name="fStdDevNeg">Specifies the negative stdev value.</param>
+        /// <param name="hY">Specifies the output data (FWD) and input data (BWD).</param>
+        /// <param name="dir">Specifies the data flow direction.</param>
+        /// <param name="method">Specifies the Z-Score method.  When using the POSNEG z-score normalization is run separately on positive and negative values.</param>
+        public void z_score(int n, long hX, double fMeanPos, double fStdDevPos, double fMeanNeg, double fStdDevNeg, long hY, DIR dir, SCORE_AS_LABEL_NORMALIZATION method)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_Z_SCORE, m_param.AsDouble(fMeanPos, fStdDevPos, fMeanNeg, fStdDevNeg), m_param.AsLong(n, hX, hY, (int)dir, (int)method));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_Z_SCORE, m_param.AsFloat((float)fMeanPos, (float)fStdDevPos, (float)fMeanNeg, (float)fStdDevNeg), m_param.AsLong(n, hX, hY, (int)dir, (int)method));
         }
 
         /// <summary>

@@ -2460,6 +2460,35 @@ template long Device<float>::cuda_muladd(long lInput, float* pfInput, long llInp
 
 
 template <class T>
+long Device<T>::cuda_z_score(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
+	int nDir = (int)plInput[3];
+	int nMethod = (int)plInput[4];
+
+	float fMeanPos = (float)pfInput[0];
+	float fStdDevPos = (float)pfInput[1];
+	float fMeanNeg = (float)pfInput[2];
+	float fStdDevNeg = (float)pfInput[3];
+
+	return m_math.z_score(n, fMeanPos, fStdDevPos, fMeanNeg, fStdDevNeg, hX, hY, nDir, nMethod);
+}
+
+template long Device<double>::cuda_z_score(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_z_score(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

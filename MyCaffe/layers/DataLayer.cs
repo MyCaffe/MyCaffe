@@ -63,7 +63,7 @@ namespace MyCaffe.layers
         private int m_nBatchCount = 0;
         private SimpleDatum[] m_rgDatum = null;
         private bool m_bUseScoreAsLabel = false;
-        private DataParameter.SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = DataParameter.SCORE_AS_LABEL_NORMALIZATION.NONE;
+        private SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
         private float? m_fScoreMean = null;
         private float? m_fScoreStdev = null;
         private float? m_fPosScoreMean = null;
@@ -139,16 +139,19 @@ namespace MyCaffe.layers
             {
                 m_bUseScoreAsLabel = true;
                 m_zscoreNormalization = p.data_param.score_as_label_normalization;
+                string strActiveScore = (p.data_param.active_score > 1) ? p.data_param.active_score.ToString() : "";
 
-                if (m_zscoreNormalization == DataParameter.SCORE_AS_LABEL_NORMALIZATION.Z_SCORE)
+                if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE)
                 {
                     int nSrcID = db.GetSourceID(m_param.data_param.source);
-                    SimpleDatum sdMean = db.GetItemMean(nSrcID, "Mean", "StdDev");
+                    string strMean = "Mean" + strActiveScore;
+                    string strStdDev = "StdDev" + strActiveScore;
+                    SimpleDatum sdMean = db.GetItemMean(nSrcID, strMean, strStdDev);
 
                     if (sdMean != null)
                     {
-                        m_fScoreMean = sdMean.GetParameter("Mean");
-                        m_fScoreStdev = sdMean.GetParameter("StdDev");
+                        m_fScoreMean = sdMean.GetParameter(strMean);
+                        m_fScoreStdev = sdMean.GetParameter(strStdDev);
                     }
                     else
                     {
@@ -156,17 +159,21 @@ namespace MyCaffe.layers
                     }
                 }
 
-                else if (m_zscoreNormalization == DataParameter.SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
+                else if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
                 {
                     int nSrcID = db.GetSourceID(m_param.data_param.source);
-                    SimpleDatum sdMean = db.GetItemMean(nSrcID, "PosMean", "PosStdDev", "NegMean", "NegStdDev");
+                    string strPosMean = "PosMean" + strActiveScore;
+                    string strPosStdDev = "PosStdDev" + strActiveScore;
+                    string strNegMean = "NegMean" + strActiveScore;
+                    string strNegStdDev = "NegStdDev" + strActiveScore;
+                    SimpleDatum sdMean = db.GetItemMean(nSrcID, strPosMean, strPosStdDev, strNegMean, strNegStdDev);
 
                     if (sdMean != null)
                     {
-                        m_fPosScoreMean = sdMean.GetParameter("PosMean");
-                        m_fPosScoreStdev = sdMean.GetParameter("PosStdDev");
-                        m_fNegScoreMean = sdMean.GetParameter("NegMean");
-                        m_fNegScoreStdev = sdMean.GetParameter("NegStdDev");
+                        m_fPosScoreMean = sdMean.GetParameter(strPosMean);
+                        m_fPosScoreStdev = sdMean.GetParameter(strPosStdDev);
+                        m_fNegScoreMean = sdMean.GetParameter(strNegMean);
+                        m_fNegScoreStdev = sdMean.GetParameter(strNegStdDev);
                     }
                     else
                     {
@@ -1005,12 +1012,12 @@ namespace MyCaffe.layers
                                     m_log.FAIL("When 'label_type = SCORE2' each image must have a 'score2' value.  An image without a 'score2' was found.");
 
                                 float fVal = (float)Convert.ChangeType(datum.Score.Value, typeof(float));
-                                if (layer_param.data_param.score_as_label_normalization == DataParameter.SCORE_AS_LABEL_NORMALIZATION.Z_SCORE && m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
+                                if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE && m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
                                 {
                                     fVal -= m_fScoreMean.Value;
                                     fVal /= m_fScoreStdev.Value;
                                 }
-                                else if (layer_param.data_param.score_as_label_normalization == DataParameter.SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
+                                else if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
                                 {
                                     if (fVal > 0 && m_fPosScoreMean.HasValue && m_fPosScoreStdev.HasValue && m_fPosScoreStdev.Value != 0)
                                     {

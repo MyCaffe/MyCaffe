@@ -21,8 +21,11 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class ZScoreLayer<T> : NeuronLayer<T>, IXNormalize<T>
     {
-        float m_fMean;
-        float m_fStdev;
+        SCORE_AS_LABEL_NORMALIZATION m_method = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE;
+        float m_fMeanPos;
+        float m_fStdevPos;
+        float m_fMeanNeg;
+        float m_fStdevNeg;
 
         /// <summary>
         /// The MishLayer constructor.
@@ -35,26 +38,39 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.Z_SCORE;
+            m_method = p.z_score_param.score_method;
 
             SourceDescriptor src = db.GetSourceByName(p.z_score_param.source);
             if (src == null)
                 throw new Exception("Could not find the data source '" + p.z_score_param.source + "!");
 
-            SimpleDatum sd = db.GetItemMean(src.ID, p.z_score_param.mean_param, p.z_score_param.stdev_param);
+            SimpleDatum sd = db.GetItemMean(src.ID, p.z_score_param.mean_pos_param, p.z_score_param.stdev_pos_param, p.z_score_param.mean_neg_param, p.z_score_param.stdev_neg_param);
             if (sd == null)
                 throw new Exception("Could not find the item mean for the data source '" + p.z_score_param.source + "!  Make sure the item mean is created for this dataset.");
 
-            float? fVal = sd.GetParameter(p.z_score_param.mean_param);
+            float? fVal = sd.GetParameter(p.z_score_param.mean_pos_param);
             if (!fVal.HasValue)
-                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the mean parameter '" + p.z_score_param.mean_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item mean is created for this dataset.");
+                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the positive mean parameter '" + p.z_score_param.mean_pos_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item mean is created for this dataset.");
 
-            m_fMean = fVal.Value;
+            m_fMeanPos = fVal.Value;
 
-            fVal = sd.GetParameter(p.z_score_param.stdev_param);
+            fVal = sd.GetParameter(p.z_score_param.stdev_pos_param);
             if (!fVal.HasValue)
-                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the stdev parameter '" + p.z_score_param.stdev_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item stdev is created for this dataset.");
+                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the positive stdev parameter '" + p.z_score_param.stdev_pos_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item stdev is created for this dataset.");
 
-            m_fStdev = fVal.Value;
+            m_fStdevPos = fVal.Value;
+
+            fVal = sd.GetParameter(p.z_score_param.mean_neg_param);
+            if (!fVal.HasValue)
+                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the negative mean parameter '" + p.z_score_param.mean_neg_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item mean is created for this dataset.");
+
+            m_fMeanNeg = fVal.Value;
+
+            fVal = sd.GetParameter(p.z_score_param.stdev_neg_param);
+            if (!fVal.HasValue)
+                throw new Exception("Layer: '" + layer_param.name + "' - Could not find the negative stdev parameter '" + p.z_score_param.stdev_neg_param + "'!  The image mean has the following parameters: " + sd.GetParameterNames() + " Make sure the item stdev is created for this dataset.");
+
+            m_fStdevNeg = fVal.Value;
         }
 
         /// <summary>
@@ -112,7 +128,19 @@ namespace MyCaffe.layers.beta
         /// <returns>The normalized value is returned.</returns>
         public float Normalize(float fVal)
         {
-            return (fVal - m_fMean) / m_fStdev;
+            float fMean = m_fMeanPos;
+            float fStdev = m_fStdevPos;
+
+            if (m_method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
+            {
+                if (fVal < 0)
+                {
+                    fMean = m_fMeanNeg;
+                    fStdev = m_fStdevNeg;
+                }
+            }
+
+            return (fVal - fMean) / fStdev;
         }
 
         /// <summary>
@@ -122,7 +150,19 @@ namespace MyCaffe.layers.beta
         /// <returns>The un-normalized value is returned.</returns>
         public float UnNormalize(float fVal)
         {
-            return (fVal * m_fStdev) + m_fMean;
+            float fMean = m_fMeanPos;
+            float fStdev = m_fStdevPos;
+
+            if (m_method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
+            {
+                if (fVal < 0)
+                {
+                    fMean = m_fMeanNeg;
+                    fStdev = m_fStdevNeg;
+                }
+            }
+
+            return (fVal * fStdev) + fMean;
         }
 
         /// <summary>
@@ -144,10 +184,7 @@ namespace MyCaffe.layers.beta
                 colTop[0].CopyFrom(colBottom[0], false, true);
 
             if (m_param.z_score_param.enabled)
-            {
-                m_cuda.add_scalar(colTop[0].count(), -m_fMean, colTop[0].mutable_gpu_data);
-                m_cuda.mul_scalar(colTop[0].count(), 1.0f / m_fStdev, colTop[0].mutable_gpu_data);
-            }
+                m_cuda.z_score(colTop[0].count(), colTop[0].gpu_data, m_fMeanPos, m_fStdevPos, m_fMeanNeg, m_fStdevNeg, colTop[0].mutable_gpu_data, DIR.FWD, m_method);
         }
 
         /// <summary>
@@ -172,12 +209,10 @@ namespace MyCaffe.layers.beta
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (colTop[0] != colBottom[0])
-                colBottom[0].CopyFrom(colTop[0], true, true);
+                colBottom[0].CopyFrom(colTop[0], true, false);
 
             if (m_param.z_score_param.enabled)
-            {
-                m_cuda.mul_scalar(colBottom[0].count(), m_fStdev, colBottom[0].mutable_gpu_diff);
-            }
+                m_cuda.z_score(colBottom[0].count(), colBottom[0].mutable_gpu_diff, m_fMeanPos, m_fStdevPos, m_fMeanNeg, m_fStdevNeg, colBottom[0].gpu_diff, DIR.BWD, m_method);
         }
     }
 }

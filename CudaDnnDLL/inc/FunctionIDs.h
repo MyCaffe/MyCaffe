@@ -306,6 +306,7 @@ const int CUDA_FN_INVERT = 273;
 const int CUDA_FN_THRESHOLD = 274;
 
 const int CUDA_FN_MULADD = 275;
+const int CUDA_FN_Z_SCORE = 276;
 
 const int CUDA_FN_IM2COL = 280;
 const int CUDA_FN_IM2COL_ND = 281;

@@ -33,24 +33,6 @@ namespace MyCaffe.param
             IMAGEDB = 1
         }
 
-        /// <summary>
-        /// Defines the type of score normalization to perform when using the score as the label.
-        /// </summary>
-        public enum SCORE_AS_LABEL_NORMALIZATION
-        {
-            /// <summary>
-            /// Specifies to not do any normalization.
-            /// </summary>
-            NONE = 0,
-            /// <summary>
-            /// Specifies to run z-score normalization on all values usng the 'Mean' and 'StdDev' values from the mean image.
-            /// </summary>
-            Z_SCORE = 1,
-            /// <summary>
-            /// Specifies to run pos/neg z-score normalization on all values using the 'PosMean' and 'PosStdDev' for all positive values, and 'NegMean' and 'NegStdDev' for all negative values..
-            /// </summary>
-            Z_SCORE_POSNEG = 2
-        }
 
         string m_strSource = null;
         uint m_nBatchSize;
@@ -74,6 +56,7 @@ namespace MyCaffe.param
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
         SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
+        int m_nActiveScore = 1;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -347,6 +330,16 @@ namespace MyCaffe.param
             set { m_zscoreNormalization = value; }
         }
 
+        /// <summary>
+        /// Specifies the active score.  When active_score > 1, the active score value is added to the mean and stddev parameters.
+        /// </summary>
+        [Category("Labels"), Description("Specifies the active score.  When active_score > 1, the active score value is added to the mean and stddev parameters.")]
+        public int active_score
+        {
+            get { return m_nActiveScore; }
+            set { m_nActiveScore = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -385,6 +378,7 @@ namespace MyCaffe.param
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
             m_zscoreNormalization = p.m_zscoreNormalization;
+            m_nActiveScore = p.m_nActiveScore;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -461,6 +455,8 @@ namespace MyCaffe.param
 
             if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
                 rgChildren.Add("score_as_label_normalization", m_zscoreNormalization.ToString());
+
+            rgChildren.Add("active_score", m_nActiveScore.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -606,6 +602,9 @@ namespace MyCaffe.param
                         throw new Exception("Unknown 'score_as_label_normalization' value " + strVal);
                 }
             }
+
+            if ((strVal = rp.FindValue("active_score")) != null)
+                p.active_score = int.Parse(strVal);
 
             return p;
         }

@@ -55,6 +55,25 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
+    /// Defines the type of score normalization to perform when using the score as the label.
+    /// </summary>
+    public enum SCORE_AS_LABEL_NORMALIZATION
+    {
+        /// <summary>
+        /// Specifies to not do any normalization.
+        /// </summary>
+        NONE = 0,
+        /// <summary>
+        /// Specifies to run z-score normalization on all values usng the 'Mean' and 'StdDev' values from the mean image.
+        /// </summary>
+        Z_SCORE = 1,
+        /// <summary>
+        /// Specifies to run pos/neg z-score normalization on all values using the 'PosMean' and 'PosStdDev' for all positive values, and 'NegMean' and 'NegStdDev' for all negative values..
+        /// </summary>
+        Z_SCORE_POSNEG = 2
+    }
+
+    /// <summary>
     /// Defines the Phase under which to run a Net.
     /// </summary>
     public enum Phase
