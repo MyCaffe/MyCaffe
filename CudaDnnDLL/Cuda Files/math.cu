@@ -5613,9 +5613,17 @@ __global__ void z_score_posneg_kernel_fwd(const int n, const T* x, T* y, const T
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		if (x[i] >= 0)
+		{
 			y[i] = (x[i] - fMeanPos) / fStdDevPos;
+			if (y[i] < 0)
+				y[i] = 0;
+		}
 		else
+		{
 			y[i] = (x[i] - fMeanNeg) / fStdDevNeg;
+			if (y[i] > 0)
+				y[i] = 0;
+		}
 	}
 }
 
