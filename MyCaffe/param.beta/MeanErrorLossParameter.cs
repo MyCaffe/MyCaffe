@@ -27,9 +27,9 @@ namespace MyCaffe.param
         MEAN_ERROR m_meanErrorType = MEAN_ERROR.MAE; // default to the Mean Absolute Error.
         bool m_bEnableWeightedLoss = false;
         float m_fMaxWeight = 10.0f;
+        float m_fWeightFrequencyErrorAlpha = 0.3f;
         int m_nWeightBucketCount = 20;
         int m_nWeightWarmupIerations = 100;
-        bool m_bEnableWeightPosNeg = false;
 
         float m_fAbovePenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesAboveThreshold = null;
@@ -73,13 +73,16 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// [\b optional, default = false] Specifies to enforce equal weighting between positive and negative targets.
+        /// [\b optional, default = 0.3] Specifies the balance between frequency and error rate weighting. A value of 0.0f uses 100% frequency weighting, whereas a value of 1.0 uses 100% error weighting.  
         /// </summary>
-        [Description("Specifies to enforce equal weighting between positive and negative targets.")]
-        public bool enable_weight_posneg
+        /// <remarks>
+        /// Recommendation: Start training with 0.3 setting, the slowly increase to 0.5 after training.
+        /// </remarks>
+        [Description("[\b optional, default = 0.3] Specifies the balance between frequency and error rate weighting. A value of 0.0f uses 100% frequency weighting, whereas a value of 1.0 uses 100% error weighting.  Recommendation, start at 0.3 and slowly increase to 0.5 after training.")]
+        public float weight_frequency_error_alpha
         {
-            get { return m_bEnableWeightPosNeg; }
-            set { m_bEnableWeightPosNeg = value;}
+            get { return m_fWeightFrequencyErrorAlpha; }
+            set { m_fWeightFrequencyErrorAlpha = value;}
         }
 
         /// <summary>
@@ -178,7 +181,7 @@ namespace MyCaffe.param
             m_fMaxWeight = p.m_fMaxWeight;
             m_nWeightBucketCount = p.m_nWeightBucketCount;
             m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
-            m_bEnableWeightPosNeg = p.m_bEnableWeightPosNeg;
+            m_fWeightFrequencyErrorAlpha = p.m_fWeightFrequencyErrorAlpha;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -201,7 +204,7 @@ namespace MyCaffe.param
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("mean_error_type", mean_error_type.ToString());
             rgChildren.Add("enable_weighted_loss", enable_weighted_loss.ToString());
-            rgChildren.Add("enable_weight_posneg", enable_weight_posneg.ToString());
+            rgChildren.Add("weight_frequency_error_alpha", weight_frequency_error_alpha.ToString());
             rgChildren.Add("max_weight", max_weight.ToString());
             rgChildren.Add("weight_bucket_count", weight_bucket_count.ToString());
             rgChildren.Add("weight_warmup_iterations", weight_warmup_iterations.ToString());
@@ -264,8 +267,8 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("enable_weighted_loss")) != null)
                 p.enable_weighted_loss = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("enable_weight_posneg")) != null)
-                p.enable_weight_posneg = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("weight_frequency_error_alpha")) != null)
+                p.weight_frequency_error_alpha = float.Parse(strVal);
 
             if ((strVal = rp.FindValue("max_weight")) != null)
                 p.max_weight = BaseParameter.ParseFloat(strVal);
