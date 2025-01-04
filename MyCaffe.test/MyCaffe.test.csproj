@@ -110,15 +110,12 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OnnxSample.cs" />
     <Compile Include="PreTest.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="SimpleGraphingDialog.cs" />
-    <Compile Include="SimpleGraphingDialog.Designer.cs" />
     <Compile Include="TestSpatialAttentionLayer.cs" />
     <Compile Include="TestExtensionLlm.cs" />
     <Compile Include="TestNhitsStackLayer.cs" />
@@ -309,7 +306,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="SimpleGraphingDialog.resx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
