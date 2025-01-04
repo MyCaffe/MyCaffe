@@ -56,7 +56,6 @@ namespace MyCaffe.param
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
         SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
-        int m_nActiveScore = 1;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -330,16 +329,6 @@ namespace MyCaffe.param
             set { m_zscoreNormalization = value; }
         }
 
-        /// <summary>
-        /// Specifies the active score.  When active_score > 1, the active score value is added to the mean and stddev parameters.
-        /// </summary>
-        [Category("Labels"), Description("Specifies the active score.  When active_score > 1, the active score value is added to the mean and stddev parameters.")]
-        public int active_score
-        {
-            get { return m_nActiveScore; }
-            set { m_nActiveScore = value; }
-        }
-
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -378,7 +367,6 @@ namespace MyCaffe.param
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
             m_zscoreNormalization = p.m_zscoreNormalization;
-            m_nActiveScore = p.m_nActiveScore;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -455,8 +443,6 @@ namespace MyCaffe.param
 
             if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
                 rgChildren.Add("score_as_label_normalization", m_zscoreNormalization.ToString());
-
-            rgChildren.Add("active_score", m_nActiveScore.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -602,9 +588,6 @@ namespace MyCaffe.param
                         throw new Exception("Unknown 'score_as_label_normalization' value " + strVal);
                 }
             }
-
-            if ((strVal = rp.FindValue("active_score")) != null)
-                p.active_score = int.Parse(strVal);
 
             return p;
         }

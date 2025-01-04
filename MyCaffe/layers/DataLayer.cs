@@ -139,7 +139,7 @@ namespace MyCaffe.layers
             {
                 m_bUseScoreAsLabel = true;
                 m_zscoreNormalization = p.data_param.score_as_label_normalization;
-                string strActiveScore = (p.data_param.active_score > 1) ? p.data_param.active_score.ToString() : "";
+                string strActiveScore = (p.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2) ? "2" : "";
 
                 if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE)
                 {
@@ -1011,7 +1011,10 @@ namespace MyCaffe.layers
                                 if (layer_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2 && !datum.Score2.HasValue)
                                     m_log.FAIL("When 'label_type = SCORE2' each image must have a 'score2' value.  An image without a 'score2' was found.");
 
-                                float fVal = (float)Convert.ChangeType(datum.Score.Value, typeof(float));
+                                decimal? dScore = (m_param.data_param.label_type == DataParameter.LABEL_TYPE.SCORE1) ? datum.Score : datum.Score2;
+                                if (!dScore.HasValue)
+                                    m_log.FAIL("The score value '" + m_param.data_param.label_type.ToString() + "' is not set!");
+                                float fVal = (float)Convert.ChangeType(dScore.Value, typeof(float));
                                 if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE && m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
                                 {
                                     fVal -= m_fScoreMean.Value;
