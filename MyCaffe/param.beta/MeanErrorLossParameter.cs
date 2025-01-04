@@ -16,6 +16,8 @@ namespace MyCaffe.param
     /// @see [Methods for forecasts of continuous variables](https://www.cawcr.gov.au/projects/verification/#Methods_for_foreasts_of_continuous_variables) by WCRP, 2017.
     /// @see [MAD vs RMSE vs MAE vs MSLE vs R^2: When to use which?](https://datascience.stackexchange.com/questions/42760/mad-vs-rmse-vs-mae-vs-msle-vs-r%C2%B2-when-to-use-which), StackExchange, 2018.
     /// @see [Mean Absolute Error](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/mean-absolute-error) by Peltarion.
+    /// @see [The Proximal Map of the Weighted Mean Absolute Error](https://arxiv.org/abs/2209.13545) by Lukas Baumgärtner, Roland Herzog, Stephan Schmidt, Manuel Weiß, 2022, arXiv 2209.13545
+    /// @see [Mean Absolute Error In Machine Learning: What You Need To Know](https://arize.com/blog-course/mean-absolute-error-in-machine-learning-what-you-need-to-know/) by David Burch, 2023, ariz.com
     /// </remarks>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -23,6 +25,10 @@ namespace MyCaffe.param
     {
         int m_nAxis = 1; // Axis used to calculate the loss normalization.
         MEAN_ERROR m_meanErrorType = MEAN_ERROR.MAE; // default to the Mean Absolute Error.
+        bool m_bEnableWeightedLoss = false;
+        float m_fMaxWeight = 10.0f;
+        int m_nWeightBucketCount = 20;
+        int m_nWeightWarmupIerations = 100;
 
         float m_fAbovePenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesAboveThreshold = null;
@@ -48,6 +54,7 @@ namespace MyCaffe.param
         /// <summary>
         /// [\b optional, default = MSE] Specifies the type of mean error to use.
         /// </summary>
+        [Description("Specifies the type of mean error to use, default = MSE")]
         public MEAN_ERROR mean_error_type
         {
             get { return m_meanErrorType; }
@@ -55,8 +62,49 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// [\b optional, default = false] Specifies to use a weighted loss.
+        /// </summary>
+        [Description("Specifies to use a weighted loss, default = false")]
+        public bool enable_weighted_loss
+        {
+            get { return m_bEnableWeightedLoss; }
+            set { m_bEnableWeightedLoss = value; }
+        }
+
+        /// <summary>
+        /// [\b optional, default = 10.0] Specifies the maximum weight to use when using the weighted loss.
+        /// </summary>
+        [Description("Specifies the maximum weight to use when using the weighted loss, default = 10.0")]
+        public float max_weight
+        {
+            get { return m_fMaxWeight; }
+            set { m_fMaxWeight = value; }
+        }
+
+        /// <summary>
+        /// [\b optional, default = 20] Specifies the number of weight buckets to use when using the weighted loss.
+        /// </summary>
+        [Description("Specifies the number of weight buckets to use when using the weighted loss, default = 20")]
+        public int weight_bucket_count
+        {
+            get { return m_nWeightBucketCount; }
+            set { m_nWeightBucketCount = value; }
+        }
+
+        /// <summary>
+        /// [\b optional, default = 100] Specifies the number of warmup iterations to use when using the weighted loss.
+        /// </summary>
+        [Description("Specifies the number of warmup iterations to use when using the weighted loss, default = 100")]
+        public int weight_warmup_iterations
+        {
+            get { return m_nWeightWarmupIerations; }
+            set { m_nWeightWarmupIerations = value; }
+        }
+
+        /// <summary>
         /// Specifies the portion of the penalty to apply to values above the threshold.  Only used when penalize_values_above_threshold is set.
         /// </summary>
+        [Description("Specifies the portion of the penalty to apply to values above the threshold.  Only used when penalize_values_above_threshold is set.")]
         public float above_penalty_portion_lambda
         {
             get { return m_fAbovePenaltyPortionLambda; }
@@ -66,6 +114,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the threshold above which to penalize values.  If set, the above_penalty_portion_lambda is used to determine the portion of the penalty to apply.
         /// </summary>
+        [Description("Specifies the threshold above which to penalize values.  If set, the above_penalty_portion_lambda is used to determine the portion of the penalty to apply.")]
         public float? penalize_values_above_threshold
         {
             get { return m_fPenalizeValuesAboveThreshold; }
@@ -75,6 +124,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the portion of the penalty to apply to values below the threshold.  Only used when penalize_values_below_threshold is set.
         /// </summary>
+        [Description("Specifies the portion of the penalty to apply to values below the threshold.  Only used when penalize_values_below_threshold is set.")]
         public float below_penalty_portion_lambda
         {
             get { return m_fBelowPenaltyPortionLambda; }
@@ -84,6 +134,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the threshold below which to penalize values.  If set, the below_penalty_portion_lambda is used to determine the portion of the penalty to apply.
         /// </summary>
+        [Description("Specifies the threshold below which to penalize values.  If set, the below_penalty_portion_lambda is used to determine the portion of the penalty to apply.")]
         public float? penalize_values_below_threshold
         {
             get { return m_fPenalizeValuesBelowThreshold; }
@@ -112,6 +163,10 @@ namespace MyCaffe.param
             m_fPenalizeValuesAboveThreshold = p.m_fPenalizeValuesAboveThreshold;
             m_fBelowPenaltyPortionLambda = p.m_fBelowPenaltyPortionLambda;
             m_fPenalizeValuesBelowThreshold = p.m_fPenalizeValuesBelowThreshold;
+            m_bEnableWeightedLoss = p.m_bEnableWeightedLoss;
+            m_fMaxWeight = p.m_fMaxWeight;
+            m_nWeightBucketCount = p.m_nWeightBucketCount;
+            m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -133,6 +188,10 @@ namespace MyCaffe.param
 
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("mean_error_type", mean_error_type.ToString());
+            rgChildren.Add("enable_weighted_loss", enable_weighted_loss.ToString());
+            rgChildren.Add("max_weight", max_weight.ToString());
+            rgChildren.Add("weight_bucket_count", weight_bucket_count.ToString());
+            rgChildren.Add("weight_warmup_iterations", weight_warmup_iterations.ToString());
 
             if (penalize_values_above_threshold.HasValue)
             {
@@ -188,6 +247,18 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("penalize_values_below_threshold")) != null)
                 p.penalize_values_below_threshold = BaseParameter.ParseFloat(strVal);
+
+            if ((strVal = rp.FindValue("enable_weighted_loss")) != null)
+                p.enable_weighted_loss = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("max_weight")) != null)
+                p.max_weight = BaseParameter.ParseFloat(strVal);
+
+            if ((strVal = rp.FindValue("weight_bucket_count")) != null)
+                p.weight_bucket_count = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("weight_warmup_iterations")) != null)
+                p.weight_warmup_iterations = int.Parse(strVal);
 
             return p;
         }

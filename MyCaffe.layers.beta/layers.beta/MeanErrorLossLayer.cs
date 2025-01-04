@@ -23,13 +23,21 @@ namespace MyCaffe.layers.beta
     /// @see [Methods for forecasts of continuous variables](https://www.cawcr.gov.au/projects/verification/#Methods_for_foreasts_of_continuous_variables) by WCRP, 2017.
     /// @see [MAD vs RMSE vs MAE vs MSLE vs R^2: When to use which?](https://datascience.stackexchange.com/questions/42760/mad-vs-rmse-vs-mae-vs-msle-vs-r%C2%B2-when-to-use-which), StackExchange, 2018.
     /// @see [Mean Absolute Error](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/mean-absolute-error) by Peltarion.
+    /// @see [The Proximal Map of the Weighted Mean Absolute Error](https://arxiv.org/abs/2209.13545) by Lukas Baumgärtner, Roland Herzog, Stephan Schmidt, Manuel Weiß, 2022, arXiv 2209.13545
+    /// @see [Mean Absolute Error In Machine Learning: What You Need To Know](https://arize.com/blog-course/mean-absolute-error-in-machine-learning-what-you-need-to-know/) by David Burch, 2023, ariz.com
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.</typeparam>
     public class MeanErrorLossLayer<T> : LossLayer<T>
     {
+        BucketCollection m_buckets = null;
+        bool m_bLossWeightsReady = false;
+        int m_nCurrentIteration = 0;
         int m_nAxis = 1;
         MEAN_ERROR m_meanType = MEAN_ERROR.MAE;
         Blob<T> m_blobWork;
+        Blob<T> m_blobWeights;
+        float m_fMin = float.MaxValue;
+        float m_fMax = -float.MaxValue;
 
         /// <summary>
         /// Constructor.
@@ -55,16 +63,16 @@ namespace MyCaffe.layers.beta
             m_meanType = p.mean_error_loss_param.mean_error_type;
 
             m_blobWork = new Blob<T>(cuda, log);
+            m_blobWork.Name = m_param.name + " workspace";
+            m_blobWeights = new Blob<T>(cuda, log);
+            m_blobWeights.Name = m_param.name + " weights";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            if (m_blobWork != null)
-            {
-                m_blobWork.Dispose();
-                m_blobWork = null;
-            }
+            dispose(ref m_blobWork);
+            dispose(ref m_blobWeights);
 
             base.dispose();
         }
@@ -113,12 +121,45 @@ namespace MyCaffe.layers.beta
             base.Reshape(colBottom, colTop);
 
             m_blobWork.ReshapeLike(colBottom[0]);
+            m_blobWeights.ReshapeLike(colBottom[0]);
 
             if (m_nOuterNum == 0)
                 m_nOuterNum = (int)colBottom[0].count(0, m_nAxis);
 
             if (m_nInnerNum == 0)
                 m_nInnerNum = colBottom[0].count(m_nAxis);
+        }
+
+        private void ComputeWeights(float[] rgTarget, int nCount)
+        {
+            // Create bucket collection for target values
+            if (m_buckets == null)
+                return;
+
+            // Add values to buckets
+            for (int i = 0; i < nCount; i++)
+            {
+                m_buckets.Add(rgTarget[i]);
+            }
+
+            // Get bucket with max count for weight normalization
+            Bucket bMax = m_buckets.GetBucketWithMaxCount();
+            double dfMaxCount = bMax.Count;
+
+            // Compute inverse frequency weights
+            float[] rgWeights = new float[nCount];
+            for (int i = 0; i < nCount; i++)
+            {
+                int nBucketIdx = m_buckets.Add(rgTarget[i], true); // Use peek mode (true) to find bucket without adding
+                Bucket b = m_buckets[nBucketIdx];
+
+                // Weight = max_count / bucket_count, but ensure minimum weight
+                rgWeights[i] = (float)Math.Min(dfMaxCount / b.Count, m_param.mean_error_loss_param.max_weight);
+            }
+
+            // Copy weights to device
+            m_blobWeights.mutable_cpu_data = convert(rgWeights);
+            m_bLossWeightsReady = true;
         }
 
         /// <summary>
@@ -145,9 +186,27 @@ namespace MyCaffe.layers.beta
             long hTarget = colBottom[1].gpu_data;
             int nCount = colBottom[0].count();
 
+            m_nCurrentIteration++;
+
             double dfLoss = 0;
 
             m_log.CHECK_EQ(nCount, colBottom[1].count(), "The bottom(0) predicted and bottom(1) target must have the same shapes!");
+
+            // When using weighted loss, run warmup iterations to collect target values for bucketing
+            if (m_param.mean_error_loss_param.enable_weighted_loss &&
+                m_nCurrentIteration >= m_param.mean_error_loss_param.weight_warmup_iterations)
+            {
+                if (m_buckets == null)
+                    m_buckets = new BucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count);
+
+                ComputeWeights(convertF(colBottom[1].update_cpu_data()), nCount);
+            }
+            else
+            {
+                Tuple<double, double, double, double> minmax = colBottom[1].minmax_data(m_blobWork);
+                m_fMin = Math.Min(m_fMin, (float)minmax.Item1);
+                m_fMax = Math.Max(m_fMax, (float)minmax.Item2);
+            }
 
             switch (m_meanType)
             {
@@ -182,6 +241,9 @@ namespace MyCaffe.layers.beta
                     m_cuda.sub(nCount, hTarget, hPredicted, colBottom[0].mutable_gpu_diff);
                     m_cuda.abs(nCount, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
 
+                    if (m_bLossWeightsReady)
+                        m_cuda.mul(nCount, colBottom[0].gpu_diff, m_blobWeights.gpu_data, colBottom[0].mutable_gpu_diff);
+
                     if (m_param.mean_error_loss_param.penalize_values_below_threshold.HasValue)
                     {
                         float fPenalty = m_param.mean_error_loss_param.penalize_values_below_threshold.Value;
@@ -207,7 +269,19 @@ namespace MyCaffe.layers.beta
             }
 
             double dfNormalizer = get_normalizer(m_normalization, -1);
-            colTop[0].SetData(dfLoss / dfNormalizer, 0);
+            double dfLossFinal;
+
+            if ((m_param.mean_error_loss_param.enable_weighted_loss && m_bLossWeightsReady))
+            {
+                double dfWeightSum = m_cuda.asum_double(nCount, m_blobWeights.gpu_data);
+                dfLossFinal = dfLoss / dfWeightSum;
+            }
+            else
+            {
+                dfLossFinal = dfLoss / dfNormalizer;
+            }
+
+            colTop[0].SetData(dfLossFinal, 0);
 
             // Clear scratch memory to prevent with interfering with backward pass (see #602)
             colBottom[0].SetDiff(0);
@@ -262,6 +336,10 @@ namespace MyCaffe.layers.beta
             int nCount = colBottom[0].count();
 
             m_cuda.mean_error_loss_bwd(nCount, hPredicted, hTarget, hBottomDiff, m_meanType);
+
+            // Apply weights if weighted MAE is enabled and warmup is complete
+            if (m_bLossWeightsReady)
+                m_cuda.mul(nCount, hBottomDiff, m_blobWeights.gpu_data, hBottomDiff);
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0));
             double dfNormalizer = get_normalizer(m_normalization, -1);
