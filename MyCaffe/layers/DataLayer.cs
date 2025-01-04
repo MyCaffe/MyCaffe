@@ -151,11 +151,16 @@ namespace MyCaffe.layers
                     if (sdMean != null)
                     {
                         m_fScoreMean = sdMean.GetParameter(strMean);
+                        if (!m_fScoreMean.HasValue)
+                            log.FAIL("The score mean '" + strMean + "' was not found!");
+
                         m_fScoreStdev = sdMean.GetParameter(strStdDev);
+                        if (!m_fScoreStdev.HasValue)
+                            log.FAIL("The score stdev '" + strStdDev + "' was not found!");
                     }
                     else
                     {
-                        log.WriteLine("WARNING: Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
+                        log.FAIL("Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
                     }
                 }
 
@@ -171,13 +176,24 @@ namespace MyCaffe.layers
                     if (sdMean != null)
                     {
                         m_fPosScoreMean = sdMean.GetParameter(strPosMean);
+                        if (!m_fPosScoreMean.HasValue)
+                            log.FAIL("The score mean '" + strPosMean + "' was not found!");
+
                         m_fPosScoreStdev = sdMean.GetParameter(strPosStdDev);
+                        if (!m_fPosScoreStdev.HasValue)
+                            log.FAIL("The score stdev '" + strPosStdDev + "' was not found!");
+
                         m_fNegScoreMean = sdMean.GetParameter(strNegMean);
+                        if (!m_fNegScoreMean.HasValue)
+                            log.FAIL("The score mean '" + strNegMean + "' was not found!");
+
                         m_fNegScoreStdev = sdMean.GetParameter(strNegStdDev);
+                        if (!m_fNegScoreStdev.HasValue)
+                            log.FAIL("The score stdev '" + strNegStdDev + "' was not found!");
                     }
                     else
                     {
-                        log.WriteLine("WARNING: Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
+                        log.FAIL("Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
                     }
                 }
             }
