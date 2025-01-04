@@ -29,6 +29,7 @@ namespace MyCaffe.param
         float m_fMaxWeight = 10.0f;
         int m_nWeightBucketCount = 20;
         int m_nWeightWarmupIerations = 100;
+        bool m_bEnableWeightPosNeg = false;
 
         float m_fAbovePenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesAboveThreshold = null;
@@ -69,6 +70,16 @@ namespace MyCaffe.param
         {
             get { return m_bEnableWeightedLoss; }
             set { m_bEnableWeightedLoss = value; }
+        }
+
+        /// <summary>
+        /// [\b optional, default = false] Specifies to enforce equal weighting between positive and negative targets.
+        /// </summary>
+        [Description("Specifies to enforce equal weighting between positive and negative targets.")]
+        public bool enable_weight_posneg
+        {
+            get { return m_bEnableWeightPosNeg; }
+            set { m_bEnableWeightPosNeg = value;}
         }
 
         /// <summary>
@@ -167,6 +178,7 @@ namespace MyCaffe.param
             m_fMaxWeight = p.m_fMaxWeight;
             m_nWeightBucketCount = p.m_nWeightBucketCount;
             m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
+            m_bEnableWeightPosNeg = p.m_bEnableWeightPosNeg;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -189,6 +201,7 @@ namespace MyCaffe.param
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("mean_error_type", mean_error_type.ToString());
             rgChildren.Add("enable_weighted_loss", enable_weighted_loss.ToString());
+            rgChildren.Add("enable_weight_posneg", enable_weight_posneg.ToString());
             rgChildren.Add("max_weight", max_weight.ToString());
             rgChildren.Add("weight_bucket_count", weight_bucket_count.ToString());
             rgChildren.Add("weight_warmup_iterations", weight_warmup_iterations.ToString());
@@ -250,6 +263,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("enable_weighted_loss")) != null)
                 p.enable_weighted_loss = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_weight_posneg")) != null)
+                p.enable_weight_posneg = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("max_weight")) != null)
                 p.max_weight = BaseParameter.ParseFloat(strVal);

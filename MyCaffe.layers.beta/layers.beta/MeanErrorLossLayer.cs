@@ -30,6 +30,7 @@ namespace MyCaffe.layers.beta
     public class MeanErrorLossLayer<T> : LossLayer<T>
     {
         BucketCollection m_buckets = null;
+        BucketCollection m_bucketsPosNeg = null;
         bool m_bLossWeightsReady = false;
         int m_nCurrentIteration = 0;
         int m_nAxis = 1;
@@ -140,21 +141,37 @@ namespace MyCaffe.layers.beta
             for (int i = 0; i < nCount; i++)
             {
                 m_buckets.Add(rgTarget[i]);
+                m_bucketsPosNeg.Add(rgTarget[i]);
             }
 
             // Get bucket with max count for weight normalization
             Bucket bMax = m_buckets.GetBucketWithMaxCount();
             double dfMaxCount = bMax.Count;
 
+            float fPosWeight = 1.0f;
+            float fNegWeight = 1.0f;
+
+            if (m_param.mean_error_loss_param.enable_weight_posneg)
+            {
+                fPosWeight = nCount / (2.0f * m_bucketsPosNeg[0].Count);
+                fNegWeight = nCount / (2.0f * m_bucketsPosNeg[1].Count);
+            }
+
             // Compute inverse frequency weights
             float[] rgWeights = new float[nCount];
             for (int i = 0; i < nCount; i++)
             {
-                int nBucketIdx = m_buckets.Add(rgTarget[i], true); // Use peek mode (true) to find bucket without adding
+                // Get range-based weight
+                int nBucketIdx = m_buckets.Add(rgTarget[i], true);
                 Bucket b = m_buckets[nBucketIdx];
+                float rangeWeight = (float)(dfMaxCount / b.Count);
 
-                // Weight = max_count / bucket_count, but ensure minimum weight
-                rgWeights[i] = (float)Math.Min(dfMaxCount / b.Count, m_param.mean_error_loss_param.max_weight);
+                // Apply pos/neg balancing
+                float balanceWeight = (rgTarget[i] >= 0) ? fPosWeight : fNegWeight;
+
+                // Combine weights and apply maximum weight constraint
+                rgWeights[i] = (float)Math.Min(rangeWeight * balanceWeight,
+                                             m_param.mean_error_loss_param.max_weight);
             }
 
             // Copy weights to device
@@ -198,6 +215,14 @@ namespace MyCaffe.layers.beta
             {
                 if (m_buckets == null)
                     m_buckets = new BucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count);
+
+                if (m_bucketsPosNeg == null)
+                {
+                    List<Tuple<double, double>> rgRanges = new List<Tuple<double, double>>();
+                    rgRanges.Add(new Tuple<double, double>(m_fMin, 0));
+                    rgRanges.Add(new Tuple<double, double>(0, m_fMax));
+                    m_bucketsPosNeg = new BucketCollection(rgRanges);
+                }
 
                 ComputeWeights(convertF(colBottom[1].update_cpu_data()), nCount);
             }
