@@ -705,14 +705,23 @@ namespace MyCaffe.layers.beta
         /// </summary>
         private void printMatrix(StringBuilder sb, string[] labels, dynamic matrix, int maxLabelWidth, int maxCellWidth, bool isPercentage)
         {
+            string strActual = "actuals ";
+
             // Print the matrix title and determine if it's showing percentages
-            sb.Append("Confusion Matrix");
+            sb.Append("Confusion Matrix [rows = actuals, cols = predicted]");
             if (isPercentage)
                 sb.Append(" (Percentages)");
             sb.AppendLine(":");
-
+            // Print the predicted row with labels
+            string str = new string('▄', maxLabelWidth + strActual.Length + 1);
+            sb.Append(str);  // Adjusted space to align with the data rows
+            foreach (string label in labels)
+            {
+                sb.Append($"| {"predicted".PadRight(maxCellWidth)} ");
+            }
+            sb.AppendLine();
             // Print the header row with labels
-            sb.Append(new string('_', maxLabelWidth + 1));  // Adjusted space to align with the data rows
+            sb.Append(new string('_', maxLabelWidth + strActual.Length + 1));  // Adjusted space to align with the data rows
             foreach (string label in labels)
             {
                 sb.Append($"| {label.PadRight(maxCellWidth)} ");
@@ -722,6 +731,7 @@ namespace MyCaffe.layers.beta
             // Print each row of the matrix
             for (int i = 0; i < labels.Length; i++)
             {
+                sb.Append(strActual);
                 // Pad the row label to align with the header row
                 sb.Append($"{labels[i].PadRight(maxLabelWidth)} ");
 
