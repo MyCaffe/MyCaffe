@@ -52,8 +52,8 @@
       <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="SimpleGraphing, Version=1.12.3.64, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleGraphingControl.1.12.3.64\lib\net40\SimpleGraphing.dll</HintPath>
+    <Reference Include="SimpleGraphing">
+      <HintPath>..\_references\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -158,4 +158,9 @@
     <Error Condition="!Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\EntityFramework.6.5.1\build\EntityFramework.targets'))" />
   </Target>
   <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
+  <PropertyGroup>
+    <PreBuildEvent>if not exist $(SolutionDir)_references md $(SolutionDir)_references
+copy /y  C:\Data\Binaries\SS_Projects\_$(ConfigurationName)\SimpleGraphing.dll $(SolutionDir)_references
+copy /y  C:\Data\Binaries\SS_Projects\_$(ConfigurationName)\SimpleGraphing.pdb $(SolutionDir)_references</PreBuildEvent>
+  </PropertyGroup>
 </Project>
