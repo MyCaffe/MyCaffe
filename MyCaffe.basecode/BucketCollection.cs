@@ -300,6 +300,29 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Create a new normalized bucket collection.
+        /// </summary>
+        /// <param name="nMaxHt">Specifies the max count to use.</param>
+        /// <returns>The new normalized bucket collection is returned.</returns>
+        public BucketCollection Normalize(int nMaxHt)
+        {
+            BucketCollection col = new BucketCollection(true);
+
+            int nMax = m_rgBuckets.Max(p => p.Count);   
+
+            foreach (Bucket b in m_rgBuckets)
+            {
+                double dfPct = (double)b.Count / (double)nMax;
+                int nCount = (int)(dfPct * nMaxHt);
+                Bucket bNew = new Bucket(b.Minimum, b.Maximum);
+                bNew.Count = nCount;
+                col.m_rgBuckets.Add(bNew);
+            }
+
+            return col;
+        }
+
+        /// <summary>
         /// Combine the bucket at the source index with the bucket at the destination index.
         /// </summary>
         /// <param name="nIdxSrc">Specifies the source bucket index.</param>

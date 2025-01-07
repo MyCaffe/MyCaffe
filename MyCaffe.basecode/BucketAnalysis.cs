@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -30,6 +31,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Save the analysis as a graphic that shows the distribution of the data within the buckets.
         /// </summary>
+        /// <param name="bNormalize">Specifies to normalize by height across all groups</param>
         /// <param name="strPath">Specifies the path.</param>
         /// <param name="strName">Specifies the name.</param>
         /// <param name="strType">Specifies the type of data.</param>
@@ -39,7 +41,7 @@ namespace MyCaffe.basecode
         /// <param name="dtMin">Optionally, specifies the minimum date in the data analyzed.</param>
         /// <param name="dtMax">Optionally, specifies the maximum date in the data analyzed.</param>
         /// <returns>The file name of the image is returned.</returns>
-        public string SaveAnalysis(string strPath, string strName, string strType, string strPeriod, double dfPctFromMid, List<Tuple<string, BucketCollection, BucketCollection>> rgSet = null, DateTime? dtMin = null, DateTime? dtMax = null)
+        public string SaveAnalysis(bool bNormalize, string strPath, string strName, string strType, string strPeriod, double dfPctFromMid, List<Tuple<string, BucketCollection, BucketCollection>> rgSet = null, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             if (string.IsNullOrEmpty(strPath))
                 return null;
@@ -47,7 +49,12 @@ namespace MyCaffe.basecode
             if (!Directory.Exists(strPath))
                 return null;
 
-            string strFile = Path.Combine(strPath, strName + "." + strPeriod + ".statistics.png");
+            string strFile = Path.Combine(strPath, strName + "." + strPeriod + ".statistics.");
+            if (bNormalize)
+                strFile += "normalized.png";
+            else
+                strFile += "raw.png";
+
             List<Color> rgColors = new List<Color>();
 
             if (rgSet == null)
@@ -102,6 +109,12 @@ namespace MyCaffe.basecode
                     BucketCollection colNeg = rgSet[i].Item2;
                     BucketCollection colPos = rgSet[i].Item3;
                     string strType1 = rgSet[i].Item1;
+
+                    if (bNormalize)
+                    {
+                        colNeg = colNeg.Normalize(1000);
+                        colPos = colPos.Normalize(1000);
+                    }
 
                     CurveCollection curveLeft = new CurveCollection();
                     int nX = 500;
