@@ -139,9 +139,10 @@ namespace MyCaffe.basecode
                     CurveCollection curve = new CurveCollection();
                     curve.Add(curveLeft, true);
                     curve.Add(curveRight, false, 1);
-                    int nMaxCount = curve.Translate(0, 0, 1000, 900, nMaxCount1);
                     if (bNormalize)
-                        nMaxCount = 1000;
+                        nMaxCount1 = 1000;
+
+                    int nMaxCount = curve.Translate(0, 0, 1000, 900, nMaxCount1);
 
                     curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i, dtMin, dtMax);
                 }
