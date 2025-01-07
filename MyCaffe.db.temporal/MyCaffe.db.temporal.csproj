@@ -159,8 +159,7 @@
   </Target>
   <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
   <PropertyGroup>
-    <PreBuildEvent>if not exist $(SolutionDir)_references md $(SolutionDir)_references
-copy /y  C:\Data\Binaries\SS_Projects\_$(ConfigurationName)\SimpleGraphing.dll $(SolutionDir)_references
-copy /y  C:\Data\Binaries\SS_Projects\_$(ConfigurationName)\SimpleGraphing.pdb $(SolutionDir)_references</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>
