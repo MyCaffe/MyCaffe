@@ -128,7 +128,7 @@ namespace MyCaffe.basecode
                     curve.Add(curveRight, false, 1);
                     int nMaxCount = curve.Translate(0, 0, 1000, 900, nMaxCount1);
 
-                    curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i, dtMin, dtMin);
+                    curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i, dtMin, dtMax);
                 }
             }
 
