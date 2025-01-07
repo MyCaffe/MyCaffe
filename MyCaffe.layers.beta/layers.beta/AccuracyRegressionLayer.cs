@@ -683,7 +683,7 @@ namespace MyCaffe.layers.beta
             return confusionMatrix;
         }
 
-        private double[,] createPercentMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTarget, int[,] confusionMatrix)
+        private double[,] createAccuracyPercentMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTarget, int[,] confusionMatrix)
         {
             double[,] percentageMatrix = new double[rgstrTargetLabels.Count, rgstrPredLabels.Count];
 
@@ -700,10 +700,27 @@ namespace MyCaffe.layers.beta
             return percentageMatrix;
         }
 
+        private double[,] createPrecisionPercentMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTarget, int[,] confusionMatrix)
+        {
+            double[,] percentageMatrix = new double[rgstrTargetLabels.Count, rgstrPredLabels.Count];
+
+            // Calculate percentages for the confusion matrix
+            for (int j = 0; j < rgstrTargetLabels.Count; j++)
+            {
+                int total = rgTarget[j].Count;
+                for (int i = 0; i < rgstrPredLabels.Count; i++)
+                {
+                    percentageMatrix[i, j] = total > 0 ? (double)confusionMatrix[i, j] / total * 100 : 0;
+                }
+            }
+
+            return percentageMatrix;
+        }
+
         /// <summary>
         /// Prints a matrix with labels and values, formatted as counts or percentages.
         /// </summary>
-        private void printMatrix(StringBuilder sb, string[] labels, dynamic matrix, int maxLabelWidth, int maxCellWidth, bool isPercentage)
+        private void printMatrix(string strName, StringBuilder sb, string[] labels, dynamic matrix, int maxLabelWidth, int maxCellWidth, bool isPercentage)
         {
             string strActual = "actuals ";
 
@@ -721,7 +738,11 @@ namespace MyCaffe.layers.beta
             }
             sb.AppendLine();
             // Print the header row with labels
-            sb.Append(new string('_', maxLabelWidth + strActual.Length + 1));  // Adjusted space to align with the data rows
+            //sb.Append(new string('_', maxLabelWidth + strActual.Length + 1));  // Adjusted space to align with the data rows
+            sb.Append(new string('_', maxLabelWidth))
+              .Append(strName)
+              .Append(new string('_', strActual.Length + 1 - strName.Length));
+            
             foreach (string label in labels)
             {
                 sb.Append($"| {label.PadRight(maxCellWidth)} ");
@@ -781,7 +802,8 @@ namespace MyCaffe.layers.beta
 
             // Create the confusion matrix
             int[,] confusionMatrix = createConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels);
-            double[,] percentageMatrix = createPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
+            double[,] accuracyPctMatrix = createAccuracyPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
+            double[,] precisionPctMatrix = createPrecisionPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
             StringBuilder sb = new StringBuilder();
 
             string[] labels = rgstrTargetLabels.ToArray();
@@ -790,9 +812,11 @@ namespace MyCaffe.layers.beta
 
             sb.AppendLine("=================================");
             sb.AppendLine("CONFUSION MATRIX");
-            printMatrix(sb, labels, confusionMatrix, maxLabelWidth, maxCellWidth, false);
+            printMatrix("Counts", sb, labels, confusionMatrix, maxLabelWidth, maxCellWidth, false);
             sb.AppendLine();
-            printMatrix(sb, labels, percentageMatrix, maxLabelWidth, maxCellWidth, true);
+            printMatrix("Accuracy", sb, labels, accuracyPctMatrix, maxLabelWidth, maxCellWidth, true);
+            sb.AppendLine();
+            printMatrix("Precision", sb, labels, precisionPctMatrix, maxLabelWidth, maxCellWidth, true);
 
             int nTotal = m_colTgtPos.Sum(p => p.Count) + m_colTgtNeg.Sum(p => p.Count);
             double dfGtPercentPos = (double)m_colTgtPos.Sum(p => p.Count) / nTotal;
