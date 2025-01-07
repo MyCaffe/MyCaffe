@@ -35,9 +35,11 @@ namespace MyCaffe.basecode
         /// <param name="strType">Specifies the type of data.</param>
         /// <param name="strPeriod">Specifies the period.</param>
         /// <param name="dfPctFromMid">Specifies the percent from the mid point to draw a red line.</param>
-        /// <param name="rgSet">Optionally specifies a set of buckets to analyze (default = null, uses buckets from constructor).</param>
+        /// <param name="rgSet">Optionally, specifies a set of buckets to analyze (default = null, uses buckets from constructor).</param>
+        /// <param name="dtMin">Optionally, specifies the minimum date in the data analyzed.</param>
+        /// <param name="dtMax">Optionally, specifies the maximum date in the data analyzed.</param>
         /// <returns>The file name of the image is returned.</returns>
-        public string SaveAnalysis(string strPath, string strName, string strType, string strPeriod, double dfPctFromMid, List<Tuple<string, BucketCollection, BucketCollection>> rgSet = null)
+        public string SaveAnalysis(string strPath, string strName, string strType, string strPeriod, double dfPctFromMid, List<Tuple<string, BucketCollection, BucketCollection>> rgSet = null, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             if (string.IsNullOrEmpty(strPath))
                 return null;
@@ -126,7 +128,7 @@ namespace MyCaffe.basecode
                     curve.Add(curveRight, false, 1);
                     int nMaxCount = curve.Translate(0, 0, 1000, 900, nMaxCount1);
 
-                    curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i);
+                    curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i, dtMin, dtMin);
                 }
             }
 
@@ -316,7 +318,7 @@ namespace MyCaffe.basecode
             }
         }
 
-        public void Render(Graphics g, int nX, int nY, int nWid, int nHt, int nMaxCount, string strType, double dfPctFromMid, Color clr, int nIdx)
+        public void Render(Graphics g, int nX, int nY, int nWid, int nHt, int nMaxCount, string strType, double dfPctFromMid, Color clr, int nIdx, DateTime? dtMin, DateTime? dtMax)
         {
             Font font = new Font("Century Gothic", 8.0f);
             int nCount = 100;
@@ -373,10 +375,27 @@ namespace MyCaffe.basecode
             font.Dispose();
             font = new Font("Century Gothic", 12.0f);
 
+            nY = 10;
+
+            if (dtMin.HasValue || dtMax.HasValue)
+            {
+                string strDate = "Date Range: ";
+                if (dtMin.HasValue)
+                    strDate += dtMin.Value.ToShortDateString();
+
+                strDate += " - ";
+
+                if (dtMax.HasValue)
+                    strDate += dtMax.Value.ToShortDateString();
+
+                g.DrawString(strDate, font, Brushes.Black, 10, nY);
+                nY += 20;
+            }
+
             string strTitle = strType;
             SizeF sz = g.MeasureString(strTitle, font);
             Brush br = new SolidBrush(clr);
-            g.DrawString(strTitle, font, br, 10, 10 + (nIdx * 20));
+            g.DrawString(strTitle, font, br, 10, nY + (nIdx * 20));
             br.Dispose();
 
             // Cleanup
