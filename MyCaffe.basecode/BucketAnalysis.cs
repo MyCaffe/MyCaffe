@@ -8,18 +8,36 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.basecode
 {
+    /// <summary>
+    /// The BucketAnalysis class is used to analyze the distribution of data within a set of buckets.
+    /// </summary>
     public class BucketAnalysis
     {
         BucketCollection m_colNeg;
         BucketCollection m_colPos;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="colNeg">Specifies the buckets of negative values.</param>
+        /// <param name="colPos">Specifies the buckets of positive values.</param>
         public BucketAnalysis(BucketCollection colNeg, BucketCollection colPos)
         {
             m_colNeg = colNeg;
             m_colPos = colPos;
         }
 
-        public string SaveAnalysis(string strPath, string strName, string strType, string strPeriod, double dfPctFromMid)
+        /// <summary>
+        /// Save the analysis as a graphic that shows the distribution of the data within the buckets.
+        /// </summary>
+        /// <param name="strPath">Specifies the path.</param>
+        /// <param name="strName">Specifies the name.</param>
+        /// <param name="strType">Specifies the type of data.</param>
+        /// <param name="strPeriod">Specifies the period.</param>
+        /// <param name="dfPctFromMid">Specifies the percent from the mid point to draw a red line.</param>
+        /// <param name="rgSet">Optionally specifies a set of buckets to analyze (default = null, uses buckets from constructor).</param>
+        /// <returns>The file name of the image is returned.</returns>
+        public string SaveAnalysis(string strPath, string strName, string strType, string strPeriod, double dfPctFromMid, List<Tuple<string, BucketCollection, BucketCollection>> rgSet = null)
         {
             if (string.IsNullOrEmpty(strPath))
                 return null;
@@ -28,6 +46,36 @@ namespace MyCaffe.basecode
                 return null;
 
             string strFile = Path.Combine(strPath, strName + "." + strPeriod + ".statistics.png");
+            List<Color> rgColors = new List<Color>();
+
+            if (rgSet == null)
+            {
+                rgSet = new List<Tuple<string, BucketCollection, BucketCollection>>();
+                rgSet.Add(new Tuple<string, BucketCollection, BucketCollection>(strType, m_colNeg, m_colPos));
+                rgColors.Add(Color.Blue);
+            }
+            else
+            {
+                List<Color> rgRefClr = new List<Color>()
+                {
+                    Color.Blue,
+                    Color.Green,
+                    Color.Purple,
+                    Color.Orange,
+                    Color.Cyan,
+                    Color.SteelBlue,
+                    Color.DarkGreen,
+                    Color.DarkRed,
+                    Color.DarkBlue,
+                    Color.DarkOrange,
+                    Color.DarkCyan
+                };
+
+                for (int i = 0; i < rgSet.Count; i++)
+                {
+                    rgColors.Add(rgRefClr[i % rgRefClr.Count]);
+                }
+            }
 
             Bitmap bmp = new Bitmap(1000, 1000);
             using (Graphics g = Graphics.FromImage(bmp))
@@ -40,32 +88,46 @@ namespace MyCaffe.basecode
                 g.DrawLine(pen, 500, 0, 500, 1000);
                 g.DrawLine(pen, 0, 900, 1000, 900);
 
-                CurveCollection curveLeft = new CurveCollection();
-                int nX = 500;
-
-                for (int i = m_colNeg.Count - 1; i >= 0; i--)
+                int nMaxCount1 = 0;
+                for (int i = 0; i < rgSet.Count; i++)
                 {
-                    Bucket b = m_colNeg[i];
-                    curveLeft.Add(m_colNeg[i], nX);
-                    nX -= 10;
+                    nMaxCount1 = Math.Max(nMaxCount1, rgSet[i].Item2.Max(p => p.Count));
+                    nMaxCount1 = Math.Max(nMaxCount1, rgSet[i].Item3.Max(p => p.Count));
                 }
 
-                CurveCollection curveRight = new CurveCollection();
-                nX = 500;
-
-                for (int i = 0; i < m_colPos.Count; i++)
+                for (int i = 0; i < rgSet.Count; i++)
                 {
-                    Bucket b = m_colPos[i];
-                    curveRight.Add(m_colPos[i], nX);
-                    nX += 10;
+                    BucketCollection colNeg = rgSet[i].Item2;
+                    BucketCollection colPos = rgSet[i].Item3;
+                    string strType1 = rgSet[i].Item1;
+
+                    CurveCollection curveLeft = new CurveCollection();
+                    int nX = 500;
+
+                    for (int j = colNeg.Count - 1; j >= 0; j--)
+                    {
+                        Bucket b = colNeg[j];
+                        curveLeft.Add(colNeg[j], nX);
+                        nX -= 10;
+                    }
+
+                    CurveCollection curveRight = new CurveCollection();
+                    nX = 500;
+
+                    for (int j = 0; j < colPos.Count; j++)
+                    {
+                        Bucket b = colPos[j];
+                        curveRight.Add(colPos[j], nX);
+                        nX += 10;
+                    }
+
+                    CurveCollection curve = new CurveCollection();
+                    curve.Add(curveLeft, true);
+                    curve.Add(curveRight, false, 1);
+                    int nMaxCount = curve.Translate(0, 0, 1000, 900, nMaxCount1);
+
+                    curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType1, dfPctFromMid, rgColors[i], i);
                 }
-
-                CurveCollection curve = new CurveCollection();
-                curve.Add(curveLeft, true);
-                curve.Add(curveRight, false, 1);
-                int nMaxCount = curve.Translate(0, 0, 1000, 900);
-
-                curve.Render(g, 500, 900, 1000, 900, nMaxCount, strType, dfPctFromMid);
             }
 
             bmp.Save(strFile);
@@ -254,7 +316,7 @@ namespace MyCaffe.basecode
             }
         }
 
-        public void Render(Graphics g, int nX, int nY, int nWid, int nHt, int nMaxCount, string strType, double dfPctFromMid)
+        public void Render(Graphics g, int nX, int nY, int nWid, int nHt, int nMaxCount, string strType, double dfPctFromMid, Color clr, int nIdx)
         {
             Font font = new Font("Century Gothic", 8.0f);
             int nCount = 100;
@@ -288,16 +350,19 @@ namespace MyCaffe.basecode
                 }
             }
 
-            renderYaxis(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
-            renderXaxisLeft(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
-            renderXaxisRight(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
-            renderGrid(g, nX, nY, nWid, nHt, nCount, nMaxCount, nNegative25PctIdx, nPositive25PctIdx);
-            renderYaxis(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
-            renderXaxisLeft(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
-            renderXaxisRight(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
+            if (nIdx == 0)
+            {
+                renderYaxis(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
+                renderXaxisLeft(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
+                renderXaxisRight(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, true, false);
+                renderGrid(g, nX, nY, nWid, nHt, nCount, nMaxCount, nNegative25PctIdx, nPositive25PctIdx);
+                renderYaxis(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
+                renderXaxisLeft(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
+                renderXaxisRight(g, font, nCount, nMaxCount, nX, nY, nWid, nHt, false, true);
+            }
 
             // Draw the curve
-            Pen pen = new Pen(Color.Blue, 2.0f);
+            Pen pen = new Pen(clr, 2.0f);
 
             for (int i = 0; i < m_rgCurves.Count; i++)
             {
@@ -310,19 +375,21 @@ namespace MyCaffe.basecode
 
             string strTitle = strType;
             SizeF sz = g.MeasureString(strTitle, font);
-            g.DrawString(strTitle, font, Brushes.Black, nX + nWid / 2 - sz.Width / 2, nY + nHt + 10);
+            Brush br = new SolidBrush(clr);
+            g.DrawString(strTitle, font, br, 10, 10 + (nIdx * 20));
+            br.Dispose();
 
             // Cleanup
             pen.Dispose();
             font.Dispose();
         }
 
-        public int Translate(int nX, int nY, int nWid, int nHt)
+        public int Translate(int nX, int nY, int nWid, int nHt, int nMaxCount)
         {
             nHt -= 10;
             nY += 10;
 
-            int nMaxCount = m_rgCurves.Max(p => p.Bucket.Count);
+            //int nMaxCount = m_rgCurves.Max(p => p.Bucket.Count);
             nMaxCount = (int)((nMaxCount * 100.0) / 100.0) + 100;
 
             for (int i = 0; i < m_rgCurves.Count; i++)
