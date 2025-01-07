@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.basecode
 {
-    class BucketAnalysis
+    public class BucketAnalysis
     {
         BucketCollection m_colNeg;
         BucketCollection m_colPos;
