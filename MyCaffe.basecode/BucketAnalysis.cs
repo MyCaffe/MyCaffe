@@ -55,6 +55,11 @@ namespace MyCaffe.basecode
             else
                 strFile += "raw.png";
 
+            if (dtMin.HasValue && dtMin.Value.Year < 2015)
+                strFile = "IS." + strFile;
+            else
+                strFile = "OOS." + strFile;
+
             List<Color> rgColors = new List<Color>();
 
             if (rgSet == null)
@@ -69,15 +74,17 @@ namespace MyCaffe.basecode
                 {
                     Color.Blue,
                     Color.Green,
-                    Color.Purple,
+                    Color.Fuchsia,
                     Color.Orange,
                     Color.Cyan,
-                    Color.SteelBlue,
-                    Color.DarkGreen,
-                    Color.DarkRed,
+                    Color.LightSteelBlue,
+
                     Color.DarkBlue,
+                    Color.DarkGreen,
+                    Color.Purple,
                     Color.DarkOrange,
-                    Color.DarkCyan
+                    Color.DarkCyan,
+                    Color.SteelBlue
                 };
 
                 for (int i = 0; i < rgSet.Count; i++)

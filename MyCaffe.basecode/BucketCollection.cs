@@ -20,6 +20,7 @@ namespace MyCaffe.basecode
         double m_fSum;
         int m_nCount;
         object m_tag = null;
+        List<List<float>> m_rgReturns = new List<List<float>>();
 
         /// <summary>
         /// The constructor.
@@ -30,6 +31,36 @@ namespace MyCaffe.basecode
         {
             m_fMin = fMin;
             m_fMax = fMax;
+        }
+
+        /// <summary>
+        /// Get the average returns at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the return index to average.</param>
+        /// <returns>The average value or null is returned.</returns>
+        public double? AveReturns(int nIdx)
+        {
+            if (m_rgReturns.Count == 0)
+                return null;
+
+            if (m_rgReturns[0].Count <= nIdx)
+                return null;
+
+            double fSum = 0;
+            int nCount = 0;
+            foreach (List<float> rg in m_rgReturns)
+            {
+                if (nIdx < rg.Count)
+                {
+                    fSum += rg[nIdx];
+                    nCount++;
+                }
+            }
+
+            if (nCount == 0)
+                return null;
+
+            return fSum / nCount;
         }
 
         /// <summary>
@@ -67,8 +98,9 @@ namespace MyCaffe.basecode
         /// <param name="fVal">Specifies the value to add.</param>
         /// <param name="bForce">Optionally, forces adding the value to the Bucket.</param>
         /// <param name="bPeekOnly">Optinoally, only peek to test if the value fits in the bucket.</param>
+        /// <param name="rgReturns">Optionally, specifies an array of returns.</param>
         /// <returns>Returns 0 if the value falls within the Buckets range and is added, -1 if the value is less than the Bucket range and 1 if the value is greater.</returns>
-        public int Add(double fVal, bool bForce = false, bool bPeekOnly = false)
+        public int Add(double fVal, bool bForce = false, bool bPeekOnly = false, List<float> rgReturns = null)
         {
             if (!bForce)
             {
@@ -81,6 +113,9 @@ namespace MyCaffe.basecode
             {
                 m_nCount++;
                 m_fSum += fVal;
+
+                if (rgReturns != null && rgReturns.Count > 0)
+                    m_rgReturns.Add(rgReturns);
             }
 
             return 0;
@@ -494,26 +529,27 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
         /// <param name="bPeekOnly">When true, only return the bucket index but dont add the value (default = false).</param>
+        /// <param name="rgReturns">Optionally, specifies an array of returns.</param>
         /// <returns>The index of the bucket for which the value was added is returned.</returns>
-        public int Add(double fVal, bool bPeekOnly = false)
+        public int Add(double fVal, bool bPeekOnly = false, List<float> rgReturns = null)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
             {
-                int nVal = m_rgBuckets[i].Add(fVal, false, bPeekOnly);
+                int nVal = m_rgBuckets[i].Add(fVal, false, bPeekOnly, rgReturns);
                 if (nVal == 0)
                     return i;
 
                 if (nVal < 0 && i == 0)
                 {
                     if (!bPeekOnly)
-                        m_rgBuckets[i].Add(fVal, true);
+                        m_rgBuckets[i].Add(fVal, true, false, rgReturns);
                     return i;
                 }
 
                 if (nVal == 1 && i == m_rgBuckets.Count - 1)
                 {
                     if (!bPeekOnly)
-                        m_rgBuckets[i].Add(fVal, true);
+                        m_rgBuckets[i].Add(fVal, true, false, rgReturns);
                     return i;
                 }
             }
