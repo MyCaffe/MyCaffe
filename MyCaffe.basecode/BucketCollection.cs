@@ -772,7 +772,7 @@ namespace MyCaffe.basecode
         /// <returns>The new BucketCollection is returned.</returns>
         public static BucketCollection FromByteStream(byte[] rg)
         {
-            using (MemoryStream ms = new MemoryStream())
+            using (MemoryStream ms = new MemoryStream(rg))
             using (BinaryReader br = new BinaryReader(ms))
             {
                 bool bIsReal = br.ReadBoolean();
