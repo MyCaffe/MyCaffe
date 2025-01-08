@@ -1937,6 +1937,18 @@ namespace MyCaffe.db.image
             }
         }
 
+        public bool UpdateRawImageScores(int nID, Tuple<DateTime, decimal?, decimal?> tgt)
+        {
+            var rawImage = m_entities.RawImages.FirstOrDefault(p => p.ID == nID);
+            if (rawImage == null)
+                return false;
+
+            rawImage.Score = tgt.Item2;
+            rawImage.Score2 = tgt.Item3;
+            m_entities.SaveChanges();
+            return true;
+        }
+
         /// <summary>
         /// Update the description of a RawImage.
         /// </summary>
