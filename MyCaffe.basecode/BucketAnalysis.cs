@@ -49,16 +49,17 @@ namespace MyCaffe.basecode
             if (!Directory.Exists(strPath))
                 return null;
 
-            string strFile = Path.Combine(strPath, strName + "." + strPeriod + ".statistics.");
+            string strTag = "";
+            if (dtMin.HasValue && dtMin.Value.Year < 2015)
+                strTag = "IS.";
+            else
+                strTag = "OOS.";
+
+            string strFile = Path.Combine(strPath, strName + "." + strPeriod + ".statistics." + strTag);
             if (bNormalize)
                 strFile += "normalized.png";
             else
                 strFile += "raw.png";
-
-            if (dtMin.HasValue && dtMin.Value.Year < 2015)
-                strFile = "IS." + strFile;
-            else
-                strFile = "OOS." + strFile;
 
             List<Color> rgColors = new List<Color>();
 
