@@ -1945,14 +1945,9 @@ namespace MyCaffe.db.image
         /// <returns>true is returned on success otherwise false.</returns>
         public bool UpdateRawImageScores(int nID, Tuple<DateTime, decimal?, decimal?> tgt)
         {
-            var rawImage = m_entities.RawImages.FirstOrDefault(p => p.ID == nID);
-            if (rawImage == null)
-                return false;
-
-            rawImage.Score = tgt.Item2;
-            rawImage.Score2 = tgt.Item3;
-            m_entities.SaveChanges();
-            return true;
+            var rowsAffected = m_entities.Database.ExecuteSqlCommand(
+                $"UPDATE RawImages SET Score = {tgt.Item2}, Score2 = {tgt.Item3} WHERE ID = {nID}");
+            return rowsAffected > 0;
         }
 
         /// <summary>
