@@ -1937,6 +1937,12 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Update the raw image scores.
+        /// </summary>
+        /// <param name="nID">Specifies the image ID.</param>
+        /// <param name="tgt">Specifies the score information.</param>
+        /// <returns>true is returned on success otherwise false.</returns>
         public bool UpdateRawImageScores(int nID, Tuple<DateTime, decimal?, decimal?> tgt)
         {
             var rawImage = m_entities.RawImages.FirstOrDefault(p => p.ID == nID);
