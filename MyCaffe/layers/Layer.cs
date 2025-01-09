@@ -1363,7 +1363,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="df">Specifies the <i>double</i> value.</param>
         /// <returns>Returns the generic value.</returns>
-        protected T convert(double df)
+        public static T convert(double df)
         {
             return (T)Convert.ChangeType(df, typeof(T));
         }
@@ -1373,7 +1373,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="f">Specifies the <i>float</i> value.</param>
         /// <returns>Returns the generic value.</returns>
-        protected T convert(float f)
+        public static T convert(float f)
         {
             return (T)Convert.ChangeType(f, typeof(T));
         }
@@ -1383,7 +1383,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="df">Specifies the generic value.</param>
         /// <returns>The <i>double</i> value is returned.</returns>
-        protected double convertD(T df)
+        public static double convertD(T df)
         {
             return (double)Convert.ChangeType(df, typeof(double));
         }
@@ -1393,7 +1393,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="df">Specifies the generic value.</param>
         /// <returns>The <i>float</i> value is returned.</returns>
-        protected float convertF(T df)
+        public static float convertF(T df)
         {
             return (float)Convert.ChangeType(df, typeof(float));
         }
@@ -1403,7 +1403,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rg">Specifies the array of generic values.</param>
         /// <returns>The array of <i>double</i> values is returned.</returns>
-        protected double[] convertD(T[] rg)
+        public static double[] convertD(T[] rg)
         {
             if (typeof(T) == typeof(double))
                 return (double[])Convert.ChangeType(rg, typeof(double[]));
@@ -1419,7 +1419,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rg">Specifies the array of <i>double</i> values.</param>
         /// <returns>Returns an array of generic values.</returns>
-        protected T[] convert(double[] rg)
+        public static T[] convert(double[] rg)
         {
             if (typeof(T) == typeof(double))
                 return (T[])Convert.ChangeType(rg, typeof(T[]));
@@ -1435,7 +1435,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rg">Specifies the array of <i>float</i> values.</param>
         /// <returns>Returns an array of generic values.</returns>
-        protected float[] convertF(T[] rg)
+        public static float[] convertF(T[] rg)
         {
             if (typeof(T) == typeof(float))
                 return (float[])Convert.ChangeType(rg, typeof(float[]));
@@ -1451,7 +1451,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rg">Specifies the array of <i>float</i> values.</param>
         /// <returns>Returns an array of generic values.</returns>
-        protected T[] convert(float[] rg)
+        public static T[] convert(float[] rg)
         {
             if (typeof(T) == typeof(float))
                 return (T[])Convert.ChangeType(rg, typeof(T[]));

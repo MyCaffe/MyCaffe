@@ -2138,9 +2138,18 @@ namespace MyCaffe
 
             AccuracyParameter accuracyParam = null;
             Layer<T> layerAccuracy = null;
+
+            IXNormalize<T> inormalize = null;
+
             foreach (Layer<T> layer in net.layers)
             {
-                if (layer.type == LayerParameter.LayerType.LABELMAPPING)
+                if (layer.type == LayerParameter.LayerType.DATA)
+                {
+                    inormalize = layer as IXNormalize<T>;
+                    if (inormalize == null)
+                        m_log.WriteLine("WARNING: IXNormalize not implemented by the Data layer.");
+                }
+                else if (layer.type == LayerParameter.LayerType.LABELMAPPING)
                 {
                     labelMapping = layer.layer_param.labelmapping_param;
                     break;
@@ -2288,11 +2297,13 @@ namespace MyCaffe
                             if (i == 0)
                                 iAccuracyTest.ResetTesting();
 
-                            float? fScore2 = null;
-                            if (sd.Score2.HasValue)
-                                fScore2 = (float)sd.Score2.Value;
+                            float fScore1 = (inormalize != null) ? Layer<T>.convertF(inormalize.Normalize(Layer<T>.convert((float)sd.Score.Value))) : (float)sd.Score.Value;
+                            float fScore2 = fScore1;
 
-                            iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, (float)sd.Score.Value, fScore2);
+                            if (sd.Score2.HasValue && inormalize != null)
+                                fScore2 = Layer<T>.convertF(inormalize.Normalize(Layer<T>.convert((float)sd.Score2.Value)));
+
+                            iAccuracyTest.AddTesting((float)rgResults.DetectedLabelOutput, fScore1, fScore2);
                             nTotalCount++;
                         }
                         else
@@ -2304,7 +2315,6 @@ namespace MyCaffe
                             {
                                 if (rgResults.ResultsOriginal.Count % 2 != 0)
                                     nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
-
 
                                 if (labelMapping != null)
                                 {

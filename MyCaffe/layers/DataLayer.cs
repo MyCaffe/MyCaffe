@@ -22,7 +22,7 @@ namespace MyCaffe.layers
     /// This layer is initialized with the MyCaffe.param.DataParameter.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class DataLayer<T> : BasePrefetchingDataLayer<T>
+    public class DataLayer<T> : BasePrefetchingDataLayer<T>, IXNormalize<T>
     {
         /// <summary>
         /// Specifies the database.
@@ -1158,6 +1158,56 @@ namespace MyCaffe.layers
         {
             string strFile = p.debug_save_path.TrimEnd('\\') + "\\dbgimg_iter_" + m_nBatchCount.ToString() + "_num_" + nNum.ToString() + "_img_" + nImg.ToString();
             d.SaveInfo(strFile + ".txt");
+        }
+
+        /// <summary>
+        /// Normalize the score if normalization is used, as specified by the score_as_label_normalization parameter.
+        /// </summary>
+        /// <param name="fVal">Specifies the input value.</param>
+        /// <returns>The normalized value is returned.</returns>
+        /// <remarks>Currently only the POS_SHIFT normalization is supported.</remarks>
+        /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
+        public T Normalize(T fVal)
+        {
+            if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.NONE)
+                return fVal;
+
+            float fVal1 = convertF(fVal);
+
+            switch (layer_param.data_param.score_as_label_normalization)
+            {
+                case SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT:
+                    fVal1 = (fVal1 + 1.0f) * (float)layer_param.data_param.score_normalization_pos_shift_multiplier;
+                    return convert(fVal1);
+
+                default:
+                    throw new NotImplementedException("The normalization type '" + layer_param.data_param.score_as_label_normalization.ToString() + "' is not currently implemented");
+            }
+        }
+
+        /// <summary>
+        /// Unnormalize a normalized score, as specified by the score_as_label_normalization parameter.
+        /// </summary>
+        /// <param name="fVal">Specifies the normalized value to unormalize.</param>
+        /// <returns>The unnormalized value is returned.</returns>
+        /// <remarks>Currently only the POS_SHIFT normalization is supported.</remarks>
+        /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
+        public T Unnormalize(T fVal)
+        {
+            if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.NONE)
+                return fVal;
+
+            float fVal1 = convertF(fVal);
+
+            switch (layer_param.data_param.score_as_label_normalization)
+            {
+                case SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT:
+                    fVal1 = (fVal1 / (float)layer_param.data_param.score_normalization_pos_shift_multiplier) - 1.0f;
+                    return convert(fVal1);
+
+                default:
+                    throw new NotImplementedException("The normalization type '" + layer_param.data_param.score_as_label_normalization.ToString() + "' is not currently implemented");
+            }
         }
     }
 
