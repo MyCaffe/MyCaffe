@@ -565,11 +565,14 @@ namespace MyCaffe.basecode
             sb.AppendLine();
             printMatrix("Precision", sb, labels, precisionPctMatrix, maxLabelWidth, maxCellWidth, true);
 
-            for (int i = 0; i < rgstrReturnNames.Count; i++)
+            if (rgstrReturnNames != null)
             {
-                double[,] returnMatrix = createReturnConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, rgPredLabels, i);
-                sb.AppendLine();
-                printMatrix(rgstrReturnNames[i], sb, labels, returnMatrix, maxLabelWidth, maxCellWidth, true);
+                for (int i = 0; i < rgstrReturnNames.Count; i++)
+                {
+                    double[,] returnMatrix = createReturnConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, rgPredLabels, i);
+                    sb.AppendLine();
+                    printMatrix(rgstrReturnNames[i], sb, labels, returnMatrix, maxLabelWidth, maxCellWidth, true);
+                }
             }
 
             int nTotal = m_colTgtPos.Sum(p => p.Count) + m_colTgtNeg.Sum(p => p.Count);
