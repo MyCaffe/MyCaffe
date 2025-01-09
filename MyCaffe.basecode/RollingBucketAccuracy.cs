@@ -97,8 +97,6 @@ namespace MyCaffe.basecode
         BucketCollection m_colCorrectPredNeg = null;
         double? m_dfIgnoreMax = null;
         double? m_dfIgnoreMin = null;
-        Dictionary<Bucket, int> m_rgBucketCorrectHits = new Dictionary<Bucket, int>();
-        Dictionary<Bucket, Dictionary<int, int>> m_rgBucketIncorrectHits = new Dictionary<Bucket, Dictionary<int, int>>();
         BucketCollection m_colOverride = null;
         float[] m_rgPred = new float[1];
         float[] m_rgTgt = new float[1];
@@ -180,38 +178,6 @@ namespace MyCaffe.basecode
                 m_colCorrectPredPos = new BucketCollection(0, dfMax, nBucketCount);
                 m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
             }
-
-            if (m_colPredNeg != null)
-            {
-                foreach (Bucket b in m_colPredNeg)
-                {
-                    m_rgBucketCorrectHits.Add(b, 0);
-                }
-            }
-
-            if (m_colPredPos != null)
-            {
-                foreach (Bucket b in m_colPredPos)
-                {
-                    m_rgBucketCorrectHits.Add(b, 0);
-                }
-            }
-
-            if (m_colTgtNeg != null)
-            {
-                foreach (Bucket b in m_colTgtNeg)
-                {
-                    m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
-                }
-            }
-
-            if (m_colTgtPos != null)
-            {
-                foreach (Bucket b in m_colTgtPos)
-                {
-                    m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
-                }
-            }
         }
 
         /// <summary>
@@ -252,59 +218,11 @@ namespace MyCaffe.basecode
                 else
                     nPredIdxPos = m_colPredPos.Add(rgPred[i], false, rgReturns);
 
-                if (nTgtIdxNeg >= 0)
-                {
-                    if (nTgtIdxNeg == nPredIdxNeg)
-                    {
-                        Bucket b = m_colPredNeg[nPredIdxNeg];
-                        m_rgBucketCorrectHits[b]++;
-                        m_colCorrectPredNeg.Add(rgPred[i], false, rgReturns);
-                    }
-                    else
-                    {
-                        Bucket b = m_colTgtNeg[nTgtIdxNeg];
-                        if (!m_rgBucketIncorrectHits.ContainsKey(b))
-                            m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
+                if (m_colCorrectPredNeg != null && nTgtIdxNeg >= 0 && nPredIdxNeg == nTgtIdxNeg)
+                    m_colCorrectPredNeg.Add(rgPred[i], false, rgReturns);
 
-                        if (nPredIdxNeg >= 0)
-                        {
-                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxNeg))
-                                m_rgBucketIncorrectHits[b].Add(nPredIdxNeg, 0);
-                            m_rgBucketIncorrectHits[b][nPredIdxNeg]++;
-                        }
-                        else if (nPredIdxPos >= 0)
-                        {
-                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxPos))
-                                m_rgBucketIncorrectHits[b].Add(nPredIdxPos, 0);
-                            m_rgBucketIncorrectHits[b][nPredIdxPos]++;
-                        }
-                    }
-                }
-                else if (nTgtIdxPos >= 0)
-                {
-                    if (nTgtIdxPos == nPredIdxPos)
-                    {
-                        Bucket b = m_colPredPos[nPredIdxPos];
-                        m_rgBucketCorrectHits[b]++;
-                        m_colCorrectPredPos.Add(rgPred[i], false, rgReturns);
-                    }
-                    else
-                    {
-                        Bucket b = m_colTgtPos[nTgtIdxPos];
-                        if (nPredIdxPos >= 0)
-                        {
-                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxPos))
-                                m_rgBucketIncorrectHits[b].Add(nPredIdxPos, 0);
-                            m_rgBucketIncorrectHits[b][nPredIdxPos]++;
-                        }
-                        else if (nPredIdxNeg >= 0)
-                        {
-                            if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxNeg))
-                                m_rgBucketIncorrectHits[b].Add(nPredIdxNeg, 0);
-                            m_rgBucketIncorrectHits[b][nPredIdxNeg]++;
-                        }
-                    }
-                }
+                if (m_colCorrectPredPos != null && nTgtIdxPos >= 0 && nPredIdxPos == nTgtIdxPos)
+                    m_colCorrectPredPos.Add(rgPred[i], false, rgReturns);
             }
 
             if (nPredIdxNeg >= 0)
@@ -347,17 +265,40 @@ namespace MyCaffe.basecode
         {
             strDetails = (bGetDetails) ? "" : null;
 
-            int nTotalCorrect = m_rgBucketCorrectHits.Sum(p => p.Value);
-            int nTotalPredictions = m_rgBucketCorrectHits.Sum(p => p.Key.Count);
+            int nTotalCorrectPos = (m_colCorrectPredPos != null) ? m_colCorrectPredPos.BucketCountSum : 0;
+            int nTotalCorrectNeg = (m_colCorrectPredNeg != null) ? m_colCorrectPredNeg.BucketCountSum : 0;
+            int nTotalPos = (m_colTgtPos != null) ? m_colTgtPos.BucketCountSum : 0;
+            int nTotalNeg = (m_colTgtNeg != null) ? m_colTgtNeg.BucketCountSum : 0;
+
+            int nTotalCorrect = nTotalCorrectPos + nTotalCorrectNeg;
+            int nTotalPredictions = nTotalPos + nTotalNeg;
 
             if (bGetDetails)
             {
-                List<KeyValuePair<Bucket, int>> rgBuckets = m_rgBucketCorrectHits.OrderBy(p => p.Key.MidPoint).ToList();
-                foreach (KeyValuePair<Bucket, int> kv in rgBuckets)
+                if (m_colTgtNeg != null)
                 {
-                    double dfPct = kv.Value / (double)kv.Key.Count;
-                    strDetails += "Bucket: " + kv.Key.ToString() + " Accuracy: " + dfPct.ToString("P2") + Environment.NewLine;
+                    for (int i = 0; i < m_colTgtNeg.Count; i++)
+                    {
+                        Bucket bTgt = m_colTgtNeg[i];
+                        Bucket bPred = m_colPredNeg[i];
+                        double dfAcc = (double)bPred.Count / (double)bTgt.Count;
+
+                        strDetails += "Bucket: " + m_colTgtNeg[i].ToString() + " Accuracy: " + dfAcc.ToString("P2") + Environment.NewLine;
+                    }
                 }
+
+                if (m_colTgtPos != null)
+                {
+                    for (int i = 0; i < m_colTgtPos.Count; i++)
+                    {
+                        Bucket bTgt = m_colTgtPos[i];
+                        Bucket bPred = m_colPredPos[i];
+                        double dfAcc = (double)bPred.Count / (double)bTgt.Count;
+
+                        strDetails += "Bucket: " + m_colTgtPos[i].ToString() + " Accuracy: " + dfAcc.ToString("P2") + Environment.NewLine;
+                    }
+                }
+
                 strDetails += CreateConfusionMatrix(rgstrReturnNames);
             }
 
@@ -366,7 +307,7 @@ namespace MyCaffe.basecode
             return accuracy;
         }
 
-        private int[,] createConfusionMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTargets)
+        private int[,] createConfusionMatrix(List<string> rgstrTargetLabels, List<string> rgstrPredLabels, List<Bucket> rgTargets, List<Bucket> rgPredicted)
         {
             int[,] confusionMatrix = new int[rgstrTargetLabels.Count, rgstrPredLabels.Count];
 
@@ -376,35 +317,21 @@ namespace MyCaffe.basecode
 
                 for (int j = 0; j < rgstrPredLabels.Count; j++)
                 {
-                    // Assuming m_rgBucketCorrectHits stores hits per target, indexed by prediction label
-                    if (m_rgBucketCorrectHits.ContainsKey(bTarget))
+                    int nVal = 0;
+                    Bucket bPredicted = rgPredicted[i];
+
+                    if (i == j)
                     {
-                        int nPredCount = m_rgBucketCorrectHits[bTarget]; // Fetch prediction count for this target-prediction pair
-                        int nVal = 0;
-
-                        if (i == j) // Diagonal: correct predictions
-                        {
-                            nVal = Math.Min(bTarget.Count, nPredCount);
-                        }
-                        else
-                        {
-                            if (m_rgBucketIncorrectHits.ContainsKey(bTarget))
-                            {
-                                if (j > i)
-                                {
-                                    if (m_rgBucketIncorrectHits[bTarget].ContainsKey(i))
-                                        nVal = m_rgBucketIncorrectHits[bTarget][i];
-                                }
-                                else if (j < i)
-                                {
-                                    if (m_rgBucketIncorrectHits[bTarget].ContainsKey(j))
-                                        nVal = m_rgBucketIncorrectHits[bTarget][j];
-                                }
-                            }
-                        }
-
-                        confusionMatrix[i, j] = nVal;
+                        nVal = bPredicted.Count;
                     }
+                    else
+                    {
+                        int nTargetCount = bTarget.Count;
+                        int nPredictedCount = bPredicted.Count;
+                        nVal = nTargetCount - nPredictedCount;
+                    }
+
+                    confusionMatrix[i, j] = nVal;
                 }
             }
 
@@ -592,7 +519,7 @@ namespace MyCaffe.basecode
             }
 
             // Create the confusion matrix
-            int[,] confusionMatrix = createConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels);
+            int[,] confusionMatrix = createConfusionMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, rgPredLabels);
             double[,] accuracyPctMatrix = createAccuracyPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
             double[,] precisionPctMatrix = createPrecisionPercentMatrix(rgstrTargetLabels, rgstrPredLabels, rgTargetLabels, confusionMatrix);
             StringBuilder sb = new StringBuilder();

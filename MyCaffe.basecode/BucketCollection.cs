@@ -469,6 +469,14 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the sum of all bucket counts.
+        /// </summary>
+        public int BucketCountSum
+        {
+            get { return m_rgBuckets.Sum(p => p.Count); }
+        }
+
+        /// <summary>
         /// Returns the bucket at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the index of the bucket to retrieve.</param>
