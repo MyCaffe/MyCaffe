@@ -2297,6 +2297,7 @@ namespace MyCaffe
                             if (i == 0)
                                 iAccuracyTest.ResetTesting();
 
+                            // Normalize the raw score values.
                             float fScore1 = (inormalize != null) ? Layer<T>.convertF(inormalize.Normalize(Layer<T>.convert((float)sd.Score.Value))) : (float)sd.Score.Value;
                             float fScore2 = fScore1;
 

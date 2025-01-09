@@ -21,7 +21,7 @@ using System.Diagnostics.SymbolStore;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// An interface for the units of computation which can be composed into a Net.
+    /// Specifies an interface for the units of computation which can be composed into a Net.
     /// </summary>
     /// <remarks>
     /// Layer%s must implement an override to the forward function, in which they take their input (bottom) Blob%s
