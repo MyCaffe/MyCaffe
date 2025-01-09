@@ -1055,6 +1055,10 @@ namespace MyCaffe.layers
                                             fVal = 0;
                                     }
                                 }
+                                else if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT)
+                                {
+                                    fVal = (fVal + 1) * (float)layer_param.data_param.score_normalization_pos_shift_multiplier;
+                                }
 
                                 m_rgTopLabel[i] = (T)Convert.ChangeType(fVal, typeof(T));
                             }

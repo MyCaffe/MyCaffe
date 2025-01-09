@@ -70,7 +70,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies to run pos/neg z-score normalization on all values using the 'PosMean' and 'PosStdDev' for all positive values, and 'NegMean' and 'NegStdDev' for all negative values..
         /// </summary>
-        Z_SCORE_POSNEG = 2
+        Z_SCORE_POSNEG = 2,
+        /// <summary>
+        /// Specifies to run a positive shift normalization on all values by adding 1 and multiplying by 100 to fit in a range of [0,200]
+        /// </summary>
+        POS_SHIFT = 3
     }
 
     /// <summary>

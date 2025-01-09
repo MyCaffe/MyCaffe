@@ -56,6 +56,7 @@ namespace MyCaffe.param
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
         SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
+        double m_dfPositiveShiftMultiplier = 100.0;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -329,6 +330,20 @@ namespace MyCaffe.param
             set { m_zscoreNormalization = value; }
         }
 
+        /// <summary>
+        /// Specifies the positive shift multiplier used when running the SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT
+        /// </summary>
+        /// <remarks>
+        /// Normalization function:
+        /// @f$ y = beta * (x + 1.0) @f$, beta default = 100
+        /// </remarks>
+        [Category("Labels"), Description("When using the POS_SHIFT label normalization, the mutlipier defines the Beta values in the normalization function x1 = Beta * (x + 1)")]
+        public double score_normalization_pos_shift_multiplier
+        {
+            get { return m_dfPositiveShiftMultiplier; }
+            set { m_dfPositiveShiftMultiplier = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -367,6 +382,7 @@ namespace MyCaffe.param
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
             m_zscoreNormalization = p.m_zscoreNormalization;
+            m_dfPositiveShiftMultiplier = p.m_dfPositiveShiftMultiplier;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -442,7 +458,10 @@ namespace MyCaffe.param
                 rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
 
             if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
+            {
                 rgChildren.Add("score_as_label_normalization", m_zscoreNormalization.ToString());
+                rgChildren.Add("score_normalization_pos_shift", m_dfPositiveShiftMultiplier.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -584,10 +603,17 @@ namespace MyCaffe.param
                         p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG;
                         break;
 
+                    case "POS_SHIFT":
+                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT;
+                        break;
+
                     default:
                         throw new Exception("Unknown 'score_as_label_normalization' value " + strVal);
                 }
             }
+
+            if ((strVal = rp.FindValue("score_normalization_pos_shift")) != null)
+                p.score_normalization_pos_shift_multiplier = double.Parse(strVal);
 
             return p;
         }
