@@ -23,6 +23,7 @@ namespace MyCaffe.param
         double? m_dfIgnoreMin = null;
         double? m_dfIgnoreMax = null;
         bool m_bEnableOverride = false;
+        double m_dfBucketCenterValue = 0;
 
         /// <summary>
         /// Defines the MAPE algorithm to use.
@@ -65,6 +66,16 @@ namespace MyCaffe.param
         {
             get { return m_alg; }
             set { m_alg = value; }
+        }
+
+        /// <summary>
+        /// Specifies the value to use as the center value for the bucketing (default = 0.0).
+        /// </summary>
+        [Description("Specifies the value to use as the center value for the bucketing (default = 0.0)")]
+        public double bucket_center
+        {
+            get { return m_dfBucketCenterValue; }
+            set { m_dfBucketCenterValue= value; }
         }
 
         /// <summary>
@@ -141,6 +152,7 @@ namespace MyCaffe.param
             m_dfIgnoreMin = p.m_dfIgnoreMin;
             m_dfIgnoreMax = p.m_dfIgnoreMax;
             m_bEnableOverride = p.m_bEnableOverride;
+            m_dfBucketCenterValue = p.m_dfBucketCenterValue;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -165,6 +177,7 @@ namespace MyCaffe.param
             rgChildren.Add("bucket_max", bucket_max.ToString());
             rgChildren.Add("bucket_count", bucket_count.ToString());
             rgChildren.Add("enable_override", enable_override.ToString().ToLower());
+            rgChildren.Add("bucket_center", bucket_center.ToString());
 
             if (bucket_ignore_min.HasValue)
                 rgChildren.Add("bucket_ignore_min", bucket_ignore_min.Value.ToString());
@@ -192,6 +205,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("bucket_max")) != null)
                 p.bucket_max = BaseParameter.ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("bucket_center")) != null)
+                p.bucket_center = BaseParameter.ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("bucket_count")) != null)
                 p.bucket_count = int.Parse(strVal);
