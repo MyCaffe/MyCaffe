@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MyCaffe.basecode
 {
@@ -158,7 +159,7 @@ namespace MyCaffe.basecode
                 throw new ArgumentException("Alpha must be between 0 and 1");
 
             if (matrix.Cast<int>().Sum() == 0)
-                throw new ArgumentException("Matrix cannot be empty (all zeros)");
+                Trace.WriteLine("WARNING: Matrix cannot be empty (all zeros)");
         }
 
         private static (double[] rowTotals, double[] colTotals, double total)
