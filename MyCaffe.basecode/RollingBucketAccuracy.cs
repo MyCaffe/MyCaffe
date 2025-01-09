@@ -332,9 +332,8 @@ namespace MyCaffe.basecode
                     double dfPct = kv.Value / (double)kv.Key.Count;
                     strDetails += "Bucket: " + kv.Key.ToString() + " Accuracy: " + dfPct.ToString("P2") + Environment.NewLine;
                 }
+                strDetails += CreateConfusionMatrix(rgstrReturnNames);
             }
-
-            strDetails += CreateConfusionMatrix(rgstrReturnNames);
 
             // Calculate accuracy as a percentage
             double accuracy = nTotalPredictions > 0 ? (nTotalCorrect / (double)nTotalPredictions) : 0;
