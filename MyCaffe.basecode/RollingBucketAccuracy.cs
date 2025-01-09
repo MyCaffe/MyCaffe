@@ -180,6 +180,38 @@ namespace MyCaffe.basecode
                 m_colCorrectPredPos = new BucketCollection(0, dfMax, nBucketCount);
                 m_colTgtPos = new BucketCollection(0, dfMax, nBucketCount);
             }
+
+            if (m_colPredNeg != null)
+            {
+                foreach (Bucket b in m_colPredNeg)
+                {
+                    m_rgBucketCorrectHits.Add(b, 0);
+                }
+            }
+
+            if (m_colPredPos != null)
+            {
+                foreach (Bucket b in m_colPredPos)
+                {
+                    m_rgBucketCorrectHits.Add(b, 0);
+                }
+            }
+
+            if (m_colTgtNeg != null)
+            {
+                foreach (Bucket b in m_colTgtNeg)
+                {
+                    m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
+                }
+            }
+
+            if (m_colTgtPos != null)
+            {
+                foreach (Bucket b in m_colTgtPos)
+                {
+                    m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
+                }
+            }
         }
 
         /// <summary>
@@ -222,17 +254,15 @@ namespace MyCaffe.basecode
 
                 if (nTgtIdxNeg >= 0)
                 {
-                    Bucket b = m_colTgtNeg[nTgtIdxNeg];
-
                     if (nTgtIdxNeg == nPredIdxNeg)
                     {
-                        if (!m_rgBucketCorrectHits.ContainsKey(b))
-                            m_rgBucketCorrectHits.Add(b, 0);
+                        Bucket b = m_colPredNeg[nPredIdxNeg];
                         m_rgBucketCorrectHits[b]++;
                         m_colCorrectPredNeg.Add(rgPred[i], false, rgReturns);
                     }
                     else
                     {
+                        Bucket b = m_colTgtNeg[nTgtIdxNeg];
                         if (!m_rgBucketIncorrectHits.ContainsKey(b))
                             m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
 
@@ -252,19 +282,15 @@ namespace MyCaffe.basecode
                 }
                 else if (nTgtIdxPos >= 0)
                 {
-                    Bucket b = m_colTgtPos[nTgtIdxPos];
                     if (nTgtIdxPos == nPredIdxPos)
                     {
-                        if (!m_rgBucketCorrectHits.ContainsKey(b))
-                            m_rgBucketCorrectHits.Add(b, 0);
+                        Bucket b = m_colPredPos[nPredIdxPos];
                         m_rgBucketCorrectHits[b]++;
                         m_colCorrectPredPos.Add(rgPred[i], false, rgReturns);
                     }
                     else
                     {
-                        if (!m_rgBucketIncorrectHits.ContainsKey(b))
-                            m_rgBucketIncorrectHits.Add(b, new Dictionary<int, int>());
-
+                        Bucket b = m_colTgtPos[nTgtIdxPos];
                         if (nPredIdxPos >= 0)
                         {
                             if (!m_rgBucketIncorrectHits[b].ContainsKey(nPredIdxPos))
@@ -515,36 +541,54 @@ namespace MyCaffe.basecode
             List<Bucket> rgTargetLabels = new List<Bucket>();
             List<Bucket> rgPredLabels = new List<Bucket>();
 
-            foreach (Bucket b in m_colTgtNeg)
+            if (m_colTgtNeg != null)
             {
-                rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
-                rgTargetLabels.Add(b);
+                foreach (Bucket b in m_colTgtNeg)
+                {
+                    rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                    rgTargetLabels.Add(b);
+                }
             }
 
-            foreach (Bucket b in m_colPredNeg)
+            if (m_colPredNeg != null)
             {
-                rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                foreach (Bucket b in m_colPredNeg)
+                {
+                    rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                }
             }
 
-            foreach (Bucket b in m_colCorrectPredNeg)
+            if (m_colCorrectPredNeg != null)
             {
-                rgPredLabels.Add(b);
+                foreach (Bucket b in m_colCorrectPredNeg)
+                {
+                    rgPredLabels.Add(b);
+                }
             }
 
-            foreach (Bucket b in m_colTgtPos)
+            if (m_colTgtPos != null)
             {
-                rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
-                rgTargetLabels.Add(b);
+                foreach (Bucket b in m_colTgtPos)
+                {
+                    rgstrTargetLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                    rgTargetLabels.Add(b);
+                }
             }
 
-            foreach (Bucket b in m_colPredPos)
+            if (m_colPredPos != null)
             {
-                rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                foreach (Bucket b in m_colPredPos)
+                {
+                    rgstrPredLabels.Add(b.Minimum.ToString("N2") + " - " + b.Maximum.ToString("N2"));
+                }
             }
 
-            foreach (Bucket b in m_colCorrectPredPos)
+            if (m_colCorrectPredPos != null)
             {
-                rgPredLabels.Add(b);
+                foreach (Bucket b in m_colCorrectPredPos)
+                {
+                    rgPredLabels.Add(b);
+                }
             }
 
             // Create the confusion matrix
@@ -575,9 +619,18 @@ namespace MyCaffe.basecode
                 }
             }
 
-            int nTotal = m_colTgtPos.Sum(p => p.Count) + m_colTgtNeg.Sum(p => p.Count);
-            double dfGtPercentPos = (double)m_colTgtPos.Sum(p => p.Count) / nTotal;
-            double dfGtPercentNeg = (double)m_colTgtNeg.Sum(p => p.Count) / nTotal;
+            int nTotalPos = 0;
+            int nTotalNeg = 0;
+
+            if (m_colTgtPos != null && m_colTgtPos.Count > 0)
+                nTotalPos = m_colTgtPos.Sum(p => p.Count);
+
+            if (m_colTgtNeg != null && m_colTgtNeg.Count > 0)
+                nTotalNeg = m_colTgtNeg.Sum(p => p.Count);
+
+            int nTotal = nTotalPos + nTotalNeg;
+            double dfGtPercentPos = (double)nTotalPos / nTotal;
+            double dfGtPercentNeg = (double)nTotalNeg / nTotal;
             sb.AppendLine();
             sb.AppendLine("Ground Truth Sample Size = " + nTotal.ToString("N0"));
             sb.AppendLine("Ground Truth % Positive = " + dfGtPercentPos.ToString("P2"));
