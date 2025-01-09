@@ -1165,7 +1165,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="fVal">Specifies the input value.</param>
         /// <returns>The normalized value is returned.</returns>
-        /// <remarks>Currently only the POS_SHIFT normalization is supported.</remarks>
+        /// <remarks>Currently only POS_SHIFT normalization is supported.</remarks>
         /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
         public T Normalize(T fVal)
         {
@@ -1190,7 +1190,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="fVal">Specifies the normalized value to unormalize.</param>
         /// <returns>The unnormalized value is returned.</returns>
-        /// <remarks>Currently only the POS_SHIFT normalization is supported.</remarks>
+        /// <remarks>Currently the POS_SHIFT normalization is supported.</remarks>
         /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
         public T Unnormalize(T fVal)
         {
