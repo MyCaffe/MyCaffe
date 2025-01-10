@@ -96,6 +96,7 @@
     <Compile Include="common\DebugInformation.cs" />
     <Compile Include="common\DictionaryEx.cs" />
     <Compile Include="common\EventArgs.cs" />
+    <Compile Include="common\NormalizedScore.cs" />
     <Compile Include="fused_ops\MatMul.cs" />
     <Compile Include="fused_ops\FusedComputation.cs" />
     <Compile Include="common\HostBuffer.cs" />
@@ -214,6 +215,7 @@
     <Compile Include="param.ts\NHitsBlockParameter.cs" />
     <Compile Include="param.ts\FcParameter.cs" />
     <Compile Include="param\LinearParameter.cs" />
+    <Compile Include="param\NormalizationScoreParameter.cs" />
     <Compile Include="weight_adapters\WeightAdapter.cs" />
     <Compile Include="weight_adapters\WeightAdapterLoRA.cs" />
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />
