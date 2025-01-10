@@ -29,8 +29,8 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.</typeparam>
     public class MeanErrorLossLayer<T> : LossLayer<T>
     {
-        BucketCollection m_buckets = null;
-        BucketCollection m_bucketsCorrect = null;
+        RollingBucketCollection m_buckets = null;
+        RollingBucketCollection m_bucketsCorrect = null;
         bool m_bLossWeightsReady = false;
         int m_nCurrentIteration = 0;
         int m_nAxis = 1;
@@ -41,8 +41,6 @@ namespace MyCaffe.layers.beta
         float m_fMax = -float.MaxValue;
         float[] m_rgWeights = null;
         float m_fAlpha;
-        float m_fBeta;
-        float m_fGamma;
 
         /// <summary>
         /// Constructor.
@@ -71,9 +69,7 @@ namespace MyCaffe.layers.beta
             m_blobWork.Name = m_param.name + " workspace";
             m_blobWeights = new Blob<T>(cuda, log);
             m_blobWeights.Name = m_param.name + " weights";
-            m_fAlpha = p.mean_error_loss_param.weight_frequency_alpha;
-            m_fBeta = p.mean_error_loss_param.weight_error_beta;
-            m_fGamma = p.mean_error_loss_param.weight_score_gamma;
+            m_fAlpha = p.mean_error_loss_param.weight_frequency_error_alpha;
         }
 
         /** @copydoc Layer::dispose */
@@ -150,44 +146,36 @@ namespace MyCaffe.layers.beta
             // Add values to buckets
             for (int i = 0; i < nCount; i++)
             {
-                int nIdxTgt = m_buckets.Add(rgTarget[i]);
-                int nIdxPred = m_bucketsCorrect.Add(rgPred[i], true);
+                float fTarget = rgTarget[i];
+                float fPred = rgPred[i];
+                List<float> rgReturns = null;
+
+                int nIdxTgt = m_buckets.Add(fTarget, false, rgReturns);
+                int nIdxPred = m_bucketsCorrect.Add(fPred, true);
 
                 if (nIdxTgt == nIdxPred)
-                    m_bucketsCorrect[nIdxPred].Count++;
+                    m_bucketsCorrect.Add(fPred, false, rgReturns);
             }
 
             // Get bucket with max count for weight normalization
-            Bucket bMax = m_buckets.GetBucketWithMaxCount();
+            Bucket bMax = m_buckets.Current.GetBucketWithMaxCount();
 
             // Compute inverse frequency weights
             for (int i = 0; i < nCount; i++)
             {
                 // Get range-based weight
                 int nBucketIdx = m_buckets.Add(rgTarget[i], true);
-                Bucket bFreq = m_buckets[nBucketIdx];
-                Bucket bCor = m_bucketsCorrect[nBucketIdx];
+                Bucket bFreq = m_buckets.Current[nBucketIdx];
+                Bucket bCor = m_bucketsCorrect.Current[nBucketIdx];
 
                 // Calculate frequency weight with alpha
-                float fFrequencyWeight = 1.0f + m_fAlpha * ((float)bMax.Count / bFreq.Count);
+                float fFrequencyWeight = (1.0f + m_fAlpha) * ((float)bMax.Count / bFreq.Count);
 
                 // Calculate error weight with beta
-                float fErrorWeight = 1.0f + m_fBeta * (1.0f - ((float)bCor.Count / bFreq.Count));
+                float fErrorWeight = (1.0f - m_fAlpha) * (1.0f - ((float)bCor.Count / bFreq.Count));
 
-                // Calculate score weight with gamma
-                float fScoreWeight = 1;
+                m_rgWeights[i] = fFrequencyWeight * fErrorWeight;
 
-                // Combine weights multiplicatively
-                m_rgWeights[i] = 1;
-
-                if (fFrequencyWeight > 0)
-                    m_rgWeights[i] *= fFrequencyWeight;
-
-                if (fErrorWeight > 0)
-                    m_rgWeights[i] *= fErrorWeight;
-
-                if (fScoreWeight > 0)
-                    m_rgWeights[i] *= fScoreWeight;
 
                 // Constrain weights to the max.
                 if (m_rgWeights[i] > m_param.mean_error_loss_param.max_weight)
@@ -234,10 +222,10 @@ namespace MyCaffe.layers.beta
                 m_nCurrentIteration >= m_param.mean_error_loss_param.weight_warmup_iterations)
             {
                 if (m_buckets == null)
-                    m_buckets = new BucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count);
+                    m_buckets = new RollingBucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count, m_param.mean_error_loss_param.weight_max_history);
 
                 if (m_bucketsCorrect == null)
-                    m_bucketsCorrect = new BucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count);
+                    m_bucketsCorrect = new RollingBucketCollection(m_fMin, m_fMax, m_param.mean_error_loss_param.weight_bucket_count, m_param.mean_error_loss_param.weight_max_history);
 
                 ComputeWeights(convertF(colBottom[0].update_cpu_data()), convertF(colBottom[1].update_cpu_data()), nCount);
             }

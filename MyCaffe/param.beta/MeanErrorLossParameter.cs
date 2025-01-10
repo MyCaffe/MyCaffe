@@ -27,17 +27,15 @@ namespace MyCaffe.param
         MEAN_ERROR m_meanErrorType = MEAN_ERROR.MAE; // default to the Mean Absolute Error.
         bool m_bEnableWeightedLoss = false;
         float m_fMaxWeight = 10.0f;
-        float m_fWeightFrequencyAlpha = 0.7f;
-        float m_fWeightErrorBeta = 0.3f;
-        float m_fWeightScoreGamma = 0.0f;
+        float m_fWeightFrequencyErrorAlpha = 0.7f;
         int m_nWeightBucketCount = 20;
         int m_nWeightWarmupIerations = 100;
+        int m_nWeightMaxHistory = 1000;
 
         float m_fAbovePenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesAboveThreshold = null;
         float m_fBelowPenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesBelowThreshold = null;
-
 
         /** @copydoc LayerParameterBase */
         public MeanErrorLossParameter()
@@ -75,39 +73,26 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// [\b optional, default = 0.7] Specifies the amount of frequency weighting to apply to the loss weights.
+        /// [\b optional, default = 1000] Specifies the maximum history used to calculate the frequency and error values.
         /// </summary>
-        /// <remarks>
-        /// Recommendation: Start training with 0.7 setting, the slowly decrease to 0.5 after training, and increase the error beta to 0.5.
-        /// </remarks>
-        [Description("[\b optional, default = 0.7] Specifies the amount of frequency weighting to apply to the loss weights.")]
-        public float weight_frequency_alpha
+        [Description("Specifies the maximum history used to calculate the frequency and error values (default = 1000).")]
+        public int weight_max_history
         {
-            get { return m_fWeightFrequencyAlpha; }
-            set { m_fWeightFrequencyAlpha = value;}
+            get { return m_nWeightMaxHistory; }
+            set { m_nWeightMaxHistory = value; }
         }
 
         /// <summary>
-        /// [\b optional, default = 0.3] Specifies the amount of error weighting to apply to the loss weights.
+        /// [\b optional, default = 0.7] Specifies the amount of frequency vs error weighting to apply to the loss weights.
         /// </summary>
         /// <remarks>
-        /// Recommendation: Start training with 0.3 setting, the slowly increase to 0.5 after training, and decrease the frequency alpha to 0.5.
+        /// Recommendation: Start training with 0.7 setting means use 70% of frequency and 30% of error weighting, change to 0.5 after training for an epoch.
         /// </remarks>
-        [Description("[\b optional, default = 0.3] Specifies the amount of error weighting to apply to the loss weights.")]
-        public float weight_error_beta
+        [Description("Specifies the amount of frequency vs error weighting to apply to the loss weights (default = 0.7).")]
+        public float weight_frequency_error_alpha
         {
-            get { return m_fWeightFrequencyAlpha; }
-            set { m_fWeightFrequencyAlpha = value; }
-        }
-
-        /// <summary>
-        /// [\b optional, default = 0.0] Specifies the amount of score weighting to apply to the loss weights.
-        /// </summary>
-        [Description("[\b optional, default = 0.3] Specifies the amount of error weighting to apply to the loss weights.")]
-        public float weight_score_gamma
-        {
-            get { return m_fWeightScoreGamma; }
-            set { m_fWeightScoreGamma = value; }
+            get { return m_fWeightFrequencyErrorAlpha; }
+            set { m_fWeightFrequencyErrorAlpha = value;}
         }
 
         /// <summary>
@@ -206,9 +191,8 @@ namespace MyCaffe.param
             m_fMaxWeight = p.m_fMaxWeight;
             m_nWeightBucketCount = p.m_nWeightBucketCount;
             m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
-            m_fWeightFrequencyAlpha = p.m_fWeightFrequencyAlpha;
-            m_fWeightErrorBeta = p.m_fWeightErrorBeta;
-            m_fWeightScoreGamma = p.m_fWeightScoreGamma;
+            m_fWeightFrequencyErrorAlpha = p.m_fWeightFrequencyErrorAlpha;
+            m_nWeightMaxHistory = p.m_nWeightMaxHistory;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -231,9 +215,8 @@ namespace MyCaffe.param
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("mean_error_type", mean_error_type.ToString());
             rgChildren.Add("enable_weighted_loss", enable_weighted_loss.ToString());
-            rgChildren.Add("weight_frequency_alpha", weight_frequency_alpha.ToString());
-            rgChildren.Add("weight_error_beta", weight_error_beta.ToString());
-            rgChildren.Add("weight_score_gamma", weight_score_gamma.ToString());
+            rgChildren.Add("weight_frequency_error_alpha", weight_frequency_error_alpha.ToString());
+            rgChildren.Add("weight_max_history", weight_max_history.ToString());
             rgChildren.Add("max_weight", max_weight.ToString());
             rgChildren.Add("weight_bucket_count", weight_bucket_count.ToString());
             rgChildren.Add("weight_warmup_iterations", weight_warmup_iterations.ToString());
@@ -296,14 +279,11 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("enable_weighted_loss")) != null)
                 p.enable_weighted_loss = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("weight_frequency_alpha")) != null)
-                p.weight_frequency_alpha = float.Parse(strVal);
+            if ((strVal = rp.FindValue("weight_frequency_error_alpha")) != null)
+                p.weight_frequency_error_alpha = float.Parse(strVal);
 
-            if ((strVal = rp.FindValue("weight_error_beta")) != null)
-                p.weight_error_beta = float.Parse(strVal);
-
-            if ((strVal = rp.FindValue("weight_score_gamma")) != null)
-                p.weight_score_gamma = float.Parse(strVal);
+            if ((strVal = rp.FindValue("weight_max_history")) != null)
+                p.weight_max_history = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("max_weight")) != null)
                 p.max_weight = BaseParameter.ParseFloat(strVal);
