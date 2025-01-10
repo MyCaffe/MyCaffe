@@ -280,7 +280,7 @@ namespace MyCaffe.basecode
                     for (int i = 0; i < m_colTgtNeg.Count; i++)
                     {
                         Bucket bTgt = m_colTgtNeg[i];
-                        Bucket bPred = m_colPredNeg[i];
+                        Bucket bPred = m_colCorrectPredNeg[i];
                         double dfAcc = (double)bPred.Count / (double)bTgt.Count;
 
                         strDetails += "Bucket: " + m_colTgtNeg[i].ToString() + " Accuracy: " + dfAcc.ToString("P2") + Environment.NewLine;
@@ -292,7 +292,7 @@ namespace MyCaffe.basecode
                     for (int i = 0; i < m_colTgtPos.Count; i++)
                     {
                         Bucket bTgt = m_colTgtPos[i];
-                        Bucket bPred = m_colPredPos[i];
+                        Bucket bPred = m_colCorrectPredPos[i];
                         double dfAcc = (double)bPred.Count / (double)bTgt.Count;
 
                         strDetails += "Bucket: " + m_colTgtPos[i].ToString() + " Accuracy: " + dfAcc.ToString("P2") + Environment.NewLine;
