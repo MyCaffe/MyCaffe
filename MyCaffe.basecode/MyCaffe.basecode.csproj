@@ -78,7 +78,7 @@
     <Compile Include="NormalizedBBox.cs" />
     <Compile Include="param\BaseParameter.cs" />
     <Compile Include="Result.cs" />
-    <Compile Include="RollingBucketAccuracy.cs" />
+    <Compile Include="BucketAccuracy.cs" />
     <Compile Include="SimpleResult.cs" />
     <Compile Include="TarFile.cs" />
     <Compile Include="Valuemap.cs" />
