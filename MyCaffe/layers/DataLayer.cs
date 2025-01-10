@@ -63,13 +63,7 @@ namespace MyCaffe.layers
         private int m_nBatchCount = 0;
         private SimpleDatum[] m_rgDatum = null;
         private bool m_bUseScoreAsLabel = false;
-        private SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
-        private float? m_fScoreMean = null;
-        private float? m_fScoreStdev = null;
-        private float? m_fPosScoreMean = null;
-        private float? m_fPosScoreStdev = null;
-        private float? m_fNegScoreMean = null;
-        private float? m_fNegScoreStdev = null;
+        private NormalizedScore m_scoreNorm = null;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -137,65 +131,8 @@ namespace MyCaffe.layers
             if (m_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE1 ||
                 m_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2)
             {
-                m_bUseScoreAsLabel = true;
-                m_zscoreNormalization = p.data_param.score_as_label_normalization;
-                string strActiveScore = (p.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2) ? "2" : "";
-
-                if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE)
-                {
-                    int nSrcID = db.GetSourceID(m_param.data_param.source);
-                    string strMean = "Mean" + strActiveScore;
-                    string strStdDev = "StdDev" + strActiveScore;
-                    SimpleDatum sdMean = db.GetItemMean(nSrcID, strMean, strStdDev);
-
-                    if (sdMean != null)
-                    {
-                        m_fScoreMean = sdMean.GetParameter(strMean);
-                        if (!m_fScoreMean.HasValue)
-                            log.FAIL("The score mean '" + strMean + "' was not found!");
-
-                        m_fScoreStdev = sdMean.GetParameter(strStdDev);
-                        if (!m_fScoreStdev.HasValue)
-                            log.FAIL("The score stdev '" + strStdDev + "' was not found!");
-                    }
-                    else
-                    {
-                        log.FAIL("Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
-                    }
-                }
-
-                else if (m_zscoreNormalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
-                {
-                    int nSrcID = db.GetSourceID(m_param.data_param.source);
-                    string strPosMean = "Mean" + strActiveScore;
-                    string strPosStdDev = "StdDev" + strActiveScore;
-                    string strNegMean = "MeanNeg" + strActiveScore;
-                    string strNegStdDev = "StdDevNeg" + strActiveScore;
-                    SimpleDatum sdMean = db.GetItemMean(nSrcID, strPosMean, strPosStdDev, strNegMean, strNegStdDev);
-
-                    if (sdMean != null)
-                    {
-                        m_fPosScoreMean = sdMean.GetParameter(strPosMean);
-                        if (!m_fPosScoreMean.HasValue)
-                            log.FAIL("The score mean '" + strPosMean + "' was not found!");
-
-                        m_fPosScoreStdev = sdMean.GetParameter(strPosStdDev);
-                        if (!m_fPosScoreStdev.HasValue)
-                            log.FAIL("The score stdev '" + strPosStdDev + "' was not found!");
-
-                        m_fNegScoreMean = sdMean.GetParameter(strNegMean);
-                        if (!m_fNegScoreMean.HasValue)
-                            log.FAIL("The score mean '" + strNegMean + "' was not found!");
-
-                        m_fNegScoreStdev = sdMean.GetParameter(strNegStdDev);
-                        if (!m_fNegScoreStdev.HasValue)
-                            log.FAIL("The score stdev '" + strNegStdDev + "' was not found!");
-                    }
-                    else
-                    {
-                        log.FAIL("Could not find the image mean for data source '" + m_param.data_param.source + "'. The image mean is required for source as label normalization.");
-                    }
-                }
+                m_scoreNorm = new NormalizedScore(m_log, p.data_param.score_norm_param, m_bUseScoreAsLabel);
+                m_scoreNorm.Setup(db, p.data_param.source, m_param.data_param.label_type);
             }
         }
 
@@ -241,77 +178,11 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// If available, returns the score mean set when 'use_score_as_label' = true.
+        /// Returns the score normalizer used to normalize score values.
         /// </summary>
-        public float? score_mean
+        public NormalizedScore score_normalizer
         {
-            get { return m_fScoreMean; }
-        }
-
-        /// <summary>
-        /// If available, returns the score stdev set when 'use_score_as_label' = true.
-        /// </summary>
-        public float? score_stdev
-        {
-            get { return m_fScoreStdev; }
-        }
-
-        /// <summary>
-        /// If available, returns the pos score mean set when 'use_score_as_label' = true.
-        /// </summary>
-        public float? pos_score_mean
-        {
-            get { return m_fPosScoreMean; }
-        }
-
-        /// <summary>
-        /// If available, returns the pos score stdev set when 'use_score_as_label' = true.
-        /// </summary>
-        public float? pos_score_stdev
-        {
-            get { return m_fPosScoreStdev; }
-        }
-
-        /// <summary>
-        /// If available, returns the neg score mean set when 'use_score_as_label' = true.
-        /// </summary>
-        public float? neg_score_mean
-        {
-            get { return m_fNegScoreMean; }
-        }
-
-        /// <summary>
-        /// If available, returns the neg score stdev set when 'use_score_as_label' = true.
-        /// </summary>
-        public float? neg_score_stdev
-        {
-            get { return m_fNegScoreStdev; }
-        }
-
-        /// <summary>
-        /// Unnormalize the score based label - only applies when 'use_score_as_label' = true.
-        /// </summary>
-        /// <param name="fVal">Specifies the normalized score based label.</param>
-        /// <returns>The un-normalized score is returned.</returns>
-        public float UnNormalizeScoreLabel(float fVal)
-        {
-            if (m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
-            {
-                fVal *= m_fScoreStdev.Value;
-                fVal += m_fScoreMean.Value;
-            }
-            else if (fVal > 0 && m_fPosScoreMean.HasValue && m_fPosScoreStdev.HasValue && m_fPosScoreStdev.Value != 0)
-            {
-                fVal *= m_fPosScoreStdev.Value;
-                fVal += m_fPosScoreMean.Value;
-            }
-            else if (fVal < 0 && m_fNegScoreMean.HasValue && m_fNegScoreStdev.HasValue && m_fNegScoreStdev.Value != 0)
-            {
-                fVal *= m_fNegScoreStdev.Value;
-                fVal += m_fNegScoreMean.Value;
-            }
-
-            return fVal;
+            get { return m_scoreNorm; }
         }
 
         /// <summary>
@@ -1022,44 +893,7 @@ namespace MyCaffe.layers
                             if (layer_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE1 || 
                                 layer_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2)
                             {
-                                if (layer_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE1 && !datum.Score.HasValue)
-                                    m_log.FAIL("When 'label_type = SCORE1' each image must have a 'score' value.  An image without a 'score' was found.");
-                                if (layer_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2 && !datum.Score2.HasValue)
-                                    m_log.FAIL("When 'label_type = SCORE2' each image must have a 'score2' value.  An image without a 'score2' was found.");
-
-                                decimal? dScore = (m_param.data_param.label_type == DataParameter.LABEL_TYPE.SCORE1) ? datum.Score : datum.Score2;
-                                if (!dScore.HasValue)
-                                    m_log.FAIL("The score value '" + m_param.data_param.label_type.ToString() + "' is not set!");
-                                float fVal = (float)Convert.ChangeType(dScore.Value, typeof(float));
-                                if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE && m_fScoreMean.HasValue && m_fScoreStdev.HasValue && m_fScoreStdev.Value != 0)
-                                {
-                                    fVal -= m_fScoreMean.Value;
-                                    fVal /= m_fScoreStdev.Value;
-                                }
-                                else if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
-                                {
-                                    if (fVal > 0 && m_fPosScoreMean.HasValue && m_fPosScoreStdev.HasValue && m_fPosScoreStdev.Value != 0)
-                                    {
-                                        fVal -= m_fPosScoreMean.Value;
-                                        fVal /= m_fPosScoreStdev.Value;
-                                        // Ensure all positive values.
-                                        if (fVal < 0)
-                                            fVal = 0;
-                                    }
-                                    if (fVal < 0 && m_fNegScoreMean.HasValue && m_fNegScoreStdev.HasValue && m_fNegScoreStdev.Value != 0)
-                                    {
-                                        fVal -= m_fNegScoreMean.Value;
-                                        fVal /= m_fNegScoreStdev.Value;
-                                        // Ensure all negative values.
-                                        if (fVal > 0)
-                                            fVal = 0;
-                                    }
-                                }
-                                else if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT)
-                                {
-                                    fVal = (fVal + 1) * (float)layer_param.data_param.score_normalization_pos_shift_multiplier;
-                                }
-
+                                float fVal = m_scoreNorm.Normalize(datum);
                                 m_rgTopLabel[i] = (T)Convert.ChangeType(fVal, typeof(T));
                             }
                             else
@@ -1169,20 +1003,7 @@ namespace MyCaffe.layers
         /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
         public T Normalize(T fVal)
         {
-            if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.NONE)
-                return fVal;
-
-            float fVal1 = convertF(fVal);
-
-            switch (layer_param.data_param.score_as_label_normalization)
-            {
-                case SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT:
-                    fVal1 = (fVal1 + 1.0f) * (float)layer_param.data_param.score_normalization_pos_shift_multiplier;
-                    return convert(fVal1);
-
-                default:
-                    throw new NotImplementedException("The normalization type '" + layer_param.data_param.score_as_label_normalization.ToString() + "' is not currently implemented");
-            }
+            return convert(m_scoreNorm.Normalize(convertF(fVal)));
         }
 
         /// <summary>
@@ -1194,20 +1015,7 @@ namespace MyCaffe.layers
         /// <exception cref="NotImplementedException">An exception is thrown on all unsupported normalization methods.</exception>
         public T Unnormalize(T fVal)
         {
-            if (layer_param.data_param.score_as_label_normalization == SCORE_AS_LABEL_NORMALIZATION.NONE)
-                return fVal;
-
-            float fVal1 = convertF(fVal);
-
-            switch (layer_param.data_param.score_as_label_normalization)
-            {
-                case SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT:
-                    fVal1 = (fVal1 / (float)layer_param.data_param.score_normalization_pos_shift_multiplier) - 1.0f;
-                    return convert(fVal1);
-
-                default:
-                    throw new NotImplementedException("The normalization type '" + layer_param.data_param.score_as_label_normalization.ToString() + "' is not currently implemented");
-            }
+            return convert(m_scoreNorm.UnNormalize(convertF(fVal)));
         }
     }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.param
 {
@@ -55,8 +56,7 @@ namespace MyCaffe.param
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
-        SCORE_AS_LABEL_NORMALIZATION m_zscoreNormalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
-        double m_dfPositiveShiftMultiplier = 100.0;
+        NormalizationScoreParameter m_scoreNorm = new NormalizationScoreParameter();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -304,44 +304,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// When enabled, score as label normalization is attempted (default = false).
+        /// Specifies the score normalization parameter used to normalize score and score2 values, when enabled.
         /// </summary>
-        /// <remarks>
-        /// Score as label normalization requires that a Mean image exist in the dataset with the following
-        /// image parameters set in the database.
-        /// Z_SCORE
-        ///     'Mean' - specifies the mean score.
-        ///     'StdDev' - specifies the standard deviation of the score.
-        /// Z_SCORE_POSNEG
-        ///     'PosMean' - specifies the mean score used with positive numbers.
-        ///     'PosStdDev' - specifies the stddev score used with positive numbers.
-        ///     'NegMean' - specifies the mean score used with negative numbers.
-        ///     'NegStdDev' - specifies the stddev score used with negative numbers.
-        /// During normalization, these values are used to perform Z-score normalization where the mean score is
-        /// subtracted from each score then divided by the score standard deviation.
-        /// 
-        /// If these parameters or the mean image do not exist, a warning is produced and no normalization
-        /// takes place.
-        /// </remarks>
-        [Category("Labels"), Description("When enabled, score as label normalization is run using z-score normalization method specified (default = NONE).")]
-        public SCORE_AS_LABEL_NORMALIZATION score_as_label_normalization
+        [Category("Labels"), Description("Specifies the score normalization parameter used to normalize score and score2 values, when enabled.")]
+        public NormalizationScoreParameter score_norm_param
         {
-            get { return m_zscoreNormalization; }
-            set { m_zscoreNormalization = value; }
-        }
-
-        /// <summary>
-        /// Specifies the positive shift multiplier used when running the SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT
-        /// </summary>
-        /// <remarks>
-        /// Normalization function:
-        /// @f$ y = beta * (x + 1.0) @f$, beta default = 100
-        /// </remarks>
-        [Category("Labels"), Description("When using the POS_SHIFT label normalization, the mutlipier defines the Beta values in the normalization function x1 = Beta * (x + 1)")]
-        public double score_normalization_pos_shift_multiplier
-        {
-            get { return m_dfPositiveShiftMultiplier; }
-            set { m_dfPositiveShiftMultiplier = value; }
+            get { return m_scoreNorm; }
+            set { m_scoreNorm = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -381,8 +350,11 @@ namespace MyCaffe.param
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
-            m_zscoreNormalization = p.m_zscoreNormalization;
-            m_dfPositiveShiftMultiplier = p.m_dfPositiveShiftMultiplier;
+
+            if (p.score_norm_param != null)
+                m_scoreNorm = p.score_norm_param.Clone();
+            else
+                m_scoreNorm = null;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -459,8 +431,8 @@ namespace MyCaffe.param
 
             if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
             {
-                rgChildren.Add("score_as_label_normalization", m_zscoreNormalization.ToString());
-                rgChildren.Add("score_normalization_pos_shift", m_dfPositiveShiftMultiplier.ToString());
+                if (m_scoreNorm != null)
+                    rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
             }
 
             return new RawProto(strName, "", rgChildren);
@@ -587,33 +559,11 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("one_hot_label_size")) != null)
                 p.one_hot_label_size = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("score_as_label_normalization")) != null)
-            {
-                switch (strVal)
-                {
-                    case "NONE":
-                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.NONE;
-                        break;
-
-                    case "Z_SCORE":
-                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE;
-                        break;
-
-                    case "Z_SCORE_POSNEG":
-                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG;
-                        break;
-
-                    case "POS_SHIFT":
-                        p.score_as_label_normalization = SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT;
-                        break;
-
-                    default:
-                        throw new Exception("Unknown 'score_as_label_normalization' value " + strVal);
-                }
-            }
-
-            if ((strVal = rp.FindValue("score_normalization_pos_shift")) != null)
-                p.score_normalization_pos_shift_multiplier = double.Parse(strVal);
+            RawProto rpScoreNorm = rp.FindChild("score_norm_param");
+            if (rpScoreNorm != null)
+                p.score_norm_param = NormalizationScoreParameter.FromProto(rpScoreNorm);
+            else
+                p.score_norm_param = null;
 
             return p;
         }
