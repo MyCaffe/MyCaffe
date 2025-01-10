@@ -886,4 +886,68 @@ namespace MyCaffe.basecode
             return m_rgBuckets.GetEnumerator();
         }
     }
+
+    /// <summary>
+    /// Defines a rolling bucket collection that maintains the bucket statistics for a set of up to max buckets.  Once the max is reached, the oldest bucket collection is dropped.
+    /// </summary>
+    public class RollingBucketCollection
+    {
+        double m_dfMin;
+        double m_dfMax;
+        int m_nCount;
+        int m_nMax;
+        List<BucketCollection> m_rgBucketColletions = new List<BucketCollection>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fMin">Specifies the minimum of the range managed by all bucket collections.</param>
+        /// <param name="fMax">Specifies the maximum of the range managed by all bucket collections.</param>
+        /// <param name="nCount">Specifies the number of buckets in each bucket collection.</param>
+        /// <param name="nMax">Specifies the maximum number of bucket collections (default = 1000).</param>
+        public RollingBucketCollection(double fMin, double fMax, int nCount, int nMax = 1000)
+        {
+            m_nMax = nMax;
+            m_dfMin = fMin;
+            m_dfMax = fMax;
+            m_nCount = nCount;
+
+            m_rgBucketColletions.Add(new BucketCollection(fMin, fMax, nCount));
+        }
+
+        /// <summary>
+        /// Adds a new value to all bucket collections.
+        /// </summary>
+        /// <param name="dfVal">Specifies the value to add.</param>
+        /// <param name="bPeekOnly">Specifies to peek only and dont add the value, but return the index where the value would fall.</param>
+        /// <param name="rgReturns">Optionally, specifies a list of returns to associate with the bucket collection for which the value falls.</param>
+        /// <returns>The index of the bucket accpeting the value is returned.</returns>
+        public int Add(double dfVal, bool bPeekOnly = false, List<float> rgReturns = null)
+        {
+            if (bPeekOnly)
+                return m_rgBucketColletions[0].Add(dfVal);
+
+            for (int i = 0; i < m_rgBucketColletions.Count; i++)
+            {
+                m_rgBucketColletions[i].Add(dfVal, false, rgReturns);
+            }
+
+            BucketCollection col = new BucketCollection(m_dfMin, m_dfMax, m_nCount);
+            m_rgBucketColletions.Add(col);
+
+            if (m_rgBucketColletions.Count > m_nMax)
+                m_rgBucketColletions.RemoveAt(0);
+
+            return col.Add(dfVal);
+        }
+
+        /// <summary>
+        /// Return the oldest bucket collection.
+        /// </summary>
+        /// <returns>The bucket collection is returned.</returns>
+        public BucketCollection Current
+        {
+            get { return m_rgBucketColletions[0]; }
+        }
+    }
 }
