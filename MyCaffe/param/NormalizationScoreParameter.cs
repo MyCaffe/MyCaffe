@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the normalization object responsible for normalizing score values.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class NormalizationScoreParameter
     {
         bool m_bEnabled = false;
