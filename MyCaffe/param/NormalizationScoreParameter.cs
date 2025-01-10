@@ -95,6 +95,20 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Copies the specified source score normalization parameter to this one.
+        /// </summary>
+        /// <param name="pSrc">Specifies the source score normalization parameter.</param>
+        public void Copy(NormalizationScoreParameter pSrc)
+        {
+            if (pSrc == null)
+                return;
+
+            m_method = pSrc.m_method;
+            m_dfPositiveShiftMultiplier = pSrc.m_dfPositiveShiftMultiplier;
+            m_bEnabled = pSrc.m_bEnabled;
+        }
+
+        /// <summary>
         /// Convert the parameter into a RawProto.
         /// </summary>
         /// <param name="strName">Specifies the name to associate with the RawProto.</param>

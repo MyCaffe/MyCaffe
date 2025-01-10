@@ -350,11 +350,7 @@ namespace MyCaffe.param
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
-
-            if (p.score_norm_param != null)
-                m_scoreNorm = p.score_norm_param.Clone();
-            else
-                m_scoreNorm = null;
+            m_scoreNorm.Copy(p.score_norm_param);
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -429,11 +425,7 @@ namespace MyCaffe.param
             if (one_hot_label_size > 0)
                 rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
 
-            if (m_labelType == LABEL_TYPE.SCORE1 || m_labelType == LABEL_TYPE.SCORE2)
-            {
-                if (m_scoreNorm != null)
-                    rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
-            }
+            rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -562,8 +554,6 @@ namespace MyCaffe.param
             RawProto rpScoreNorm = rp.FindChild("score_norm_param");
             if (rpScoreNorm != null)
                 p.score_norm_param = NormalizationScoreParameter.FromProto(rpScoreNorm);
-            else
-                p.score_norm_param = null;
 
             return p;
         }
