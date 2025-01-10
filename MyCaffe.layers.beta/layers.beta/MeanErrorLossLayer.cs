@@ -41,6 +41,8 @@ namespace MyCaffe.layers.beta
         float m_fMax = -float.MaxValue;
         float[] m_rgWeights = null;
         float m_fAlpha;
+        float m_fBeta;
+        float m_fGamma;
 
         /// <summary>
         /// Constructor.
@@ -69,7 +71,9 @@ namespace MyCaffe.layers.beta
             m_blobWork.Name = m_param.name + " workspace";
             m_blobWeights = new Blob<T>(cuda, log);
             m_blobWeights.Name = m_param.name + " weights";
-            m_fAlpha = p.mean_error_loss_param.weight_frequency_error_alpha;
+            m_fAlpha = p.mean_error_loss_param.weight_frequency_alpha;
+            m_fBeta = p.mean_error_loss_param.weight_error_beta;
+            m_fGamma = p.mean_error_loss_param.weight_score_gamma;
         }
 
         /** @copydoc Layer::dispose */
@@ -165,14 +169,26 @@ namespace MyCaffe.layers.beta
                 Bucket bCor = m_bucketsCorrect[nBucketIdx];
 
                 // Calculate frequency weight with alpha
-                float fRangeWeight = 1.0f + (1.0f - m_fAlpha) * ((float)bMax.Count / bFreq.Count);
+                float fFrequencyWeight = 1.0f + m_fAlpha * ((float)bMax.Count / bFreq.Count);
 
-                // Calculate error weight with alpha
-                float fErrorWeight = 1.0f + m_fAlpha * (1.0f - ((float)bCor.Count / bFreq.Count));
+                // Calculate error weight with beta
+                float fErrorWeight = 1.0f + m_fBeta * (1.0f - ((float)bCor.Count / bFreq.Count));
+
+                // Calculate score weight with gamma
+                float fScoreWeight = 1;
 
                 // Combine weights multiplicatively
-                m_rgWeights[i] = fRangeWeight * fErrorWeight;
-                
+                m_rgWeights[i] = 1;
+
+                if (fFrequencyWeight > 0)
+                    m_rgWeights[i] *= fFrequencyWeight;
+
+                if (fErrorWeight > 0)
+                    m_rgWeights[i] *= fErrorWeight;
+
+                if (fScoreWeight > 0)
+                    m_rgWeights[i] *= fScoreWeight;
+
                 // Constrain weights to the max.
                 if (m_rgWeights[i] > m_param.mean_error_loss_param.max_weight)
                     m_rgWeights[i] = m_param.mean_error_loss_param.max_weight;
