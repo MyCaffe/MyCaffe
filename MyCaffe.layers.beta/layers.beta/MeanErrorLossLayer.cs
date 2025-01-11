@@ -37,10 +37,10 @@ namespace MyCaffe.layers.beta
         MEAN_ERROR m_meanType = MEAN_ERROR.MAE;
         Blob<T> m_blobWork;
         Blob<T> m_blobWeights;
-        float m_fMin = float.MaxValue;
-        float m_fMax = -float.MaxValue;
         float[] m_rgWeights = null;
         float m_fAlpha;
+        float m_fMin = float.MaxValue;
+        float m_fMax = -float.MaxValue;
 
         /// <summary>
         /// Constructor.
@@ -70,6 +70,12 @@ namespace MyCaffe.layers.beta
             m_blobWeights = new Blob<T>(cuda, log);
             m_blobWeights.Name = m_param.name + " weights";
             m_fAlpha = p.mean_error_loss_param.weight_frequency_error_alpha;
+
+            if (p.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT)
+            {
+                m_fMin = 0;
+                m_fMax = (float)(p.mean_error_loss_param.score_norm_param.pos_shift_mult * 2);
+            }
         }
 
         /** @copydoc Layer::dispose */
@@ -143,6 +149,9 @@ namespace MyCaffe.layers.beta
             if (m_rgWeights == null)
                 m_rgWeights = new float[nCount];
 
+            m_buckets.AddCollection();
+            m_bucketsCorrect.AddCollection();
+
             // Add values to buckets
             for (int i = 0; i < nCount; i++)
             {
@@ -169,12 +178,17 @@ namespace MyCaffe.layers.beta
                 Bucket bCor = m_bucketsCorrect.Current[nBucketIdx];
 
                 // Calculate frequency weight with alpha
-                float fFrequencyWeight = (1.0f + m_fAlpha) * ((float)bMax.Count / bFreq.Count);
+                float fFrequencyWeight = m_fAlpha * (1.0f - (bFreq.Count / (float)bMax.Count));
 
                 // Calculate error weight with beta
                 float fErrorWeight = (1.0f - m_fAlpha) * (1.0f - ((float)bCor.Count / bFreq.Count));
 
-                m_rgWeights[i] = fFrequencyWeight * fErrorWeight;
+                if (m_fAlpha == 1)
+                    m_rgWeights[i] = 1.0f + fFrequencyWeight;
+                else if (m_fAlpha == 0)
+                    m_rgWeights[i] = 1.0f + fErrorWeight;
+                else 
+                    m_rgWeights[i] = 1.0f + (fFrequencyWeight * fErrorWeight);
 
 
                 // Constrain weights to the max.
@@ -219,6 +233,7 @@ namespace MyCaffe.layers.beta
 
             // When using weighted loss, run warmup iterations to collect target values for bucketing
             if (m_param.mean_error_loss_param.enable_weighted_loss &&
+                m_param.mean_error_loss_param.score_norm_param.enabled && 
                 m_nCurrentIteration >= m_param.mean_error_loss_param.weight_warmup_iterations)
             {
                 if (m_buckets == null)
@@ -229,7 +244,8 @@ namespace MyCaffe.layers.beta
 
                 ComputeWeights(convertF(colBottom[0].update_cpu_data()), convertF(colBottom[1].update_cpu_data()), nCount);
             }
-            else
+            else if (m_param.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE || 
+                     m_param.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
             {
                 Tuple<double, double, double, double> minmax = colBottom[1].minmax_data(m_blobWork);
                 m_fMin = Math.Min(m_fMin, (float)minmax.Item1);
