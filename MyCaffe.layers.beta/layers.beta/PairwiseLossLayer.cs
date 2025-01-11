@@ -234,9 +234,16 @@ namespace MyCaffe.layers.beta
                 }
             }
 
-            // Normalize loss by total weight to prevent scaling issues
-            float fMeanLoss = fTotalWeight > 0.0f ? fTotalLoss / fTotalWeight : 0.0f;
-            colTop[0].SetData(fMeanLoss, 0);
+            // Update the internal blobs with computed values
+            m_blobDiffTrue.mutable_cpu_data = convert(rgfDiffTrue);
+            m_blobDiffPred.mutable_cpu_data = convert(rgfDiffPred);
+            m_blobLoss.mutable_cpu_data = convert(rgfLoss);
+            m_blobValidPairs.mutable_cpu_data = convert(rgfValidPairs);
+            m_blobWeights.mutable_cpu_data = convert(rgfWeights);
+
+            // Normalize the loss by total weight to match test expectations
+            float fNormalizedLoss = (fTotalWeight > 0) ? fTotalLoss / fTotalWeight : 0.0f;
+            colTop[0].SetData(fNormalizedLoss, 0);
         }
 
         /// <summary>
@@ -276,29 +283,48 @@ namespace MyCaffe.layers.beta
             float[] rgfWeights = convertF(m_blobWeights.mutable_cpu_data);
             float[] rgfGrad = convertF(colBottom[0].mutable_cpu_diff);
 
+            // Get the loss weight from the top gradient
             float fLossWeight = convertF(colTop[0].GetDiff(0));
 
-            Array.Clear(rgfGrad, 0, colBottom[0].count());
-
+            // Calculate total weight for normalization
+            float fTotalWeight = 0.0f;
             for (int i = 0; i < m_nBatchSize; i++)
             {
                 for (int j = 0; j < m_nBatchSize; j++)
                 {
                     if (i == j) continue;
-
                     int idx = i * m_nBatchSize + j;
                     if (rgfValidPairs[idx] > 0)
                     {
-                        float fTrueDiff = rgfDiffTrue[idx];
-                        float fPredDiff = rgfDiffPred[idx];
-                        float fWeight = rgfWeights[idx];
+                        fTotalWeight += rgfWeights[idx];
+                    }
+                }
+            }
 
-                        if (m_dfMargin - Math.Sign(fTrueDiff) * fPredDiff > 0)
+            // Initialize gradients to zero
+            Array.Clear(rgfGrad, 0, colBottom[0].count());
+
+            if (fTotalWeight > 0)
+            {
+                for (int i = 0; i < m_nBatchSize; i++)
+                {
+                    for (int j = 0; j < m_nBatchSize; j++)
+                    {
+                        if (i == j) continue;
+                        int idx = i * m_nBatchSize + j;
+                        if (rgfValidPairs[idx] > 0)
                         {
-                            // Weight gradients by return difference magnitude
-                            float fGradSign = Math.Sign(fTrueDiff) * fWeight * fLossWeight;
-                            rgfGrad[i] = rgfGrad[i] - fGradSign;
-                            rgfGrad[j] = rgfGrad[j] + fGradSign;
+                            float fTrueDiff = rgfDiffTrue[idx];
+                            float fPredDiff = rgfDiffPred[idx];
+                            float fWeight = rgfWeights[idx];
+
+                            if (m_dfMargin - Math.Sign(fTrueDiff) * fPredDiff > 0)
+                            {
+                                // Apply gradient with weight, loss weight, and normalization
+                                float fGradSign = Math.Sign(fTrueDiff) * fWeight * fLossWeight / fTotalWeight;
+                                rgfGrad[i] -= fGradSign;
+                                rgfGrad[j] += fGradSign;
+                            }
                         }
                     }
                 }

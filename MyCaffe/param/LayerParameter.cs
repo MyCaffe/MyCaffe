@@ -1631,6 +1631,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("x");
                     expected_bottom.Add("trgt");
                     expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
                     m_rgLayerParameters[lt] = new PairwiseLossParameter();
                     break;
 
