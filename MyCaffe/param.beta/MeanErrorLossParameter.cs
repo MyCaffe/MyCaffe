@@ -37,6 +37,8 @@ namespace MyCaffe.param
         float m_fBelowPenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesBelowThreshold = null;
 
+        NormalizationScoreParameter m_scoreNormParam = new NormalizationScoreParameter();
+
         /** @copydoc LayerParameterBase */
         public MeanErrorLossParameter()
         {
@@ -93,6 +95,16 @@ namespace MyCaffe.param
         {
             get { return m_fWeightFrequencyErrorAlpha; }
             set { m_fWeightFrequencyErrorAlpha = value;}
+        }
+
+        /// <summary>
+        /// Specifies the score normalization parameter used to normalize score and score2 values, when enabled.
+        /// </summary>
+        [Category("Labels"), Description("Specifies the score normalization parameter used to normalize score and score2 values, when enabled.")]
+        public NormalizationScoreParameter score_norm_param
+        {
+            get { return m_scoreNormParam; }
+            set { m_scoreNormParam = value; }
         }
 
         /// <summary>
@@ -193,6 +205,7 @@ namespace MyCaffe.param
             m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
             m_fWeightFrequencyErrorAlpha = p.m_fWeightFrequencyErrorAlpha;
             m_nWeightMaxHistory = p.m_nWeightMaxHistory;
+            m_scoreNormParam.Copy(p.score_norm_param);
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -232,6 +245,8 @@ namespace MyCaffe.param
                 rgChildren.Add("penalize_values_below_threshold", penalize_values_below_threshold.Value.ToString());
                 rgChildren.Add("below_penalty_portion_lambda", below_penalty_portion_lambda.ToString());
             }
+
+            rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -293,6 +308,10 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("weight_warmup_iterations")) != null)
                 p.weight_warmup_iterations = int.Parse(strVal);
+
+            RawProto rpScoreNorm = rp.FindChild("score_norm_param");
+            if (rpScoreNorm != null)
+                p.score_norm_param = NormalizationScoreParameter.FromProto(rpScoreNorm);
 
             return p;
         }
