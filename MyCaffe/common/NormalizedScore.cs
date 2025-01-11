@@ -104,7 +104,7 @@ namespace MyCaffe.basecode
         /// <param name="lblType">Specifies the label type that indicates whether to use SCORE1 or SCORE2 as the primary score.</param>
         public void Setup(IXDatabaseBase db, string strSourceName, LayerParameterBase.LABEL_TYPE lblType)
         {
-            if (m_labelType != LayerParameterBase.LABEL_TYPE.SCORE1 && m_labelType != LayerParameterBase.LABEL_TYPE.SCORE2)
+            if (lblType != LayerParameterBase.LABEL_TYPE.SCORE1 && lblType != LayerParameterBase.LABEL_TYPE.SCORE2)
             {
                 m_log.WriteLine("WARNING: Score based normalization disabled as label type '" + m_labelType.ToString() + "' is not supported.");
                 m_bEnabled = false;
