@@ -56,7 +56,7 @@ namespace MyCaffe.param
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
-        NormalizationScoreParameter m_scoreNorm = new NormalizationScoreParameter();
+        NormalizationScoreParameter m_scoreNormParam = new NormalizationScoreParameter();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -309,8 +309,8 @@ namespace MyCaffe.param
         [Category("Labels"), Description("Specifies the score normalization parameter used to normalize score and score2 values, when enabled.")]
         public NormalizationScoreParameter score_norm_param
         {
-            get { return m_scoreNorm; }
-            set { m_scoreNorm = value; }
+            get { return m_scoreNormParam; }
+            set { m_scoreNormParam = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -350,7 +350,7 @@ namespace MyCaffe.param
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
-            m_scoreNorm.Copy(p.score_norm_param);
+            m_scoreNormParam.Copy(p.score_norm_param);
         }
 
         /** @copydoc LayerParameterBase::Clone */
