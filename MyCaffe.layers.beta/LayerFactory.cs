@@ -82,6 +82,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.MODEL_DATA:
                     return new ModelDataLayer<double>(cuda, log, p, db, evtCancel);
 
+                case LayerParameter.LayerType.PAIRWISE_LOSS:
+                    return new PairwiseLossLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.SPATIAL_ATTENTION:
                     return new SpatialAttentionLayer<double>(cuda, log, p);
 
@@ -189,6 +192,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.MODEL_DATA:
                     return new ModelDataLayer<float>(cuda, log, p, db, evtCancel);
+
+                case LayerParameter.LayerType.PAIRWISE_LOSS:
+                    return new PairwiseLossLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.SPATIAL_ATTENTION:
                     return new SpatialAttentionLayer<float>(cuda, log, p);

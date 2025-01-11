@@ -454,6 +454,10 @@ namespace MyCaffe.param
             /// </summary>
             ONEHOT,
             /// <summary>
+            /// Initializes a parameter for the PairwiseLossLayer.
+            /// </summary>
+            PAIRWISE_LOSS,
+            /// <summary>
             /// Initializes a parameter for the ParameterLayer.
             /// </summary>
             PARAMETER,
@@ -1623,6 +1627,13 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new Normalization2Parameter();
                     break;
 
+                case LayerType.PAIRWISE_LOSS:
+                    expected_bottom.Add("x");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[lt] = new PairwiseLossParameter();
+                    break;
+
                 case LayerType.PARAMETER:
                     expected_bottom.Add("input");
                     expected_top.Add("param");
@@ -2398,6 +2409,15 @@ namespace MyCaffe.param
         {
             get { return (MultiHeadAttentionInterpParameter)m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION_INTERP]; }
             set { m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION_INTERP] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.PAIRWISE_LOSS
+        /// </summary>
+        public PairwiseLossParameter pairwise_loss_param
+        {
+            get { return (PairwiseLossParameter)m_rgLayerParameters[LayerType.PAIRWISE_LOSS]; }
+            set { m_rgLayerParameters[LayerType.PAIRWISE_LOSS] = value; }
         }
 
         /// <summary>
@@ -3661,6 +3681,9 @@ namespace MyCaffe.param
                 case LayerType.NORMALIZATION2:
                     return "Normalization2";
 
+                case LayerType.PAIRWISE_LOSS:
+                    return "PairwiseLoss";
+
                 case LayerType.PARAMETER:
                     return "Parameter";
 
@@ -3976,6 +3999,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mish_param, "mish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(pairwise_loss_param, "pairwise_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(serf_param, "serf_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
@@ -4348,6 +4372,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization1_param = Normalization1Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("pairwise_loss_param")) != null)
+                p.pairwise_loss_param = PairwiseLossParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("serf_param")) != null)
                 p.serf_param = SerfParameter.FromProto(rpp);
@@ -4855,6 +4882,10 @@ namespace MyCaffe.param
                 case "normalize":
                 case "normalization2":
                     return LayerType.NORMALIZATION2;
+
+                case "pairwise_loss":
+                case "pairwiseloss":
+                    return LayerType.PAIRWISE_LOSS;
 
                 case "parameter":
                     return LayerType.PARAMETER;
