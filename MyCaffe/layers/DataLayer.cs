@@ -62,7 +62,6 @@ namespace MyCaffe.layers
         private int m_nIteration = 0;
         private int m_nBatchCount = 0;
         private SimpleDatum[] m_rgDatum = null;
-        private bool m_bUseScoreAsLabel = false;
         private NormalizedScore m_scoreNorm = null;
 
         /// <summary>
@@ -131,7 +130,7 @@ namespace MyCaffe.layers
             if (m_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE1 ||
                 m_param.data_param.label_type == LayerParameterBase.LABEL_TYPE.SCORE2)
             {
-                m_scoreNorm = new NormalizedScore(m_log, p.data_param.score_norm_param, m_bUseScoreAsLabel);
+                m_scoreNorm = new NormalizedScore(m_log, p.data_param.score_norm_param, true);
                 m_scoreNorm.Setup(db, p.data_param.source, m_param.data_param.label_type);
             }
         }
