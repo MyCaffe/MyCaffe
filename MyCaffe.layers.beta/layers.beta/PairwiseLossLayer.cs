@@ -19,27 +19,28 @@ namespace MyCaffe.layers.beta
     /// </summary>
     /// <remarks>
     /// References:
-    /// @see [Deep Portfolio Management Using Deep Learning](https://arxiv.org/abs/2112.06313) by Yang Wang et al., 2021.
-    /// Discusses the application of deep learning to portfolio optimization with an emphasis on ranking-based approaches.
+    /// @see [Deep Portfolio Management Using Deep Learning](https://arxiv.org/abs/2405.01604) by Ashish Anil Pawar, Vishnureddy Prashant Muskawar, Ritesh Tiku., 2024.
+    /// The paper proposes a Deep Reinforcement Learning (DRL) approach for portfolio management that directly learns to allocate weights to different assets 
+    /// (both long and short positions) and shows it can outperform traditional portfolio management methods in terms of risk-adjusted returns.
     /// 
     /// @see [Deep Learning for Portfolio Optimization](https://arxiv.org/abs/2005.13665) by Zhang et al., 2020.
     /// Introduces weighted ranking losses for portfolio selection.
     /// 
-    /// @see [Learning to Trade with Deep Actor Networks](https://arxiv.org/abs/2107.08317) by Wang et al., 2021.
-    /// Details ranking-based approaches for trading strategy development.
+    /// @see [From RankNet to LambdaRank to LambdaMART:AnOverview](https://www.microsoft.com/en-us/research/uploads/prod/2016/02/MSR-TR-2010-82.pdf) by Burges, 2016.
+    /// This technical report provides a comprehensive explanation of three related learning-to-rank algorithms - RankNet, LambdaRank, and LambdaMART - which 
+    /// progressively improved ranking performance by introducing the novel concept of directly specifying gradients rather than deriving them from cost functions.
     /// 
-    /// @see [RankNet, LambdaRank and LambdaMART: An Overview](https://www.microsoft.com/en-us/research/publication/ranknet-lambdarank-and-lambdamart-an-overview/) by Burges, 2010.
-    /// Foundational work on pairwise ranking losses and their gradients.
-    /// 
-    /// @see [ListNet: Learning to Rank Using Neural Networks](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2007-40.pdf) by Cao et al., 2007.
-    /// Classic paper introducing neural network-based ranking methods.
+    /// @see [Learning to Rank: From Pairwise Approach to Listwise Approach](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2007-40.pdf) by Cao et al., 2007.
+    /// This paper proposes a "listwise" approach to learning-to-rank that treats entire lists of items as training instances rather than pairs of items, introducing probability 
+    /// models and neural networks to define loss functions that outperform traditional pairwise ranking methods.
     /// 
     /// Implementation References:
     /// @see [LightGBM Ranking Implementation](https://github.com/microsoft/LightGBM/blob/master/src/objective/rank_objective.hpp)
     /// Efficient C++ implementation of ranking losses.
     /// 
     /// @see [FastAI Pairwise Ranking](https://github.com/fastai/fastai/blob/master/fastai/losses.py)
-    /// Python implementation of pairwise ranking losses with emphasis on efficiency.    /// </remarks>
+    /// Python implementation of pairwise ranking losses with emphasis on efficiency.    
+    /// </remarks>
     public class PairwiseLossLayer<T> : LossLayer<T>
     {
         List<int> m_rgShape = new List<int>(4);
