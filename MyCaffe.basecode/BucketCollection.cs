@@ -925,20 +925,28 @@ namespace MyCaffe.basecode
         public int Add(double dfVal, bool bPeekOnly = false, List<float> rgReturns = null)
         {
             if (bPeekOnly)
-                return m_rgBucketColletions[0].Add(dfVal);
+                return m_rgBucketColletions[0].Add(dfVal, true);
+
+            int? nIdx = null;
 
             for (int i = 0; i < m_rgBucketColletions.Count; i++)
             {
-                m_rgBucketColletions[i].Add(dfVal, false, rgReturns);
+                int nIdx1 = m_rgBucketColletions[i].Add(dfVal, false, rgReturns);
+                if (!nIdx.HasValue)
+                    nIdx = nIdx1;
             }
 
-            BucketCollection col = new BucketCollection(m_dfMin, m_dfMax, m_nCount);
-            m_rgBucketColletions.Add(col);
+            return nIdx.Value;
+        }
 
+        /// <summary>
+        /// Add a new bucket collection to the list.
+        /// </summary>
+        public void AddCollection()
+        {
+            m_rgBucketColletions.Add(new BucketCollection(m_dfMin, m_dfMax, m_nCount));
             if (m_rgBucketColletions.Count > m_nMax)
                 m_rgBucketColletions.RemoveAt(0);
-
-            return col.Add(dfVal);
         }
 
         /// <summary>
