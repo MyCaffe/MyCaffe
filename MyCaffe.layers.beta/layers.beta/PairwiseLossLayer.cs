@@ -50,8 +50,8 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobLoss;
         Blob<T> m_blobWeights;       // Stores importance weights for each pair
         double m_dfMargin;
-        readonly int m_nBatchSize;
-        readonly int m_nValidPairsPerBatch;
+        int m_nBatchSize;
+        int m_nValidPairsPerBatch;
 
         /// <summary>
         /// The constructor.
@@ -150,8 +150,23 @@ namespace MyCaffe.layers.beta
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
+
+            m_nBatchSize = colBottom[0].num;
             m_nOuterNum = m_nBatchSize;
             m_nInnerNum = colBottom[0].count(1);
+
+            // Reset internal blobs
+            List<int> pairShape = new List<int> { m_nBatchSize, m_nBatchSize };
+            m_blobDiffTrue.Reshape(pairShape);
+            m_blobDiffPred.Reshape(pairShape);
+            m_blobValidPairs.Reshape(pairShape);
+            m_blobLoss.Reshape(pairShape);
+            m_blobWeights.Reshape(pairShape);
+
+            // Loss is a scalar
+            List<int> topShape = new List<int> { 1 };
+            colTop[0].Reshape(topShape);
+            colTop[0].blob_type = BLOB_TYPE.LOSS;
         }
 
         /// <summary>
