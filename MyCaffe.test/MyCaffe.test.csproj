@@ -116,6 +116,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestPairwiseAccuracy.cs" />
     <Compile Include="TestPairwiseLossLayer.cs" />
     <Compile Include="TestSpatialAttentionLayer.cs" />
     <Compile Include="TestExtensionLlm.cs" />

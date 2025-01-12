@@ -454,6 +454,10 @@ namespace MyCaffe.param
             /// </summary>
             ONEHOT,
             /// <summary>
+            /// Initializes a parameter for the AccuracyPairwiseLayer.
+            /// </summary>
+            PAIRWISE_ACCURACY,
+            /// <summary>
             /// Initializes a parameter for the PairwiseLossLayer.
             /// </summary>
             PAIRWISE_LOSS,
@@ -1625,6 +1629,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
                     m_rgLayerParameters[lt] = new Normalization2Parameter();
+                    break;
+
+                case LayerType.PAIRWISE_ACCURACY:
+                    expected_bottom.Add("x");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("accuracy");
                     break;
 
                 case LayerType.PAIRWISE_LOSS:
@@ -3682,6 +3692,9 @@ namespace MyCaffe.param
                 case LayerType.NORMALIZATION2:
                     return "Normalization2";
 
+                case LayerType.PAIRWISE_ACCURACY:
+                    return "PairwiseAccuracy";
+
                 case LayerType.PAIRWISE_LOSS:
                     return "PairwiseLoss";
 
@@ -4883,6 +4896,10 @@ namespace MyCaffe.param
                 case "normalize":
                 case "normalization2":
                     return LayerType.NORMALIZATION2;
+
+                case "pairwise_accuracy":
+                case "pairwiseaccuracy":
+                    return LayerType.PAIRWISE_ACCURACY;
 
                 case "pairwise_loss":
                 case "pairwiseloss":

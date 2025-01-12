@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
+    <Compile Include="layers.beta\PairwiseAccuracyLayer.cs" />
     <Compile Include="layers.beta\AccuracyRegressionLayer.cs" />
     <Compile Include="layers.beta\PairwiseLossLayer.cs" />
     <Compile Include="layers.beta\SpatialAttentionLayer.cs" />
