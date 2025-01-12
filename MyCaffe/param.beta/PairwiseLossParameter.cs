@@ -37,7 +37,6 @@ namespace MyCaffe.param
     public class PairwiseLossParameter : LayerParameterBase
     {
         double m_dfMargin = 1.0;
-        int m_nBatchSize = 32;
         bool m_bWeightByReturnDiff = true;
         double m_dfMinReturnDiff = 1e-6;
 
@@ -56,16 +55,6 @@ namespace MyCaffe.param
         {
             get { return m_dfMargin; }
             set { m_dfMargin = value; }
-        }
-
-        /// <summary>
-        /// Specifies the fixed batch size used for training (default = 32).
-        /// </summary>
-        [Description("Specifies the fixed batch size used for training (default = 32).")]
-        public int batch_size
-        {
-            get { return m_nBatchSize; }
-            set { m_nBatchSize = value; }
         }
 
         /// <summary>
@@ -113,7 +102,6 @@ namespace MyCaffe.param
         {
             PairwiseLossParameter p = (PairwiseLossParameter)src;
             m_dfMargin = p.m_dfMargin;
-            m_nBatchSize = p.m_nBatchSize;
             m_bWeightByReturnDiff = p.m_bWeightByReturnDiff;
             m_dfMinReturnDiff = p.m_dfMinReturnDiff;
         }
@@ -139,7 +127,6 @@ namespace MyCaffe.param
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("margin", margin.ToString());
-            rgChildren.Add("batch_size", batch_size.ToString());
             rgChildren.Add("weight_by_return_diff", weight_by_return_diff.ToString());
             rgChildren.Add("min_return_diff", min_return_diff.ToString());
 
@@ -158,9 +145,6 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("margin")) != null)
                 p.margin = ParseDouble(strVal);
-
-            if ((strVal = rp.FindValue("batch_size")) != null)
-                p.batch_size = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("weight_by_return_diff")) != null)
                 p.weight_by_return_diff = bool.Parse(strVal);

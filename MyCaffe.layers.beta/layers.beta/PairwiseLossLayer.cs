@@ -64,7 +64,6 @@ namespace MyCaffe.layers.beta
         {
             m_type = LayerParameter.LayerType.PAIRWISE_LOSS;
             m_dfMargin = p.pairwise_loss_param.margin;
-            m_nBatchSize = p.pairwise_loss_param.batch_size;
             m_nValidPairsPerBatch = m_nBatchSize * (m_nBatchSize - 1);
 
             m_blobDiffTrue = new Blob<T>(cuda, log);
@@ -139,7 +138,6 @@ namespace MyCaffe.layers.beta
             base.LayerSetUp(colBottom, colTop);
             m_log.CHECK_EQ(colBottom.Count, 2, "There should be two inputs: predictions and target values.");
             m_log.CHECK_EQ(colBottom[0].count(), colBottom[1].count(), "The inputs must have the same count.");
-            m_log.CHECK_EQ(colBottom[0].num, m_nBatchSize, "Input batch size must match configured batch size.");
 
             colTop[0].Reshape(m_rgShape);
         }

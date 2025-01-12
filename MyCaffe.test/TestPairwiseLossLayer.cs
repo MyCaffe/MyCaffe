@@ -108,7 +108,6 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_LOSS);
             p.pairwise_loss_param.margin = MARGIN;
-            p.pairwise_loss_param.batch_size = BATCH_SIZE;
             p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
@@ -165,7 +164,6 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_LOSS);
             p.pairwise_loss_param.margin = MARGIN;
-            p.pairwise_loss_param.batch_size = BATCH_SIZE;
             p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
             p.loss_weight.Add(1.0);
 
