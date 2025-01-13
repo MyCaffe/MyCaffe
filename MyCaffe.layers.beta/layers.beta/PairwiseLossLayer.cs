@@ -256,6 +256,11 @@ namespace MyCaffe.layers.beta
 
             // Normalize the loss by total weight to match test expectations
             float fNormalizedLoss = (fTotalWeight > 0) ? fTotalLoss / fTotalWeight : 0.0f;
+
+            if (m_param.loss_param.loss_scale != 1.0 &&
+                m_param.loss_param.loss_scale != 0.0)
+                fNormalizedLoss *= (float)m_param.loss_param.loss_scale;
+
             colTop[0].SetData(fNormalizedLoss, 0);
         }
 
@@ -298,6 +303,10 @@ namespace MyCaffe.layers.beta
 
             // Get the loss weight from the top gradient
             float fLossWeight = convertF(colTop[0].GetDiff(0));
+
+            if (m_param.loss_param.loss_scale != 1.0 &&
+                m_param.loss_param.loss_scale != 0.0)
+                fLossWeight *= (float)m_param.loss_param.loss_scale;
 
             // Calculate total weight for normalization
             float fTotalWeight = 0.0f;
