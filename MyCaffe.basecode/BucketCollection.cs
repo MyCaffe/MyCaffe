@@ -34,6 +34,14 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the returns if any exist.
+        /// </summary>
+        public List<List<float>> Returns
+        {
+            get { return m_rgReturns; }
+        }
+
+        /// <summary>
         /// Get the average returns at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the return index to average.</param>
