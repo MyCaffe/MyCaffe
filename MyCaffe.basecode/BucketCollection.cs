@@ -343,6 +343,14 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Return the list of buckets.
+        /// </summary>
+        public List<Bucket> Buckets
+        {
+            get { return m_rgBuckets; }
+        }
+
+        /// <summary>
         /// Create a new normalized bucket collection.
         /// </summary>
         /// <param name="nMaxHt">Specifies the max count to use.</param>
