@@ -42,6 +42,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Add the returns from one bucket to another.
+        /// </summary>
+        /// <param name="b"></param>
+        public void AddReturns(Bucket b)
+        {
+            m_rgReturns.AddRange(b.Returns);
+        }
+
+        /// <summary>
         /// Get the average returns at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the return index to average.</param>
@@ -348,6 +357,21 @@ namespace MyCaffe.basecode
         public List<Bucket> Buckets
         {
             get { return m_rgBuckets; }
+        }
+
+        /// <summary>
+        /// Add the returns from one BucketCollection to another.
+        /// </summary>
+        /// <param name="col">Specifies the BucketCollection with returns to add.</param>
+        public void AddRetrns(BucketCollection col)
+        {
+            for (int i = 0; i < m_rgBuckets.Count; i++)
+            {
+                Bucket b = m_rgBuckets[i];
+                Bucket b1 = col.m_rgBuckets[i];
+
+                b.AddReturns(b1);
+            }
         }
 
         /// <summary>
