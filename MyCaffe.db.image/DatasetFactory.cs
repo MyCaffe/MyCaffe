@@ -2212,13 +2212,11 @@ namespace MyCaffe.db.image
         /// <returns>The SimpleDatum containing the image is returned.</returns>
         public SimpleDatum LoadImage(int nImageId, int nSrcId = 0)
         {
-            if (nSrcId == 0)
-            {
-                if (m_db.CurrentSource == null)
-                    throw new Exception("You must open a data source first!");
+            if (m_db.CurrentSource == null)
+                throw new Exception("You must open a data source first!");
 
+            if (nSrcId == 0)
                 nSrcId = m_db.CurrentSource.ID;
-            }
 
             RawImage img = m_db.GetRawImage(nImageId);
             if (img == null)
