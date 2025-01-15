@@ -363,7 +363,7 @@ namespace MyCaffe.basecode
         /// Add the returns from one BucketCollection to another.
         /// </summary>
         /// <param name="col">Specifies the BucketCollection with returns to add.</param>
-        public void AddRetrns(BucketCollection col)
+        public void AddReturns(BucketCollection col)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
             {
