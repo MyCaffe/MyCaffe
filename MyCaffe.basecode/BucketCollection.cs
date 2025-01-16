@@ -47,6 +47,7 @@ namespace MyCaffe.basecode
         /// <param name="b"></param>
         public void AddReturns(Bucket b)
         {
+            m_nCount += b.Count;
             m_rgReturns.AddRange(b.Returns);
         }
 
