@@ -57,6 +57,7 @@ namespace MyCaffe.param
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
         NormalizationScoreParameter m_scoreNormParam = new NormalizationScoreParameter();
+        bool m_bTimeAlign = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -313,6 +314,16 @@ namespace MyCaffe.param
             set { m_scoreNormParam = value; }
         }
 
+        /// <summary>
+        /// Enable time alignment where all images are aligned in time when enabled (default = false).
+        /// </summary>
+        [Description("Enable time alignment where all images are aligned in time when enabled (default = false).")]
+        public bool time_align
+        {
+            get { return m_bTimeAlign; }
+            set { m_bTimeAlign = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -351,6 +362,7 @@ namespace MyCaffe.param
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
             m_scoreNormParam.Copy(p.score_norm_param);
+            m_bTimeAlign = p.m_bTimeAlign;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -426,6 +438,8 @@ namespace MyCaffe.param
                 rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
 
             rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
+
+            rgChildren.Add("time_align", time_align.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -554,6 +568,9 @@ namespace MyCaffe.param
             RawProto rpScoreNorm = rp.FindChild("score_norm_param");
             if (rpScoreNorm != null)
                 p.score_norm_param = NormalizationScoreParameter.FromProto(rpScoreNorm);
+
+            if ((strVal = rp.FindValue("time_align")) != null)
+                p.time_align = bool.Parse(strVal);
 
             return p;
         }

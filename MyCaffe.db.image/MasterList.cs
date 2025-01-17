@@ -364,7 +364,8 @@ namespace MyCaffe.db.image
         {
             if (m_imgMean != null || bQueryOnly)
             {
-                loadParameters(m_imgMean, rgParams);
+                if (m_imgMean != null)
+                    loadParameters(m_imgMean, rgParams);
                 return m_imgMean;
             }
 
@@ -554,6 +555,54 @@ namespace MyCaffe.db.image
                 iQuery = iQuery.Where(p => p.Description == strFilterVal);
 
             return iQuery;
+        }
+
+        /// <summary>
+        /// Get the image based on its DbItem.
+        /// </summary>
+        /// <param name="item1">Specifies the DbItem to load.</param>
+        /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria along with the image.</param>
+        /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
+        /// <param name="loadMethod">Specifies the image loading method used.</param>
+        /// <returns>If found, the image is returned, otherwise it is loaded then returned.</returns>
+        public SimpleDatum GetImage(DbItem item1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
+        {
+            SimpleDatum sd = m_rgImages.FirstOrDefault(p => p != null && p.Index == item1.Index);
+
+            if (sd != null)
+                return sd;
+
+            sd = directLoadImage(item1.Index);
+            if (sd == null)
+                return sd;
+
+            int? nFirstNullIdx = m_rgImages.Select((item, index) => new { item, index })
+                                            .FirstOrDefault(x => x.item == null)
+                                            ?.index;
+
+            if (nFirstNullIdx != null)
+            {
+                m_rgImages[nFirstNullIdx.Value] = sd;
+            }
+            else
+            {
+                List<int> rgIdx = m_rgImages.Select((item, index) => new { item, index })
+                                               .Where(x => x.item.Label == item1.Label)
+                                               .Select(x => x.index)
+                                               .ToList();
+                if (rgIdx.Count > 0)
+                {
+                    int nIdx = m_random.Next(rgIdx.Count);
+                    nIdx = rgIdx[nIdx];
+                    m_rgImages[nIdx] = sd;
+                }
+                else
+                {
+                    Trace.WriteLine("Image not replaced in master dataset - could not find a replacement slot.");
+                }
+            }
+
+            return sd;
         }
 
         /// <summary>

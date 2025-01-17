@@ -140,10 +140,34 @@ namespace MyCaffe.data
         /// <param name="nLabel">Optionally, specifies a label for which the cursor should query from.</param>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
         /// <param name="imgSel">Optionally, specifies the image selection method (default = null).</param>
+        /// <param name="bThrowExceptions">Optinoally, specifies to throw exceptions on error.</param>
         /// <returns>The Datum retrieved is returned.</returns>
         public SimpleDatum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, DB_ITEM_SELECTION_METHOD? imgSel = null, bool bThrowExceptions = true)
         {
             SimpleDatum sd = m_db.QueryItem(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false, bThrowExceptions);
+            if (sd == null)
+                return null;
+
+            if (m_log != null)
+                m_log.WriteLine(m_strSrc + ": Idx = " + sd.Index.ToString() + " Label = " + sd.Label.ToString());
+
+            m_transformer.TransformLabel(sd);
+
+            return sd;
+        }
+
+        /// <summary>
+        /// Retrieve the Datum at the current cursor location within the data source at a specific point in time.
+        /// </summary>
+        /// <param name="dt">Specifies the alignment in time to use.</param>
+        /// <param name="nLabel">Optionally, specifies a label for which the cursor should query from.</param>
+        /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
+        /// <param name="imgSel">Optionally, specifies the image selection method (default = null).</param>
+        /// <param name="bThrowExceptions">Optinoally, specifies to throw exceptions on error.</param>
+        /// <returns>The Datum retrieved is returned.</returns>
+        public SimpleDatum GetValue(DateTime dt, int? nLabel = null, bool bLoadDataCriteria = false, DB_ITEM_SELECTION_METHOD? imgSel = null, bool bThrowExceptions = true)
+        {
+            SimpleDatum sd = m_db.QueryItem(m_nSrcID, dt, null, imgSel, nLabel, bLoadDataCriteria, false, bThrowExceptions);
             if (sd == null)
                 return null;
 

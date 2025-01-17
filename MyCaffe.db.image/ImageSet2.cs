@@ -401,6 +401,48 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the image based on its label and image selection method.
+        /// </summary>
+        /// <param name="state">Specifies the query state.</param>
+        /// <param name="labelSelectionMethod">Specifies the label selection method.</param>
+        /// <param name="imageSelectionMethod">Specifies the image selection method.</param>
+        /// <param name="log">Specifies the Log for status output.</param>
+        /// <param name="dt">Specifies the image timestamp to use when loading a specific image.</param>
+        /// <param name="nLabel">Optionally, specifies the label (default = null).</param>
+        /// <param name="bLoadDataCriteria">Optionally, specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Optionally, specifies to load the debug data (default = false).</param>
+        /// <param name="bThrowExceptions">Optionally, specifies to throw exceptions on error (default = true).</param>
+        /// <returns>The SimpleDatum containing the image is returned.</returns>
+        public SimpleDatum GetImage(QueryState state, DB_LABEL_SELECTION_METHOD labelSelectionMethod, DB_ITEM_SELECTION_METHOD imageSelectionMethod, Log log, DateTime dt, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false, bool bThrowExceptions = true)
+        {
+            if ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST &&
+                (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
+                labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.BOOST;
+
+            if (!nLabel.HasValue && (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
+                nLabel = state.GetNextLabel(labelSelectionMethod);
+
+            List<DbItem> rgItems = state.FindImageIndexes(dt);
+            if (rgItems.Count == 0)
+                return null;
+
+            if (nLabel.HasValue)
+            {
+                rgItems = rgItems.Where(p => p.Label == nLabel.Value).ToList();
+                if (rgItems.Count == 0)
+                    return null;
+            }
+
+            int nIdx = m_random.Next(rgItems.Count);
+            DbItem item = rgItems[nIdx];
+
+            SimpleDatum sd = m_masterList.GetImage(item, bLoadDataCriteria, bLoadDebugData, m_loadMethod);
+            state.UpdateStats(sd);
+
+            return sd;
+        }
+
+        /// <summary>
         /// Returns the number of images in the image set, optionally with super-boost only.
         /// </summary>
         /// <param name="state">Specifies the query state to use.</param>

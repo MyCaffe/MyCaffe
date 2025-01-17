@@ -650,7 +650,7 @@ namespace MyCaffe.layers
                 m_dfTransTime = 0;
             }
 
-            SimpleDatum datum;
+            SimpleDatum datum = null;
             int nDim = 0;
             List<int> rgLabels = null;
             List<int> rgTargetLabels = null;
@@ -688,12 +688,20 @@ namespace MyCaffe.layers
                     int nRetry = 0;
                     bool bThrowExceptions = false;
 
-                    datum = m_cursor.GetValue(null, bLoadDataCriteria, null, false);
+                    if (m_param.data_param.time_align && i > 0)
+                        datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, DB_ITEM_SELECTION_METHOD.RANDOM, bThrowExceptions);
+                    else
+                        datum = m_cursor.GetValue(null, bLoadDataCriteria, null, false);
+
                     while (datum == null && nRetry < 10)
                     {
                         if (nRetry == 9)
                             bThrowExceptions = true;
-                        datum = m_cursor.GetValue(null, bLoadDataCriteria, null,bThrowExceptions);
+
+                        if (m_param.data_param.time_align && i > 0)
+                            datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, DB_ITEM_SELECTION_METHOD.RANDOM, bThrowExceptions);
+                        else
+                            datum = m_cursor.GetValue(null, bLoadDataCriteria, null,bThrowExceptions);
                         nRetry++;
                     }
 

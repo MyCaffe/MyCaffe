@@ -2039,6 +2039,8 @@ namespace MyCaffe.test
 
             CryptoRandom random = new CryptoRandom(CryptoRandom.METHOD.SYSTEM, 1701);
 
+            DateTime dt = new DateTime(2008, 1, 1);
+
             for (int i = 0; i < nCountTrain; i++)
             {
                 int nLabel = -1;
@@ -2057,9 +2059,12 @@ namespace MyCaffe.test
                     nLabel = rgLabels[nIdx];
                 }
 
-                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, DateTime.MinValue, 0, false, i);
+                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, dt, 0, false, i);
                 sd.SetData(rgData.ToList(), nLabel);
                 factory.PutRawImageCache(i, sd);
+
+                if (i % 100 == 0)
+                    dt = dt.AddDays(1);
             }
 
             factory.ClearImageCache(true);
@@ -2092,9 +2097,12 @@ namespace MyCaffe.test
                     nLabel = rgLabels[nIdx];
                 }
 
-                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, DateTime.MinValue, 0, false, i);
+                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, dt, 0, false, i);
                 sd.SetData(rgData.ToList(), nLabel);
                 factory.PutRawImageCache(i, sd);
+
+                if (i % 100 == 0)
+                    dt = dt.AddDays(1);
             }
 
             factory.ClearImageCache(true);
@@ -2379,6 +2387,103 @@ namespace MyCaffe.test
                     log.CHECK_EQ(nExpected, nActual, "The expected and actual values do not match!");
                 }
             }
+        }
+
+        [TestMethod]
+        public void TestQueryByTime()
+        {
+            IXImageDatabase2 db = null;
+            PreTest.Init();
+
+            TestingProgressSet progress = new TestingProgressSet();
+            Log log = new Log("Test Image Database");
+            Database db1 = new Database();
+            int nSrcId = -1;
+
+            log.EnableTrace = true;
+
+            try
+            {
+                DatasetFactory factory = new DatasetFactory();
+
+                string strDs = CreateDataset(factory, 10000, 1000, true);
+
+                SettingsCaffe settings = new SettingsCaffe();
+                DatasetDescriptor ds = factory.LoadDataset(strDs);
+                List<int> rgBoostIdx = new List<int>();
+                nSrcId = ds.TrainingSource.ID;
+
+                db = new MyCaffeImageDatabase2(log, "default", 1701);
+                long lQueryState = db.InitializeWithDsName(settings, ds.Name);
+
+                DateTime dt1 = new DateTime(2008, 1, 3);
+                List<SimpleDatum> rgSd1 = new List<SimpleDatum>();
+                List<SimpleDatum> rgSd2 = new List<SimpleDatum>();
+
+                for (int i = 0; i < 50; i++)
+                {
+                    SimpleDatum sd = db.QueryItem(nSrcId, dt1);
+                    rgSd1.Add(sd);
+                }
+
+                for (int i = 0; i < 50; i++)
+                {
+                    SimpleDatum sd = db.QueryItem(nSrcId, dt1);
+                    rgSd2.Add(sd);
+                }
+
+                DateTime dt2 = new DateTime(2008, 1, 5);
+                List<SimpleDatum> rgSd3 = new List<SimpleDatum>();
+                List<SimpleDatum> rgSd4 = new List<SimpleDatum>();
+
+                for (int i = 0; i < rgSd1.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryItem(nSrcId, dt2);
+                    rgSd3.Add(sd);
+                }
+
+                for (int i = 0; i < rgSd1.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryItem(nSrcId, dt2);
+                    rgSd4.Add(sd);
+                }
+
+                // Verify the data
+                verifyItems(log, rgSd1);
+                verifyItems(log, rgSd2);
+                verifyItems(log, rgSd3);
+                verifyItems(log, rgSd4);
+            }
+            finally
+            {
+                if (db != null)
+                    db.CleanUp();
+
+                if (nSrcId > 0)
+                    db1.ResetAllBoosts(nSrcId);
+            }
+        }
+
+        private bool verifyItems(Log log, List<SimpleDatum> rgSd)
+        {
+            Dictionary<int, int> rgDup = new Dictionary<int, int>();
+            rgDup.Add(rgSd[0].Index, 1);
+            for (int i = 1; i < rgSd.Count; i++)
+            {
+                log.CHECK(rgSd[0].TimeStamp == rgSd[i].TimeStamp, "The timestamps shoudl match.");
+                if (!rgDup.ContainsKey(rgSd[i].Index))
+                    rgDup.Add(rgSd[i].Index, 1);
+                else
+                    rgDup[rgSd[i].Index]++;
+            }
+
+            int nMaxDup = rgDup.Max(p => p.Value);
+            log.CHECK_LT(nMaxDup, 5, "Max duplicate should be less than 5.");
+
+            int nMaxWithDup = rgDup.Count(p => p.Value > 1);
+            log.CHECK_LT(nMaxWithDup, 11, "Max items with duplicates should be less than 11.");
+
+            return true;
         }
 
         // ONLY UNCOMMENT WHEN USING, but do not leave in the Test Cycle.
