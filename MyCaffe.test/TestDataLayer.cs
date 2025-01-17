@@ -172,7 +172,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    t.TestForward_TimeAlign(test.SourceName);
+                    t.TestForward_TimeAlign(test.SourceName, true);
                 }
             }
             finally
@@ -190,7 +190,43 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    t.TestForward_TimeAlign(test.SourceName);
+                    t.TestForward_TimeAlign(test.SourceName, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForward_TimeAlign_LoadAll_NoIndexCheck()
+        {
+            DataLayerTest test = new DataLayerTest("test_qry", DB_LOAD_METHOD.LOAD_ALL, DB_ITEM_SELECTION_METHOD.RANDOM);
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.TestForward_TimeAlign(test.SourceName, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForward_TimeAlign_LoadOnDemand_NoIndexCheck()
+        {
+            DataLayerTest test = new DataLayerTest("test_qry", DB_LOAD_METHOD.LOAD_ON_DEMAND, DB_ITEM_SELECTION_METHOD.RANDOM);
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.TestForward_TimeAlign(test.SourceName, false);
                 }
             }
             finally
@@ -652,7 +688,7 @@ namespace MyCaffe.test
         void TestForward(string strSrc);
         void TestForward2(string strSrc);
         void TestForward_OneHotLabelConversion(string strSrc);
-        void TestForward_TimeAlign(string strSrc);
+        void TestForward_TimeAlign(string strSrc, bool bIndexCheck);
         void TestForwardPairs(string strSrc, int nImagesPerBlob);
         void TestForwardMask(string strSrc, int nImagesPerBlob);
         string Fill(bool unique_pixels, int nMaxLabel = -1);
@@ -1631,7 +1667,7 @@ namespace MyCaffe.test
             progress.Dispose();
         }
 
-        public void TestForward_TimeAlign(string strSrc)
+        public void TestForward_TimeAlign(string strSrc, bool bIndexCheck)
         {
             TestingProgressSet progress = new TestingProgressSet();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
@@ -1646,12 +1682,13 @@ namespace MyCaffe.test
             p.data_param.enable_pair_selection = false;
             p.data_param.one_hot_label_size = 16;
             p.data_param.time_align = true;
-            p.data_param.output_image_index = true;
+            p.data_param.output_image_index = bIndexCheck;
             p.data_param.label_type = LayerParameterBase.LABEL_TYPE.SINGLE;
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_parent.db, m_parent.CancelEvent);
             int nSrcID = m_parent.db.GetSourceID(strSrc);
 
-            TopVec.Add(m_blob_top_idx);
+            if (bIndexCheck)
+                TopVec.Add(m_blob_top_idx);
 
             layer.LayerSetUp(BottomVec, TopVec);
             layer.Reshape(BottomVec, TopVec);
@@ -1676,48 +1713,52 @@ namespace MyCaffe.test
                 sw.Stop();
                 sw.Reset();
 
-                m_log.CHECK_EQ(TopVec.Count, 3, "The top vec should have two elements: data, label and index.");
+                m_log.CHECK_EQ(TopVec.Count, (bIndexCheck) ? 3 : 2, "The top vec should have two elements: data, label and index.");
                 T[] rgData = TopVec[0].update_cpu_data();
                 int nDataDim = TopVec[0].count(1);
 
                 T[] rgLabel = TopVec[1].update_cpu_data();
                 int nLabelDim = TopVec[1].count(1);
 
-                T[] rgIndex = TopVec[2].update_cpu_data();
-                int nIndexDim = TopVec[2].count(1);
-
-                for (int k = 0; k < nBatch; k++)
+                if (bIndexCheck)
                 {
-                    nIdxTotalCount++;
+                    T[] rgIndex = TopVec[2].update_cpu_data();
+                    int nIndexDim = TopVec[2].count(1);
 
-                    int nIdx = (int)Convert.ChangeType(rgIndex[k], typeof(int));
-                    SimpleDatum d = m_parent.db.QueryItem(nSrcID, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, false, false, false);
-                    if (d == null)
+                    for (int k = 0; k < nBatch; k++)
                     {
-                        nIdxNullCount++;
-                        continue;
-                    }
+                        nIdxTotalCount++;
 
-                    byte[] rgData2 = d.ByteData;
+                        int nIdx = (int)Convert.ChangeType(rgIndex[k], typeof(int));
+                        SimpleDatum d = m_parent.db.QueryItem(nSrcID, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, false, false, false);
+                        if (d == null)
+                        {
+                            nIdxNullCount++;
+                            continue;
+                        }
 
-                    RawImage img = db.GetRawImageAt(d.Index);
-                    m_log.CHECK_EQ(img.ID, d.ImageID, "The image ID's do not match!");
-                    m_log.CHECK_EQ(img.ActiveLabel.Value, d.Label, "The image Labels do not match!");
-                    m_log.CHECK_EQ(img.Height.Value, d.Height, "The image heights do not match!");
-                    m_log.CHECK_EQ(img.Width.Value, d.Width, "The image widths do not match!");
-                    m_log.CHECK(img.TimeStamp.Value == d.TimeStamp, "The image time stamps do not match!");
+                        byte[] rgData2 = d.ByteData;
 
-                    if (swProgress.Elapsed.TotalMilliseconds > 1000)
-                    {
-                        progress.SetProgress((double)(i * nBatch + k) / (double)(nCount * nBatch));
-                        swProgress.Restart();
+                        RawImage img = db.GetRawImageAt(d.Index);
+                        m_log.CHECK_EQ(img.ID, d.ImageID, "The image ID's do not match!");
+                        m_log.CHECK_EQ(img.ActiveLabel.Value, d.Label, "The image Labels do not match!");
+                        m_log.CHECK_EQ(img.Height.Value, d.Height, "The image heights do not match!");
+                        m_log.CHECK_EQ(img.Width.Value, d.Width, "The image widths do not match!");
+                        m_log.CHECK(img.TimeStamp.Value == d.TimeStamp, "The image time stamps do not match!");
+
+                        if (swProgress.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            progress.SetProgress((double)(i * nBatch + k) / (double)(nCount * nBatch));
+                            swProgress.Restart();
+                        }
                     }
                 }
             }
 
             db.Close();
 
-            Trace.WriteLine("Null Images Found = " + nIdxNullCount.ToString() + " out of " + nIdxTotalCount.ToString() + " (" + ((double)nIdxNullCount/nIdxTotalCount).ToString("P") + ")");
+            if (bIndexCheck)
+                Trace.WriteLine("Null Images Found = " + nIdxNullCount.ToString() + " out of " + nIdxTotalCount.ToString() + " (" + ((double)nIdxNullCount/nIdxTotalCount).ToString("P") + ")");
 
             string str = (dfTotalTime / (double)nCount).ToString() + " ms.";
             Trace.WriteLine("Average DataLayer Forward Time = " + str);
