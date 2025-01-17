@@ -58,6 +58,7 @@ namespace MyCaffe.param
         int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
         NormalizationScoreParameter m_scoreNormParam = new NormalizationScoreParameter();
         bool m_bTimeAlign = false;
+        bool m_bOutputImageIdx = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -324,6 +325,16 @@ namespace MyCaffe.param
             set { m_bTimeAlign = value; }
         }
 
+        /// <summary>
+        /// Enable outputing the image index as a third blob.
+        /// </summary>
+        [Description("Enable outputing the image index as a third blob.")]
+        public bool output_image_index
+        {
+            get { return m_bOutputImageIdx; }
+            set { m_bOutputImageIdx = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -363,6 +374,7 @@ namespace MyCaffe.param
             m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
             m_scoreNormParam.Copy(p.score_norm_param);
             m_bTimeAlign = p.m_bTimeAlign;
+            m_bOutputImageIdx = p.m_bOutputImageIdx;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -440,6 +452,7 @@ namespace MyCaffe.param
             rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
 
             rgChildren.Add("time_align", time_align.ToString());
+            rgChildren.Add("output_image_index", output_image_index.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -571,6 +584,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("time_align")) != null)
                 p.time_align = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_image_index")) != null)
+                p.output_image_index = bool.Parse(strVal);
 
             return p;
         }

@@ -26,6 +26,10 @@ namespace MyCaffe.layers
         /// </summary>
         protected bool m_bOutputLabels;
         /// <summary>
+        /// Specifies whether or not the Layer should output the image indexes.
+        /// </summary>
+        protected bool m_bOutputImageIdx;
+        /// <summary>
         /// Specifies the MyCaffeImageDatabase.
         /// </summary>
         protected IXImageDatabaseBase m_imgdb;
@@ -114,6 +118,11 @@ namespace MyCaffe.layers
                 m_bOutputLabels = false;
             else
                 m_bOutputLabels = true;
+
+            if (colTop.Count > 2)
+                m_bOutputImageIdx = true;
+            else
+                m_bOutputImageIdx = false;
 
             int nC = 0;
             int nH = 0;

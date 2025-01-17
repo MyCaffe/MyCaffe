@@ -2,6 +2,7 @@
 using MyCaffe.basecode.descriptors;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -432,7 +433,7 @@ namespace MyCaffe.db.image
                 if (rgItems.Count == 0)
                     return null;
             }
-
+            
             int nIdx = m_random.Next(rgItems.Count);
             DbItem item = rgItems[nIdx];
 

@@ -52,6 +52,7 @@ namespace MyCaffe.layers
         private T[] m_rgTopData = null;
         private T[] m_rgTopLabel = null;
         private T[] m_rgOneHotLabel = null;
+        private T[] m_rgTopImageIdx = null;
         private int[] m_rgTopShape = null;
         private bool m_bMatchingCycle = true;
         private Datum m_datumNoise = null;
@@ -352,6 +353,16 @@ namespace MyCaffe.layers
                 {
                     m_rgPrefetch[i].Label.Reshape(rgLabelShape);
                 }
+
+                if (colTop.Count > 2)
+                {
+                    colTop[2].Reshape(rgLabelShape);
+
+                    for (int i = 0; i < m_rgPrefetch.Length; i++)
+                    {
+                        m_rgPrefetch[i].Index.Reshape(rgLabelShape);
+                    }
+                }
             }
 
             m_nIteration = 0;
@@ -503,7 +514,7 @@ namespace MyCaffe.layers
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return 2; }
+            get { return (m_param.data_param.output_image_index) ? 3 : 2; }
         }
 
         /// <summary>
@@ -643,6 +654,13 @@ namespace MyCaffe.layers
                 }
             }
 
+            if (m_bOutputImageIdx)
+            {
+                int nCount = batch.Index.count();
+                if (m_rgTopImageIdx == null || m_rgTopImageIdx.Length < nCount)
+                    m_rgTopImageIdx = new T[nCount];
+            }
+
             if (m_param.data_param.display_timing)
             {
                 m_swTimerBatch.Restart();
@@ -688,10 +706,14 @@ namespace MyCaffe.layers
                     int nRetry = 0;
                     bool bThrowExceptions = false;
 
+                    DB_ITEM_SELECTION_METHOD? itemQry = null;
+                    if (m_param.data_param.time_align)
+                        itemQry = DB_ITEM_SELECTION_METHOD.RANDOM;
+
                     if (m_param.data_param.time_align && i > 0)
-                        datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, DB_ITEM_SELECTION_METHOD.RANDOM, bThrowExceptions);
+                        datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, itemQry, false);
                     else
-                        datum = m_cursor.GetValue(null, bLoadDataCriteria, null, false);
+                        datum = m_cursor.GetValue(null, bLoadDataCriteria, itemQry, false);
 
                     while (datum == null && nRetry < 10)
                     {
@@ -699,9 +721,9 @@ namespace MyCaffe.layers
                             bThrowExceptions = true;
 
                         if (m_param.data_param.time_align && i > 0)
-                            datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, DB_ITEM_SELECTION_METHOD.RANDOM, bThrowExceptions);
+                            datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, itemQry, bThrowExceptions);
                         else
-                            datum = m_cursor.GetValue(null, bLoadDataCriteria, null,bThrowExceptions);
+                            datum = m_cursor.GetValue(null, bLoadDataCriteria, itemQry, bThrowExceptions);
                         nRetry++;
                     }
 
@@ -911,6 +933,11 @@ namespace MyCaffe.layers
                     }
                 }
 
+                if (m_bOutputImageIdx)
+                {
+                    m_rgTopImageIdx[i] = (T)Convert.ChangeType(datum.Index, typeof(T));
+                }
+
                 if (m_param.data_param.display_timing)
                     m_dfTransTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;
 
@@ -928,6 +955,9 @@ namespace MyCaffe.layers
 
             if (m_bOutputLabels)
                 batch.Label.SetCPUData(m_rgTopLabel);
+
+            if (m_bOutputImageIdx)
+                batch.Index.SetCPUData(m_rgTopImageIdx);
 
             if (m_param.data_param.display_timing)
             {

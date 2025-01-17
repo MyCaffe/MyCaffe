@@ -124,6 +124,9 @@ namespace MyCaffe.layers
 
                 if (m_bOutputLabels)
                     m_rgPrefetch[i].Label.update_cpu_data();
+
+                if (m_bOutputImageIdx)
+                    m_rgPrefetch[i].Index.update_cpu_data();
             }
 
             m_transformer.InitRand();
@@ -180,6 +183,13 @@ namespace MyCaffe.layers
                         if (m_bOutputLabels)
                         {
                             batch.Label.AsyncGpuPush(hStream);
+                            if (hStream != 0)
+                                m_cuda.SynchronizeStream(hStream);
+                        }
+
+                        if (m_bOutputImageIdx)
+                        {
+                            batch.Index.AsyncGpuPush(hStream);
                             if (hStream != 0)
                                 m_cuda.SynchronizeStream(hStream);
                         }
@@ -247,6 +257,15 @@ namespace MyCaffe.layers
                     // Copy the labels.
                     m_cuda.copy(m_prefetch_current.Label.count(), m_prefetch_current.Label.gpu_data, colTop[1].mutable_gpu_data);
                 }
+
+                if (m_bOutputImageIdx)
+                {
+                    // Reshape to loaded labels.
+                    colTop[2].ReshapeLike(m_prefetch_current.Index);
+
+                    // Copy the labels.
+                    m_cuda.copy(m_prefetch_current.Index.count(), m_prefetch_current.Index.gpu_data, colTop[2].mutable_gpu_data);
+                }
             }
             else if (m_err != null)
             {
@@ -270,6 +289,7 @@ namespace MyCaffe.layers
     {
         Blob<T> m_data;
         Blob<T> m_label;
+        Blob<T> m_idx;
 
         /// <summary>
         /// The Batch constructor.
@@ -278,8 +298,9 @@ namespace MyCaffe.layers
         /// <param name="log">Specifies the Log for output.</param>
         public Batch(CudaDnn<T> cuda, Log log)
         {
-            m_data = new Blob<T>(cuda, log);
-            m_label = new Blob<T>(cuda, log);
+            m_data = new Blob<T>(cuda, log, false);
+            m_label = new Blob<T>(cuda, log, false);
+            m_idx = new Blob<T>(cuda, log, false);
         }
 
         /// <summary>
@@ -303,6 +324,14 @@ namespace MyCaffe.layers
         public Blob<T> Label
         {
             get { return m_label; }
+        }
+
+        /// <summary>
+        /// Returns the index Blob of the batch.
+        /// </summary>
+        public Blob<T> Index
+        {
+            get { return m_idx; }
         }
     }
 }

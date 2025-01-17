@@ -863,7 +863,8 @@ namespace MyCaffe.db.image
 
                 factory.Open(m_src);
 
-                m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...", true);
+                if (m_log != null)
+                    m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...", true);
 
                 while (nNextIdx.HasValue || rgIdxBatch.Count > 0)
                 {
@@ -915,7 +916,7 @@ namespace MyCaffe.db.image
                     nNextIdx = m_loadSequence.GetNext();
                 }
 
-                if (rgIdxBatch.Count > 0)
+                if (rgIdxBatch.Count > 0 && m_log != null)
                     m_log.FAIL("Not all images were loaded!");
             }
             finally
