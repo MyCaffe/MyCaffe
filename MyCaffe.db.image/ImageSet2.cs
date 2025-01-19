@@ -114,7 +114,7 @@ namespace MyCaffe.db.image
             }
 
             if (m_masterIdx == null || m_masterIdx.LoadLimit != nMaxLoadCount)
-                m_masterIdx = new MasterIndexes(m_random, m_src, nMaxLoadCount);
+                m_masterIdx = new MasterIndexes(m_factory, m_random, m_src, nMaxLoadCount);
 
             QueryState state = new QueryState(m_masterIdx, bUseUniqueLabelIndexes, bUseUniqueImageIndexes);
 

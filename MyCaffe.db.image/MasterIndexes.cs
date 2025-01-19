@@ -36,7 +36,7 @@ namespace MyCaffe.db.image
         CryptoRandom m_random;
         CryptoRandom m_randomLabel = new CryptoRandom(CryptoRandom.METHOD.CRYPTO);
         CryptoRandom m_randomLabelBoosted = new CryptoRandom(CryptoRandom.METHOD.CRYPTO);
-        DatasetFactory m_factory = new DatasetFactory();
+        DatasetFactory m_factory;
         List<DbItem> m_rgImageIdx = null;
         IMGDB_SORT m_sort = IMGDB_SORT.BYIDX;
         int m_nLoadLimit = 0;
@@ -44,14 +44,15 @@ namespace MyCaffe.db.image
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="factory">Specifies the dataset factory to use.</param>
         /// <param name="random">Specifies the random number generator.</param>
         /// <param name="src">Specifies the data source.</param>
         /// <param name="nLoadLimit">Optionally, specifies the load limit used which when set to a value > 0, limits queries to RANDOM image selection within the load limit count (default = 0).</param>
-        public MasterIndexes(CryptoRandom random, SourceDescriptor src, int nLoadLimit = 0)
+        public MasterIndexes(DatasetFactory factory, CryptoRandom random, SourceDescriptor src, int nLoadLimit = 0)
         {
+            m_factory = factory;
             m_random = random;
             m_src = src;
-            m_factory.Open(src);
             m_nLoadLimit = nLoadLimit;
 
             if (m_nLoadLimit > src.ImageCount)

@@ -20,6 +20,7 @@ namespace MyCaffe.db.image
         SourceDescriptor m_src;
         SimpleDatum[] m_rgImages = null;
         RefreshManager m_refreshManager = null;
+        bool m_bRefreshManagerActive = false;
         LoadSequence m_loadSequence = null;
         List<WaitHandle> m_rgAbort = new List<WaitHandle>();
         ManualResetEvent m_evtCancel = new ManualResetEvent(false);
@@ -81,6 +82,9 @@ namespace MyCaffe.db.image
 
             if (m_nLoadCount < m_src.ImageCount)
                 m_refreshManager = new RefreshManager(random, m_src, m_factory);
+
+            if (nMaxLoadCount > 0)
+                m_bRefreshManagerActive = true;
         }
 
         /// <summary>
@@ -126,7 +130,7 @@ namespace MyCaffe.db.image
         {
             get 
             {
-                if (m_refreshManager != null)
+                if (m_bRefreshManagerActive && m_refreshManager != null)
                     return true;
 
                 return false;
@@ -642,7 +646,7 @@ namespace MyCaffe.db.image
                 if (!nLabel.HasValue)
                     throw new Exception("You must specify a label when using a NULL index.");
 
-                if (m_refreshManager != null)
+                if (m_bRefreshManagerActive && m_refreshManager != null)
                     return m_refreshManager.GetNextDatum(nLabel.Value);
 
                 int nIdx = m_random.Next(m_rgImages.Length);
@@ -668,7 +672,7 @@ namespace MyCaffe.db.image
 
                 if (sd == null)
                 {
-                    if (m_refreshManager != null)
+                    if (m_bRefreshManagerActive && m_refreshManager != null)
                     {
                         while (nIdx > 0 && m_rgImages[nIdx] == null)
                         {
@@ -689,8 +693,7 @@ namespace MyCaffe.db.image
                         if (sd == null)
                             throw new Exception("The image is still null yet should have loaded!");
 
-                        if (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND)
-                            m_rgImages[nIdx] = sd;
+                        m_rgImages[nIdx] = sd;
                     }
                 }
 
@@ -881,7 +884,7 @@ namespace MyCaffe.db.image
             int? nNextIdx = m_loadSequence.GetNext();
             Stopwatch sw = new Stopwatch();
 
-            if (m_refreshManager != null)
+            if (m_bRefreshManagerActive && m_refreshManager != null)
                 m_refreshManager.Reset();
 
             try
@@ -908,7 +911,7 @@ namespace MyCaffe.db.image
                     {
                         List<RawImage> rgImg;
 
-                        if (m_refreshManager == null)
+                        if (m_bRefreshManagerActive && m_refreshManager == null)
                             rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
                         else                        
                             rgImg = factory.GetRawImagesAt(rgIdxBatch, m_evtCancel, 0, null, m_log);
@@ -920,7 +923,7 @@ namespace MyCaffe.db.image
                         {
                             SimpleDatum sd = factory.LoadDatum(rgImg[j]);
 
-                            if (m_refreshManager != null)
+                            if (m_bRefreshManagerActive && m_refreshManager != null)
                                 m_refreshManager.AddLoaded(sd);
 
                             m_rgImages[m_nLoadedCount] = sd;
