@@ -18,8 +18,9 @@ namespace MyCaffe.db.image
         public DNNEntities()
             : base("name=DNNEntities")
         {
+            ((IObjectContextAdapter)this).ObjectContext.CommandTimeout = 600;
         }
-    
+
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             throw new UnintentionalCodeFirstException();

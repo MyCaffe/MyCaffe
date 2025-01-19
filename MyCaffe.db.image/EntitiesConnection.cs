@@ -23,6 +23,7 @@ namespace MyCaffe.db.image
         public DNNEntities(string strConnectionString)
             : base(strConnectionString)
         {
+            ((IObjectContextAdapter)this).ObjectContext.CommandTimeout = 600;
         }
     }
 
