@@ -48,6 +48,8 @@ namespace MyCaffe.db.image
         int m_nPadW = 0;
         int m_nPadH = 0;
         Guid m_userGuid;
+        DateTime? m_dtMinDate = null;
+        DateTime? m_dtMaxDate = null;
 
 
         /// <summary>
@@ -161,6 +163,8 @@ namespace MyCaffe.db.image
             m_loadMethod = s.DbLoadMethod;
             m_nLoadLimit = s.DbLoadLimit;
             m_bSkipMeanCheck = s.SkipMeanCheck;
+            m_dtMinDate = s.DbLoadMinDate;
+            m_dtMaxDate = s.DbLoadMaxDate;
 
             if (m_loadMethod == DB_LOAD_METHOD.LOAD_EXTERNAL)
                 m_loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
@@ -198,7 +202,7 @@ namespace MyCaffe.db.image
                 {
                     m_evtInitializing.Set();
 
-                    m_factory.SetLoadingParameters(s.ItemDbLoadDataCriteria, s.ItemDbLoadDebugData);
+                    m_factory.SetLoadingParameters(s.ItemDbLoadDataCriteria, s.ItemDbLoadDebugData, s.DbLoadMinDate, s.DbLoadMaxDate);
 
                     DatasetDescriptor ds = m_factory.LoadDataset(nDataSetID);
                     if (ds == null)
