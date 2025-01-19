@@ -109,9 +109,7 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_LOSS);
             p.pairwise_loss_param.margin = MARGIN;
             p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
-
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
             try
             {
                 if (!(layer is PairwiseLossLayer<T>))
@@ -120,7 +118,6 @@ namespace MyCaffe.test
                 layer.Setup(BottomVec, TopVec);
                 double dfLoss1 = layer.Forward(BottomVec, TopVec);
                 double dfLoss = convert(TopVec[0].GetData(0));
-
                 m_log.CHECK_EQ(dfLoss1, dfLoss, "The loss values should match!");
 
                 // Calculate expected loss manually
@@ -129,7 +126,7 @@ namespace MyCaffe.test
                 double dfTotalLoss = 0;
                 double dfTotalWeight = 0;
 
-                // Compute pairwise comparisons
+                // Compute pairwise comparisons with enhanced weighting and dynamic margins
                 for (int i = 0; i < BATCH_SIZE; i++)
                 {
                     for (int j = 0; j < BATCH_SIZE; j++)
@@ -138,11 +135,32 @@ namespace MyCaffe.test
 
                         double dfTrueDiff = rgTarget[i] - rgTarget[j];
                         double dfPredDiff = rgPredicted[i] - rgPredicted[j];
+                        double dfReturnDiffAbs = Math.Abs(dfTrueDiff);
 
-                        if (Math.Abs(dfTrueDiff) > 1e-6)
+                        // Position-based importance
+                        double dfPositionWeight = 1.0;
+                        bool isExtremePair = (i < BATCH_SIZE / 4 || i > 3 * BATCH_SIZE / 4) &&
+                                           (j < BATCH_SIZE / 4 || j > 3 * BATCH_SIZE / 4);
+                        if (isExtremePair)
+                            dfPositionWeight = 2.0;
+
+                        // Sigmoid-based magnitude weight
+                        double dfMagnitudeWeight = 2.0 / (1.0 + Math.Exp(-2.0 * dfReturnDiffAbs)) - 1.0;
+
+                        // Combine weights
+                        double dfWeight = dfPositionWeight * dfMagnitudeWeight;
+
+                        // Adaptive threshold for valid pairs
+                        double dfValidThreshold = Math.Max(1e-6, 1e-5 * dfReturnDiffAbs);
+
+                        if (dfReturnDiffAbs > dfValidThreshold)
                         {
-                            double dfWeight = Math.Abs(dfTrueDiff) * (1.0 + Math.Abs(dfTrueDiff));
-                            double dfPairLoss = dfWeight * Math.Max(0.0, MARGIN - Math.Sign(dfTrueDiff) * dfPredDiff);
+                            // Dynamic margin based on return difference
+                            double dfDynamicMargin = MARGIN * (1.0 + 0.5 * Math.Tanh(dfReturnDiffAbs));
+
+                            // Softplus loss calculation
+                            double z = dfDynamicMargin - Math.Sign(dfTrueDiff) * dfPredDiff;
+                            double dfPairLoss = dfWeight * Math.Log(1.0 + Math.Exp(z));
 
                             dfTotalLoss += dfPairLoss;
                             dfTotalWeight += dfWeight;
@@ -151,8 +169,8 @@ namespace MyCaffe.test
                 }
 
                 double dfExpectedLoss = (dfTotalWeight > 0) ? dfTotalLoss / dfTotalWeight : 0;
-
-                m_log.EXPECT_NEAR_FLOAT(dfExpectedLoss, dfLoss, 1e-4, "The computed loss does not match expected value!");
+                m_log.EXPECT_NEAR_FLOAT(dfExpectedLoss, dfLoss, 1e-4,
+                    "The computed loss does not match expected value!");
             }
             finally
             {

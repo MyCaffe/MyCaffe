@@ -50,12 +50,31 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestPositionWeighting()
+        {
+            PairwiseAccuracyLayerTest test = new PairwiseAccuracyLayerTest();
+
+            try
+            {
+                foreach (IPairwiseAccuracyLayerTest t in test.Tests)
+                {
+                    t.TestPositionWeighting();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IPairwiseAccuracyLayerTest : ITest
     {
         void TestForward();
         void TestPerfectRanking();
+        void TestPositionWeighting();  // Add new test method
     }
 
     class PairwiseAccuracyLayerTest : TestBase
@@ -106,9 +125,7 @@ namespace MyCaffe.test
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_ACCURACY);
-
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
             try
             {
                 if (!(layer is PairwiseAccuracyLayer<T>))
@@ -124,7 +141,7 @@ namespace MyCaffe.test
                 double dfTotalCorrect = 0;
                 double dfTotalWeight = 0;
 
-                // Compute pairwise comparisons
+                // Compute pairwise comparisons with enhanced weighting
                 for (int i = 0; i < BATCH_SIZE; i++)
                 {
                     for (int j = 0; j < BATCH_SIZE; j++)
@@ -133,23 +150,37 @@ namespace MyCaffe.test
 
                         double dfTrueDiff = rgTarget[i] - rgTarget[j];
                         double dfPredDiff = rgPredicted[i] - rgPredicted[j];
+                        double dfReturnDiffAbs = Math.Abs(dfTrueDiff);
 
-                        if (Math.Abs(dfTrueDiff) > 1e-6)
+                        // Position-based importance
+                        double dfPositionWeight = 1.0;
+                        bool isExtremePair = (i < BATCH_SIZE / 4 || i > 3 * BATCH_SIZE / 4) &&
+                                           (j < BATCH_SIZE / 4 || j > 3 * BATCH_SIZE / 4);
+                        if (isExtremePair)
+                            dfPositionWeight = 2.0;
+
+                        // Sigmoid-based magnitude weight
+                        double dfMagnitudeWeight = 2.0 / (1.0 + Math.Exp(-2.0 * dfReturnDiffAbs)) - 1.0;
+
+                        // Combine weights
+                        double dfWeight = dfPositionWeight * dfMagnitudeWeight;
+
+                        // Adaptive threshold
+                        double dfValidThreshold = Math.Max(1e-6, 1e-5 * dfReturnDiffAbs);
+
+                        if (dfReturnDiffAbs > dfValidThreshold)
                         {
-                            double dfWeight = Math.Abs(dfTrueDiff) * (1.0 + Math.Abs(dfTrueDiff));
                             bool bCorrect = Math.Sign(dfPredDiff) == Math.Sign(dfTrueDiff);
-
                             if (bCorrect)
                                 dfTotalCorrect += dfWeight;
-
                             dfTotalWeight += dfWeight;
                         }
                     }
                 }
 
                 double dfExpectedAccuracy = (dfTotalWeight > 0) ? dfTotalCorrect / dfTotalWeight : 0;
-
-                m_log.EXPECT_NEAR_FLOAT(dfExpectedAccuracy, dfAccuracy, 1e-4, "The computed accuracy does not match expected value!");
+                m_log.EXPECT_NEAR_FLOAT(dfExpectedAccuracy, dfAccuracy, 1e-4,
+                    "The computed accuracy does not match expected value!");
             }
             finally
             {
@@ -160,29 +191,82 @@ namespace MyCaffe.test
         public void TestPerfectRanking()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_ACCURACY);
-
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
             try
             {
                 if (!(layer is PairwiseAccuracyLayer<T>))
                     m_log.FAIL("The layer is not the expected PairwiseAccuracy type!");
 
                 // Set predictions to exactly match targets for perfect ranking
-                m_cuda.copy(m_blob_bottom_target.count(), m_blob_bottom_target.gpu_data, m_blob_bottom.mutable_gpu_data);
+                m_cuda.copy(m_blob_bottom_target.count(), m_blob_bottom_target.gpu_data,
+                    m_blob_bottom.mutable_gpu_data);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                double dfAccuracy = convert(TopVec[0].GetData(0));
+
+                // With perfect ranking, accuracy should still be 1.0 even with new weighting
+                m_log.EXPECT_NEAR_FLOAT(1.0, dfAccuracy, 1e-4,
+                    "Perfect ranking should give accuracy of 1.0!");
+
+                // Test with scaled predictions (should still give perfect accuracy)
+                m_cuda.scale(m_blob_bottom.count(), 2.0, m_blob_bottom_target.gpu_data,
+                    m_blob_bottom.mutable_gpu_data);
+                layer.Forward(BottomVec, TopVec);
+                dfAccuracy = convert(TopVec[0].GetData(0));
+                m_log.EXPECT_NEAR_FLOAT(1.0, dfAccuracy, 1e-4,
+                    "Scaled perfect ranking should still give accuracy of 1.0!");
+
+                // Additional test for extreme pairs
+                m_cuda.copy(m_blob_bottom_target.count(), m_blob_bottom_target.gpu_data,
+                    m_blob_bottom.mutable_gpu_data);
+                // Modify some values to create extreme pairs
+                double[] rgTarget = convert(m_blob_bottom_target.mutable_cpu_data);
+                rgTarget[0] = 10.0;  // Very high value
+                rgTarget[BATCH_SIZE - 1] = -10.0;  // Very low value
+                layer.Forward(BottomVec, TopVec);
+                dfAccuracy = convert(TopVec[0].GetData(0));
+                m_log.EXPECT_NEAR_FLOAT(1.0, dfAccuracy, 1e-4,
+                    "Perfect ranking with extreme values should give accuracy of 1.0!");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        // Add new test for position-based weighting
+        public void TestPositionWeighting()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.PAIRWISE_ACCURACY);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            try
+            {
+                if (!(layer is PairwiseAccuracyLayer<T>))
+                    m_log.FAIL("The layer is not the expected PairwiseAccuracy type!");
+
+                // Create a scenario where only extreme positions are correct
+                double[] rgTarget = convert(m_blob_bottom_target.mutable_cpu_data);
+                double[] rgPred = convert(m_blob_bottom.mutable_cpu_data);
+
+                // Set up extreme positions correctly
+                for (int i = 0; i < BATCH_SIZE / 4; i++)
+                {
+                    rgTarget[i] = 5.0 - i * 0.1;  // Top quartile
+                    rgPred[i] = 5.0 - i * 0.1;
+                }
+                for (int i = 3 * BATCH_SIZE / 4; i < BATCH_SIZE; i++)
+                {
+                    rgTarget[i] = -5.0 - i * 0.1;  // Bottom quartile
+                    rgPred[i] = -5.0 - i * 0.1;
+                }
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
                 double dfAccuracy = convert(TopVec[0].GetData(0));
 
-                // With perfect ranking, accuracy should be 1.0
-                m_log.EXPECT_NEAR_FLOAT(1.0, dfAccuracy, 1e-4, "Perfect ranking should give accuracy of 1.0!");
-
-                // Test with scaled predictions (should still give perfect accuracy)
-                m_cuda.scale(m_blob_bottom.count(), 2.0, m_blob_bottom_target.gpu_data, m_blob_bottom.mutable_gpu_data);
-                layer.Forward(BottomVec, TopVec);
-                dfAccuracy = convert(TopVec[0].GetData(0));
-                m_log.EXPECT_NEAR_FLOAT(1.0, dfAccuracy, 1e-4, "Scaled perfect ranking should still give accuracy of 1.0!");
+                // Accuracy should be higher than 0.5 due to position weighting
+                m_log.CHECK_GT(dfAccuracy, 0.5,
+                    "Accuracy with correct extreme positions should be higher than 0.5!");
             }
             finally
             {

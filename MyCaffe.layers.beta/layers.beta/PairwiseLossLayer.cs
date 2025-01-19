@@ -190,8 +190,8 @@ namespace MyCaffe.layers.beta
         /// 1. Weighting pairs by the magnitude of their return difference
         /// 2. Enforcing a margin between scores based on return rankings
         /// 3. Putting extra emphasis on extreme return differences through quadratic and exponential weighting
-        /// </remarks>
-        protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        /// </remarks>         
+        protected void forwardOld(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             float[] rgfPred = convertF(colBottom[0].mutable_cpu_data);
             float[] rgfTrue = convertF(colBottom[1].mutable_cpu_data);
@@ -264,6 +264,98 @@ namespace MyCaffe.layers.beta
             colTop[0].SetData(fNormalizedLoss, 0);
         }
 
+        protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            float[] rgfPred = convertF(colBottom[0].mutable_cpu_data);
+            float[] rgfTrue = convertF(colBottom[1].mutable_cpu_data);
+            float[] rgfDiffTrue = convertF(m_blobDiffTrue.mutable_cpu_data);
+            float[] rgfDiffPred = convertF(m_blobDiffPred.mutable_cpu_data);
+            float[] rgfValidPairs = convertF(m_blobValidPairs.mutable_cpu_data);
+            float[] rgfLoss = convertF(m_blobLoss.mutable_cpu_data);
+            float[] rgfWeights = convertF(m_blobWeights.mutable_cpu_data);
+            float fTotalLoss = 0.0f;
+            float fTotalWeight = 0.0f;
+
+            // Pre-compute true values statistics for normalization
+            float fMaxAbsReturn = 0.0f;
+            for (int i = 0; i < m_nBatchSize; i++)
+                fMaxAbsReturn = Math.Max(fMaxAbsReturn, Math.Abs(rgfTrue[i]));
+
+            // Compute pairwise comparisons with enhanced weighting and dynamic margins
+            for (int i = 0; i < m_nBatchSize; i++)
+            {
+                float fTrueI = rgfTrue[i];
+                float fPredI = rgfPred[i];
+
+                for (int j = 0; j < m_nBatchSize; j++)
+                {
+                    if (i == j) continue;
+
+                    int idx = i * m_nBatchSize + j;
+                    float fTrueJ = rgfTrue[j];
+                    float fPredJ = rgfPred[j];
+                    float fTrueDiff = fTrueI - fTrueJ;
+                    float fPredDiff = fPredI - fPredJ;
+
+                    rgfDiffTrue[idx] = fTrueDiff;
+                    rgfDiffPred[idx] = fPredDiff;
+
+                    // Calculate position-based importance
+                    float fPositionWeight = 1.0f;
+                    bool isExtremePair = (i < m_nBatchSize / 4 || i > 3 * m_nBatchSize / 4) &&
+                                        (j < m_nBatchSize / 4 || j > 3 * m_nBatchSize / 4);
+                    if (isExtremePair)
+                        fPositionWeight = 2.0f;
+
+                    // Calculate return-based weight using sigmoid
+                    float fReturnDiffAbs = Math.Abs(fTrueDiff);
+                    float fMagnitudeWeight = 2.0f / (1.0f + (float)Math.Exp(-2.0f * fReturnDiffAbs)) - 1.0f;
+
+                    // Combine weights
+                    float fWeight = fPositionWeight * fMagnitudeWeight;
+                    rgfWeights[idx] = fWeight;
+
+                    // Adaptive threshold for valid pairs
+                    float fValidThreshold = Math.Max(1e-6f, 1e-5f * fReturnDiffAbs);
+                    bool bValidPair = fReturnDiffAbs > fValidThreshold;
+                    rgfValidPairs[idx] = bValidPair ? 1.0f : 0.0f;
+
+                    if (bValidPair)
+                    {
+                        // Dynamic margin based on return difference
+                        float fDynamicMargin = (float)(m_dfMargin * (1.0f + 0.5f * (float)Math.Tanh(fReturnDiffAbs)));
+
+                        // Smooth approximation of hinge loss using softplus
+                        float z = fDynamicMargin - Math.Sign(fTrueDiff) * fPredDiff;
+                        float fLoss = fWeight * (float)Math.Log(1.0f + Math.Exp(z));
+
+                        rgfLoss[idx] = fLoss;
+                        fTotalLoss += fLoss;
+                        fTotalWeight += fWeight;
+                    }
+                    else
+                    {
+                        rgfLoss[idx] = 0.0f;
+                    }
+                }
+            }
+
+            // Update the internal blobs with computed values
+            m_blobDiffTrue.mutable_cpu_data = convert(rgfDiffTrue);
+            m_blobDiffPred.mutable_cpu_data = convert(rgfDiffPred);
+            m_blobLoss.mutable_cpu_data = convert(rgfLoss);
+            m_blobValidPairs.mutable_cpu_data = convert(rgfValidPairs);
+            m_blobWeights.mutable_cpu_data = convert(rgfWeights);
+
+            // Normalize the loss by total weight
+            float fNormalizedLoss = (fTotalWeight > 0) ? fTotalLoss / fTotalWeight : 0.0f;
+            if (m_param.loss_param.loss_scale != 1.0 &&
+                m_param.loss_param.loss_scale != 0.0)
+                fNormalizedLoss *= (float)m_param.loss_param.loss_scale;
+
+            colTop[0].SetData(fNormalizedLoss, 0);
+        }
+
         /// <summary>
         /// Computes the PairwiseLoss error gradient w.r.t. the inputs, optimizing for return-spread prediction.
         /// </summary>
@@ -290,7 +382,7 @@ namespace MyCaffe.layers.beta
         /// 2. Lower scores for assets with lower future returns
         /// 3. Larger score differences for pairs with larger return differences
         /// </remarks>
-        protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        protected void backwardOld(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (!rgbPropagateDown[0])
                 return;
@@ -347,6 +439,80 @@ namespace MyCaffe.layers.beta
                                 rgfGrad[i] -= fGradSign;
                                 rgfGrad[j] += fGradSign;
                             }
+                        }
+                    }
+                }
+            }
+
+            colBottom[0].mutable_cpu_diff = convert(rgfGrad);
+        }
+
+        protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
+            if (!rgbPropagateDown[0])
+                return;
+
+            float[] rgfDiffTrue = convertF(m_blobDiffTrue.mutable_cpu_data);
+            float[] rgfDiffPred = convertF(m_blobDiffPred.mutable_cpu_data);
+            float[] rgfValidPairs = convertF(m_blobValidPairs.mutable_cpu_data);
+            float[] rgfWeights = convertF(m_blobWeights.mutable_cpu_data);
+            float[] rgfGrad = convertF(colBottom[0].mutable_cpu_diff);
+
+            // Get the loss weight from the top gradient
+            float fLossWeight = convertF(colTop[0].GetDiff(0));
+            if (m_param.loss_param.loss_scale != 1.0 &&
+                m_param.loss_param.loss_scale != 0.0)
+                fLossWeight *= (float)m_param.loss_param.loss_scale;
+
+            // Calculate total weight for normalization
+            float fTotalWeight = 0.0f;
+            for (int i = 0; i < m_nBatchSize; i++)
+            {
+                for (int j = 0; j < m_nBatchSize; j++)
+                {
+                    if (i == j) continue;
+                    int idx = i * m_nBatchSize + j;
+                    if (rgfValidPairs[idx] > 0)
+                    {
+                        fTotalWeight += rgfWeights[idx];
+                    }
+                }
+            }
+
+            // Initialize gradients to zero
+            Array.Clear(rgfGrad, 0, colBottom[0].count());
+
+            if (fTotalWeight > 0)
+            {
+                for (int i = 0; i < m_nBatchSize; i++)
+                {
+                    for (int j = 0; j < m_nBatchSize; j++)
+                    {
+                        if (i == j) continue;
+                        int idx = i * m_nBatchSize + j;
+
+                        if (rgfValidPairs[idx] > 0)
+                        {
+                            float fTrueDiff = rgfDiffTrue[idx];
+                            float fPredDiff = rgfDiffPred[idx];
+                            float fWeight = rgfWeights[idx];
+                            float fReturnDiffAbs = Math.Abs(fTrueDiff);
+
+                            // Calculate dynamic margin as in forward pass
+                            float fDynamicMargin = (float)(m_dfMargin * (1.0f + 0.5f * (float)Math.Tanh(fReturnDiffAbs)));
+
+                            // Calculate softplus gradient
+                            float z = fDynamicMargin - Math.Sign(fTrueDiff) * fPredDiff;
+                            float fExpZ = (float)Math.Exp(z);
+                            float fSoftplusGrad = fExpZ / (1.0f + fExpZ);  // Derivative of softplus
+
+                            // Apply gradient with weight, loss weight, and normalization
+                            float fGradMagnitude = fSoftplusGrad * fWeight * fLossWeight / fTotalWeight;
+                            float fGradSign = Math.Sign(fTrueDiff) * fGradMagnitude;
+
+                            // Apply gradients to both items in the pair
+                            rgfGrad[i] -= fGradSign;
+                            rgfGrad[j] += fGradSign;
                         }
                     }
                 }

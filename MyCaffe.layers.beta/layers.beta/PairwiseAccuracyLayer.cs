@@ -138,11 +138,15 @@ namespace MyCaffe.layers.beta
             float[] rgfValidPairs = convertF(m_blobValidPairs.mutable_cpu_data);
             float[] rgfCorrectPairs = convertF(m_blobCorrectPairs.mutable_cpu_data);
             float[] rgfWeights = convertF(m_blobWeights.mutable_cpu_data);
-
             float fTotalCorrect = 0.0f;
             float fTotalWeight = 0.0f;
 
-            // Compute pairwise comparisons
+            // Pre-compute true values statistics for normalization
+            float fMaxAbsReturn = 0.0f;
+            for (int i = 0; i < m_nBatchSize; i++)
+                fMaxAbsReturn = Math.Max(fMaxAbsReturn, Math.Abs(rgfTrue[i]));
+
+            // Compute pairwise comparisons with enhanced weighting
             for (int i = 0; i < m_nBatchSize; i++)
             {
                 float fTrueI = rgfTrue[i];
@@ -155,19 +159,30 @@ namespace MyCaffe.layers.beta
                     int idx = i * m_nBatchSize + j;
                     float fTrueJ = rgfTrue[j];
                     float fPredJ = rgfPred[j];
-
                     float fTrueDiff = fTrueI - fTrueJ;
                     float fPredDiff = fPredI - fPredJ;
 
                     rgfDiffTrue[idx] = fTrueDiff;
                     rgfDiffPred[idx] = fPredDiff;
 
-                    // Calculate importance weight based on return difference magnitude
+                    // Calculate position-based importance
+                    float fPositionWeight = 1.0f;
+                    bool isExtremePair = (i < m_nBatchSize / 4 || i > 3 * m_nBatchSize / 4) &&
+                                        (j < m_nBatchSize / 4 || j > 3 * m_nBatchSize / 4);
+                    if (isExtremePair)
+                        fPositionWeight = 2.0f;
+
+                    // Calculate return-based weight using sigmoid
                     float fReturnDiffAbs = Math.Abs(fTrueDiff);
-                    float fWeight = fReturnDiffAbs * (1.0f + fReturnDiffAbs);  // Quadratic weighting
+                    float fMagnitudeWeight = 2.0f / (1.0f + (float)Math.Exp(-2.0f * fReturnDiffAbs)) - 1.0f;
+
+                    // Combine weights
+                    float fWeight = fPositionWeight * fMagnitudeWeight;
                     rgfWeights[idx] = fWeight;
 
-                    bool bValidPair = fReturnDiffAbs > 1e-6;
+                    // Adaptive threshold for valid pairs
+                    float fValidThreshold = Math.Max(1e-6f, 1e-5f * fReturnDiffAbs);
+                    bool bValidPair = fReturnDiffAbs > fValidThreshold;
                     rgfValidPairs[idx] = bValidPair ? 1.0f : 0.0f;
 
                     if (bValidPair)
@@ -176,6 +191,7 @@ namespace MyCaffe.layers.beta
                         bool bCorrect = Math.Sign(fPredDiff) == Math.Sign(fTrueDiff);
                         rgfCorrectPairs[idx] = bCorrect ? 1.0f : 0.0f;
 
+                        // Add to totals with enhanced weighting
                         if (bCorrect)
                             fTotalCorrect += fWeight;
 
