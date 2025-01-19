@@ -543,6 +543,7 @@ namespace MyCaffe.db.image
         bool m_bBoosted = false;
         int m_nIdx = 0;
         List<DbItem> m_rgItems;
+        Dictionary<DateTime, List<DbItem>> m_rgItemsByTime = new Dictionary<DateTime, List<DbItem>>();
         double m_dfProbability = 0;
         object m_objSync = new object();
 
@@ -561,6 +562,13 @@ namespace MyCaffe.db.image
             m_nLabel = nLabel;
             m_bBoosted = bBoosted;
             m_dfProbability = dfProbability;
+
+            foreach (DbItem item in rgItems)
+            {
+                if (!m_rgItemsByTime.ContainsKey(item.Time))
+                    m_rgItemsByTime.Add(item.Time, new List<DbItem>());
+                m_rgItemsByTime[item.Time].Add(item);
+            }
         }
 
         public int Count
@@ -667,7 +675,9 @@ namespace MyCaffe.db.image
 
         public List<DbItem> FindImageIndexes(DateTime dt)
         {
-            return m_rgItems.Where(p => p.Time == dt).ToList();
+            if (!m_rgItemsByTime.ContainsKey(dt))
+                return new List<DbItem>();
+            return m_rgItemsByTime[dt];
         }
 
         public int? GetNext(SELECTION_TYPE type, bool bRemove = false)
