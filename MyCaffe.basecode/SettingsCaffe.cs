@@ -32,6 +32,8 @@ namespace MyCaffe.basecode
         bool m_bItemDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.STATE_BEST_ACCURACY;
+        DateTime? m_dtDbLoadMinDate = null;
+        DateTime? m_dtDbLoadMaxDate = null;
         bool m_bSkipMeanCheck = false;
 
         /// <summary>
@@ -67,6 +69,8 @@ namespace MyCaffe.basecode
             m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
             m_snapshotLoadMethod = s.m_snapshotLoadMethod;
             m_bSkipMeanCheck = s.m_bSkipMeanCheck;
+            m_dtDbLoadMinDate = s.m_dtDbLoadMinDate;
+            m_dtDbLoadMaxDate = s.m_dtDbLoadMaxDate;
         }
 
         /// <summary>
@@ -97,6 +101,26 @@ namespace MyCaffe.basecode
             m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)getInt(info, "SnapshotLoadMethod", (int)m_snapshotLoadMethod);
             m_bSkipMeanCheck = getBool(info, "SkipMeanCheck", m_bSkipMeanCheck);
+
+            m_dtDbLoadMinDate = null;
+            m_dtDbLoadMaxDate = null;
+
+            try
+            {
+                string str;
+                DateTime dt;
+
+                str = info.GetString("ImageDbLoadMinDate");
+                if (DateTime.TryParse(str, out dt))
+                    m_dtDbLoadMinDate = dt;
+
+                str = info.GetString("ImageDbLoadMaxDate");
+                if (DateTime.TryParse(str, out dt))
+                    m_dtDbLoadMaxDate = dt;
+            }
+            catch (Exception excpt)
+            {
+            }
         }
 
         private bool getBool(SerializationInfo info, string str, bool bDefault)
@@ -175,6 +199,8 @@ namespace MyCaffe.basecode
             info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
             info.AddValue("SkipMeanCheck", m_bSkipMeanCheck);
+            info.AddValue("ImageDbLoadMinDate", m_dtDbLoadMinDate.HasValue ? m_dtDbLoadMinDate.Value.ToString() : "");
+            info.AddValue("ImageDbLoadMaxDate", m_dtDbLoadMaxDate.HasValue ? m_dtDbLoadMaxDate.Value.ToString() : "");
         }
 
         /// <summary>
@@ -206,6 +232,8 @@ namespace MyCaffe.basecode
             s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
             s.m_snapshotLoadMethod = m_snapshotLoadMethod;
             s.m_bSkipMeanCheck = m_bSkipMeanCheck;
+            s.m_dtDbLoadMinDate = m_dtDbLoadMinDate;
+            s.m_dtDbLoadMaxDate = m_dtDbLoadMaxDate;
 
             return s;
         }
@@ -357,6 +385,24 @@ namespace MyCaffe.basecode
 
                 m_nDbLoadLimit = value;
             }
+        }
+
+        /// <summary>
+        /// Specifies the minimum date to load images from.
+        /// </summary>
+        public DateTime? DbLoadMinDate
+        {
+            get { return m_dtDbLoadMinDate; }
+            set { m_dtDbLoadMinDate = value; }
+        }
+
+        /// <summary>
+        /// Specifies the maximum date to load images from.
+        /// </summary>
+        public DateTime? DbLoadMaxDate
+        {
+            get { return m_dtDbLoadMaxDate; }
+            set { m_dtDbLoadMaxDate = value; }
         }
 
         /// <summary>
