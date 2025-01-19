@@ -696,6 +696,22 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the min date to load from or null to ignore.
+        /// </summary>
+        public DateTime? ImageLoadMinDate
+        {
+            get { return m_project.Settings.DbLoadMinDate; }
+        }
+
+        /// <summary>
+        /// Returns the max date to load from or null to ignore.
+        /// </summary>
+        public DateTime? ImageLoadMaxDate
+        {
+            get { return m_project.Settings.DbLoadMaxDate; }
+        }
+
+        /// <summary>
         /// Returns the image load limit refresh period in milliseconds.
         /// </summary>
         public int ImageLoadLimitRefreshPeriod
