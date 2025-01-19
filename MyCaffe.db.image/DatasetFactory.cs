@@ -41,6 +41,14 @@ namespace MyCaffe.db.image
         /// Specifies the connection information used on open.
         /// </summary>
         protected ConnectInfo m_ciOpen = null;
+        /// <summary>
+        /// Specifies the minimum date to load from, or null to ignore.
+        /// </summary>
+        protected DateTime? m_dtMin = null;
+        /// <summary>
+        /// Specifies the maximum date to load from, or null to ignore.
+        /// </summary>
+        protected DateTime? m_dtMax = null;
 
         ImageCache m_imageCache = null;
         ParamCache m_paramCache = null;
@@ -75,6 +83,8 @@ namespace MyCaffe.db.image
         {
             m_bLoadDebugData = factory.m_bLoadDebugData;
             m_bLoadDataCriteria = factory.m_bLoadDataCriteria;
+            m_dtMin = factory.m_dtMin;
+            m_dtMax = factory.m_dtMax;
         }
 
         /// <summary>
@@ -114,10 +124,28 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file. (default = true).</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file. (default = true).</param>
-        public void SetLoadingParameters(bool bLoadDataCriteria, bool bLoadDebugData)
+        public void SetLoadingParameters(bool bLoadDataCriteria, bool bLoadDebugData, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             m_bLoadDataCriteria = bLoadDataCriteria;
             m_bLoadDebugData = bLoadDebugData;
+            m_dtMin = dtMin;
+            m_dtMax = dtMax;
+        }
+
+        /// <summary>
+        /// Specifies the minimum date to load from, set with SetLoadingParameters.
+        /// </summary>
+        public DateTime? MinDate
+        {
+            get { return m_dtMin; }
+        }
+
+        /// <summary>
+        /// Specifies the maximum date to load to, set with SetLoadingParameters.
+        /// </summary>
+        public DateTime? MaxDate
+        {
+            get { return m_dtMax; }
         }
 
         /// <summary>
@@ -379,6 +407,21 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Get the raw image count, optionally with date bounds
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="dtMin">Specifies the min date or null to ignore.</param>
+        /// <param name="dtMax">Specifies the max date or null to ignore.</param>
+        /// <returns>The image count is returned.</returns>
+        public int GetRawImageCount(int nSrcID, DateTime? dtMin = null, DateTime? dtMax = null)
+        {
+            if (dtMin == null && dtMax == null)
+                return -1;
+
+            return m_db.QueryRawImageCount(nSrcID, dtMin, dtMax);
+        }
+
+        /// <summary>
         /// Returns a list of RawImages from the database for a data source.
         /// </summary>
         /// <param name="nImageIdx">Specifies the starting image index.</param>
@@ -402,40 +445,35 @@ namespace MyCaffe.db.image
         /// <returns>The list of RawImage items is returned.</returns>
         public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null, Log log = null)
         {
-            List<RawImage> rgImg = new List<RawImage>();
+            if (rgImageIdx == null || rgImageIdx.Count == 0)
+                return new List<RawImage>();
 
+            var rgImg = new List<RawImage>(rgImageIdx.Count); // Preallocate capacity
             m_sw.Restart();
+            int totalCount = rgImageIdx.Count;
+            int processedCount = 0;
 
-            int nCount = rgImageIdx.Count;
-
-            while (rgImageIdx.Count > 0)
+            // Process in batches of 100
+            for (int offset = 0; offset < rgImageIdx.Count; offset += 100)
             {
-                List<int> rgIdx = new List<int>();
+                // Take next batch using Range instead of building new list
+                int batchSize = Math.Min(100, rgImageIdx.Count - offset);
+                var batch = rgImageIdx.GetRange(offset, batchSize);
 
-                for (int i=0; i<rgImageIdx.Count && i < 100; i++)
-                {
-                    rgIdx.Add(rgImageIdx[i]);
-                }
-
-                List<RawImage> rgImg1 = m_db.GetRawImagesAt(rgIdx, nSrcId, strDescription);
-                rgImg.AddRange(rgImg1);
-
-                for (int i = 0; i < rgIdx.Count; i++)
-                {
-                    rgImageIdx.RemoveAt(0);
-                }                
+                // Get and add images
+                var batchImages = m_db.GetRawImagesAt(batch, nSrcId, strDescription);
+                rgImg.AddRange(batchImages);
+                processedCount += batchSize;
 
                 if (evtCancel.WaitOne(0))
                     return null;
 
-                if (log != null)
+                // Log progress if needed
+                if (log != null && m_sw.Elapsed.TotalMilliseconds >= 1000)
                 {
-                    if (m_sw.Elapsed.TotalMilliseconds >= 1000)
-                    {
-                        double dfPct = 1.0 - ((double)rgImageIdx.Count / (double)nCount);
-                        log.WriteLine("Loading image block of " + rgIdx.Count.ToString() + " images, remaining = " + rgImageIdx.Count.ToString() + " (" + dfPct.ToString("P") + ")...");
-                        m_sw.Restart();
-                    }
+                    double progress = (double)processedCount / totalCount;
+                    log.WriteLine($"Loading image block of {batchSize} images, remaining = {totalCount - processedCount} ({progress:P})...");
+                    m_sw.Restart();
                 }
             }
 
@@ -1930,7 +1968,7 @@ namespace MyCaffe.db.image
         /// <returns>The list of DbItem's is returned where each DbItem contains the image index, label, and boost.</returns>
         public List<DbItem> LoadImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false)
         {
-            return m_db.GetAllRawImageIndexes(bBoostedOnly, bIncludeActive, bIncludeInactive);
+            return m_db.GetAllRawImageIndexes(bBoostedOnly, bIncludeActive, bIncludeInactive, m_dtMin, m_dtMax);
         }
 
         /// <summary>
