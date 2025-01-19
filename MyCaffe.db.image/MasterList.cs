@@ -69,12 +69,18 @@ namespace MyCaffe.db.image
             if (m_nLoadCount == 0 || m_nLoadCount > m_src.ImageCount)
                 m_nLoadCount = m_src.ImageCount;
 
+            if (factory.MinDate.HasValue || factory.MaxDate.HasValue)
+            {
+                int nCount = factory.GetRawImageCount(src.ID, factory.MinDate, factory.MaxDate);
+                if (m_nLoadCount > 0 && nCount < m_nLoadCount)
+                    m_nLoadCount = nCount;
+            }
+
             m_rgImages = new SimpleDatum[m_nLoadCount];
             m_nLoadedCount = 0;
 
             if (m_nLoadCount < m_src.ImageCount)
                 m_refreshManager = new RefreshManager(random, m_src, m_factory);
-
         }
 
         /// <summary>
@@ -118,7 +124,7 @@ namespace MyCaffe.db.image
         /// </summary>
         public bool IsLoadLimitEnabled
         {
-            get
+            get 
             {
                 if (m_refreshManager != null)
                     return true;
@@ -185,7 +191,7 @@ namespace MyCaffe.db.image
 
                 StopRefresh();
 
-                m_loadSequence = new LoadSequence(m_random, m_rgImages.Length, m_src.ImageCount, m_refreshManager);
+                m_loadSequence = new LoadSequence(m_src.ID, m_log, m_random, m_rgImages.Length, m_src.ImageCount, m_factory.MinDate, m_factory.MaxDate, m_refreshManager);
             }
 
             if (bReLoad)
@@ -567,39 +573,49 @@ namespace MyCaffe.db.image
         /// <returns>If found, the image is returned, otherwise it is loaded then returned.</returns>
         public SimpleDatum GetImage(DbItem item1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
         {
-            SimpleDatum sd = m_rgImages.FirstOrDefault(p => p != null && p.Index == item1.Index);
+            // Cache the index since we use it multiple times
+            int targetIndex = item1.Index;
+            int targetLabel = item1.Label;
 
-            if (sd != null)
-                return sd;
-
-            sd = directLoadImage(item1.Index);
-            if (sd == null)
-                return sd;
-
-            int? nFirstNullIdx = m_rgImages.Select((item, index) => new { item, index })
-                                            .FirstOrDefault(x => x.item == null)
-                                            ?.index;
-
-            if (nFirstNullIdx != null)
+            // Use array indexing and loop instead of LINQ for first check
+            for (int i = 0; i < m_rgImages.Length; i++)
             {
-                m_rgImages[nFirstNullIdx.Value] = sd;
+                var img = m_rgImages[i];
+                if (img != null && img.Index == targetIndex)
+                    return img;
+            }
+
+            // Load the image
+            var sd = directLoadImage(targetIndex);
+            if (sd == null)
+                return null;
+
+            // Look for first null slot using simple loop
+            for (int i = 0; i < m_rgImages.Length; i++)
+            {
+                if (m_rgImages[i] == null)
+                {
+                    m_rgImages[i] = sd;
+                    return sd;
+                }
+            }
+
+            // If no null slots, find indices with matching label
+            var matchingIndices = new List<int>();
+            for (int i = 0; i < m_rgImages.Length; i++)
+            {
+                if (m_rgImages[i].Label == targetLabel)
+                    matchingIndices.Add(i);
+            }
+
+            if (matchingIndices.Count > 0)
+            {
+                int replaceIndex = matchingIndices[m_random.Next(matchingIndices.Count)];
+                m_rgImages[replaceIndex] = sd;
             }
             else
             {
-                List<int> rgIdx = m_rgImages.Select((item, index) => new { item, index })
-                                               .Where(x => x.item.Label == item1.Label)
-                                               .Select(x => x.index)
-                                               .ToList();
-                if (rgIdx.Count > 0)
-                {
-                    int nIdx = m_random.Next(rgIdx.Count);
-                    nIdx = rgIdx[nIdx];
-                    m_rgImages[nIdx] = sd;
-                }
-                else
-                {
-                    Trace.WriteLine("Image not replaced in master dataset - could not find a replacement slot.");
-                }
+                Trace.WriteLine("Image not replaced in master dataset - could not find a replacement slot.");
             }
 
             return sd;
@@ -626,7 +642,24 @@ namespace MyCaffe.db.image
                 if (!nLabel.HasValue)
                     throw new Exception("You must specify a label when using a NULL index.");
 
-                return m_refreshManager.GetNextDatum(nLabel.Value);
+                if (m_refreshManager != null)
+                    return m_refreshManager.GetNextDatum(nLabel.Value);
+
+                int nIdx = m_random.Next(m_rgImages.Length);
+                sd = m_rgImages[nIdx];
+
+                if (sd == null)
+                {
+                    if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
+                        Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
+
+                    sd = directLoadImage(nIdx);
+                    if (sd == null)
+                        throw new Exception("The image is still null yet should have loaded!");
+
+                    if (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND)
+                        m_rgImages[nIdx] = sd;
+                }
             }
             else
             {
@@ -1035,45 +1068,82 @@ namespace MyCaffe.db.image
 
     public class LoadSequence /** @private */
     {
+        Database m_db = new Database();
         List<int> m_rgLoadSequence = new List<int>();
         Dictionary<int, Tuple<bool, bool>> m_rgLoadConditions = new Dictionary<int, Tuple<bool, bool>>();
         Dictionary<int, AutoResetEvent> m_rgPending = new Dictionary<int, AutoResetEvent>();
         object m_syncObj = new object();
 
-        public LoadSequence(CryptoRandom random, int nCount, int nImageCount, RefreshManager refresh)
+        public LoadSequence(int nSrcID, Log log, CryptoRandom random, int nCount, int nImageCount, DateTime? dtMin, DateTime? dtMax, RefreshManager refresh)
         {
-            // When using load limit (count < image count), load item indexes in such
-            // a way that balances the number of items per label.
-            if (nCount < nImageCount)
-            {
-                Dictionary<int, List<DbItem>> rgItemsByLabel = refresh.GetItemsByLabel();
-                List<int> rgLabel = rgItemsByLabel.Where(p => p.Value.Count > 0).Select(p => p.Key).ToList();
+            m_db.Open(nSrcID);
+            List<DbItem> rgImg = m_db.GetAllRawImageIndexes(false, true, false, dtMin, dtMax);
+            m_db.Close();
 
+            if (nCount >= nImageCount)
+            {
+                // Fast path for loading all indexes
+                m_rgLoadSequence.Capacity = nCount;  // Preallocate
                 for (int i = 0; i < nCount; i++)
                 {
-                    int nLabelIdx = random.Next(rgLabel.Count);
-                    int nLabel = rgLabel[nLabelIdx];
-                    List<DbItem> rgItems = rgItemsByLabel[nLabel];
-                    int nItemIdx = random.Next(rgItems.Count);
-                    DbItem item = rgItems[nItemIdx];
-
-                    m_rgLoadSequence.Add(item.Index);
-
-                    rgLabel.Remove(nLabel);
-                    if (rgLabel.Count == 0)
-                        rgLabel = rgItemsByLabel.Where(p => p.Value.Count > 0).Select(p => p.Key).ToList();
+                    int nIdx = rgImg[i].Index;
+                    m_rgLoadSequence.Add(nIdx);
                 }
-
-                refresh.Reset();
+                return;
             }
-            // Otherwise just load all item indexes.
-            else
+
+            // Initialize for partial loading
+            var sw = new Stopwatch();
+            sw.Start();
+            m_rgLoadSequence.Capacity = nCount;  // Preallocate
+
+            var rgItemsByLabel = refresh.GetItemsByLabel();
+
+            // Pre-compute eligible labels and their items
+            var labelData = rgItemsByLabel
+                .Where(p => p.Value.Count > 0)
+                .Select(kvp => new {
+                    Label = kvp.Key,
+                    Items = kvp.Value.Values.ToList()  // Cache values as list
+                })
+                .ToList();
+
+            var availableLabels = new List<int>(labelData.Count);
+            var labelToItems = new Dictionary<int, List<DbItem>>(labelData.Count);
+
+            foreach (var data in labelData)
             {
-                for (int i = 0; i < nCount; i++)
+                availableLabels.Add(data.Label);
+                labelToItems[data.Label] = data.Items;
+            }
+
+            // Main loading loop
+            for (int i = 0; i < nCount; i++)
+            {
+                if (availableLabels.Count == 0)
                 {
-                    m_rgLoadSequence.Add(i);
+                    // Replenish available labels
+                    availableLabels.AddRange(labelData.Select(d => d.Label));
+                }
+
+                int labelIndex = random.Next(availableLabels.Count);
+                int label = availableLabels[labelIndex];
+                var items = labelToItems[label];
+
+                int itemIndex = random.Next(items.Count);
+                m_rgLoadSequence.Add(items[itemIndex].Index);
+
+                availableLabels.RemoveAt(labelIndex);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double progress = (double)i / nCount;
+                    log.WriteLine($"Loading sequence at {progress:P}");
+                    sw.Restart();
                 }
             }
+
+            refresh.Reset();
         }
 
         public int Count
@@ -1151,7 +1221,7 @@ namespace MyCaffe.db.image
         object m_syncObj = new object();
         CryptoRandom m_random;
         List<DbItem> m_rgItems;
-        Dictionary<int, List<DbItem>> m_rgItemsByLabel = null;
+        Dictionary<int, Dictionary<int, DbItem>> m_rgItemsByLabelByID = null;
         Dictionary<int, List<int>> m_rgLoadedIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> m_rgNotLoadedIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<SimpleDatum>> m_rgDynamicLoadItems = new Dictionary<int, List<SimpleDatum>>();
@@ -1162,27 +1232,27 @@ namespace MyCaffe.db.image
             m_rgItems = factory.LoadImageIndexes(false, true);
         }
 
-        public Dictionary<int, List<DbItem>> GetItemsByLabel()
+        public Dictionary<int, Dictionary<int, DbItem>> GetItemsByLabel()
         {
-            if (m_rgItemsByLabel == null)
+            if (m_rgItemsByLabelByID == null)
             {
-                m_rgItemsByLabel = new Dictionary<int, List<DbItem>>();
+                m_rgItemsByLabelByID = new Dictionary<int, Dictionary<int,DbItem>>();
 
                 for (int i=0; i<m_rgItems.Count; i++)
                 {
                     DbItem item = m_rgItems[i];
                     item.Tag = i;
 
-                    if (!m_rgItemsByLabel.ContainsKey(item.Label))
-                        m_rgItemsByLabel.Add(item.Label, new List<DbItem>());
+                    if (!m_rgItemsByLabelByID.ContainsKey(item.Label))
+                        m_rgItemsByLabelByID.Add(item.Label, new Dictionary<int, DbItem>());
 
-                    m_rgItemsByLabel[item.Label].Add(item);
+                    m_rgItemsByLabelByID[item.Label].Add(item.ID, item);
                 }
 
                 Reset();
             }
 
-            return m_rgItemsByLabel;
+            return m_rgItemsByLabelByID;
         }
 
         public void Reset()
@@ -1190,9 +1260,9 @@ namespace MyCaffe.db.image
             m_rgLoadedIdx = new Dictionary<int, List<int>>();
             m_rgNotLoadedIdx = new Dictionary<int, List<int>>();
 
-            foreach (KeyValuePair<int, List<DbItem>> kv in m_rgItemsByLabel)
+            foreach (KeyValuePair<int, Dictionary<int, DbItem>> kv in m_rgItemsByLabelByID)
             {
-                m_rgNotLoadedIdx.Add(kv.Key, kv.Value.Select(p => (int)p.Tag).ToList());
+                m_rgNotLoadedIdx.Add(kv.Key, kv.Value.Select(p => (int)p.Value.Tag).ToList());
             }
         }
 
@@ -1230,26 +1300,40 @@ namespace MyCaffe.db.image
 
         public void AddLoaded(SimpleDatum sd)
         {
-            if (!m_rgLoadedIdx.ContainsKey(sd.Label))
-                m_rgLoadedIdx.Add(sd.Label, new List<int>());
+            var label = sd.Label; // Cache the label to avoid repeated property access
 
-            DbItem item = m_rgItemsByLabel[sd.Label].Where(p => p.ID == sd.ImageID).First();
-            m_rgLoadedIdx[sd.Label].Add((int)item.Tag);
+            // Get or create loaded index list
+            if (!m_rgLoadedIdx.TryGetValue(label, out var loadedList))
+            {
+                loadedList = new List<int>();
+                m_rgLoadedIdx[label] = loadedList;
+            }
 
-            m_rgNotLoadedIdx[sd.Label].Remove((int)item.Tag);
+            // Find item using dictionary indexer instead of LINQ
+            var item = m_rgItemsByLabelByID[label][sd.ImageID];
+            var tagValue = (int)item.Tag;
 
-            if (!m_rgDynamicLoadItems.ContainsKey(sd.Label))
-                m_rgDynamicLoadItems.Add(sd.Label, new List<SimpleDatum>());
+            // Update indices
+            loadedList.Add(tagValue);
+            m_rgNotLoadedIdx[label].Remove(tagValue);
 
-            m_rgDynamicLoadItems[sd.Label].Add(sd);
+            // Get or create dynamic load items list
+            if (!m_rgDynamicLoadItems.TryGetValue(label, out var dynamicItems))
+            {
+                dynamicItems = new List<SimpleDatum>();
+                m_rgDynamicLoadItems[label] = dynamicItems;
+            }
+
+            dynamicItems.Add(sd);
         }
+
 
         public DbItem GetNextImageId(int? nLabel, bool bUseLoadedOnly = false)
         {
             if (!nLabel.HasValue)
             {
-                int nLabelIdx = m_random.Next(m_rgItemsByLabel.Count);
-                nLabel = m_rgItemsByLabel.ElementAt(nLabelIdx).Key;
+                int nLabelIdx = m_random.Next(m_rgItemsByLabelByID.Count);
+                nLabel = m_rgItemsByLabelByID.ElementAt(nLabelIdx).Key;
             }
 
             if (!m_rgLoadedIdx.ContainsKey(nLabel.Value))
@@ -1269,7 +1353,7 @@ namespace MyCaffe.db.image
             if (rgNotLoadedIdx.Count == 0)
             {
                 rgLoadedIdx.Clear();
-                rgNotLoadedIdx = m_rgItemsByLabel[nLabel.Value].Select(p => (int)p.Tag).ToList();
+                rgNotLoadedIdx = m_rgItemsByLabelByID[nLabel.Value].Select(p => (int)p.Value.Tag).ToList();
             }
 
             int nIdx = m_random.Next(rgNotLoadedIdx.Count);
