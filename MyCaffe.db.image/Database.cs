@@ -1129,8 +1129,10 @@ namespace MyCaffe.db.image
         /// <param name="bBoostedOnly">Specifies to only retrieve boosted images.</param>
         /// <param name="bIncludeActive">Optionally, specifies to query active images (default = true).</param>
         /// <param name="bIncludeInactive">Optionally, specifies to query inactive images (default = false).</param>
+        /// <param name="dtMax">Optionally, specifies the minimum time to load.</param>
+        /// <param name="dtMin">Optionally, specifies the maximum time to load.</param>
         /// <returns>The image indexes are returned in a list.</returns>
-        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false)
+        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -1145,9 +1147,29 @@ namespace MyCaffe.db.image
                 if (bBoostedOnly)
                     iQuery = iQuery.Where(p => p.ActiveBoost > 0);
 
+                if (dtMin != null)
+                    iQuery = iQuery.Where(p => p.TimeStamp >= dtMin);
+
+                if (dtMax != null)
+                    iQuery = iQuery.Where(p => p.TimeStamp <= dtMax);
+
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, sourceid = p.SourceID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, score = p.Score, score2 = p.Score2, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
+                return iQuery.Select(p => new DbItem
+                {
+                    id = p.ID,
+                    sourceid = p.SourceID,
+                    virtualid = p.VirtualID,
+                    index = p.Idx,
+                    label = p.ActiveLabel,
+                    score = p.Score,
+                    score2 = p.Score2,
+                    boost = p.ActiveBoost,
+                    time = p.TimeStamp,
+                    desc = p.Description,
+                    originalsrcid = p.OriginalSourceID,
+                    active = p.Active
+                }).ToList();
             }
         }
 
@@ -1274,9 +1296,6 @@ namespace MyCaffe.db.image
 
             strCmd += " ORDER BY Idx";
 
-            if (m_entities != null)
-                return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
-
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 return entities.Database.SqlQuery<RawImage>(strCmd).ToList();
@@ -1291,6 +1310,29 @@ namespace MyCaffe.db.image
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
         /// <returns>The raw images are returned.</returns>
         public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            if (rgImageIdx.Count > 100)
+                throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
+
+            // Convert list to HashSet for more efficient Contains operation
+            var idxSet = new HashSet<int>(rgImageIdx);
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                var query = entities.RawImages.AsNoTracking()
+                    .Where(r => r.SourceID == nSrcId && r.Active == true && r.Idx != null)
+                    .Where(r => idxSet.Contains(r.Idx.Value));
+
+                if (!string.IsNullOrEmpty(strDescription))
+                    query = query.Where(r => r.Description == strDescription);
+
+                return query.ToList();
+            }
+        }
+        public List<RawImage> GetRawImagesAtOld(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1325,6 +1367,63 @@ namespace MyCaffe.db.image
             if (rgImageID.Count > 100)
                 throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
 
+            // Build parameterized query
+            const string baseQuery = @"
+                SELECT * 
+                FROM [DNN].[dbo].[RawImages] 
+                WHERE SourceID = @sourceId 
+                AND ID IN ({0})
+                AND Active = 1
+                {1}";
+
+            // Create parameters list for IDs
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@sourceId", nSrcId)
+            };
+
+            // Build the IN clause parameters
+            var idParameters = new List<string>();
+            for (int i = 0; i < rgImageID.Count; i++)
+            {
+                var paramName = $"@id{i}";
+                idParameters.Add(paramName);
+                parameters.Add(new SqlParameter(paramName, rgImageID[i]));
+            }
+
+            // Add description parameter if needed
+            string descriptionClause = "";
+            if (!string.IsNullOrEmpty(strDescription))
+            {
+                descriptionClause = " AND Description = @description";
+                parameters.Add(new SqlParameter("@description", strDescription));
+            }
+
+            // Build final query
+            string finalQuery = string.Format(
+                baseQuery,
+                string.Join(",", idParameters),
+                descriptionClause
+            );
+
+            // Execute query
+            lock (m_objRemoteSync)
+            {
+                using (var entities = EntitiesConnection.CreateEntities())
+                {
+                    return entities.Database.SqlQuery<RawImage>(finalQuery, parameters.ToArray()).ToList();
+                }
+            }
+        }
+
+        public List<RawImage> GetRawImagesAtIDOld(List<int> rgImageID, int nSrcId = 0, string strDescription = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            if (rgImageID.Count > 100)
+                throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
+
             StringBuilder sb = new StringBuilder();
 
             sb.Append("SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = ");
@@ -1347,7 +1446,10 @@ namespace MyCaffe.db.image
 
             lock (m_objRemoteSync)
             {
-                return m_entities.Database.SqlQuery<RawImage>(sb.ToString()).ToList();
+                using (DNNEntities entities = EntitiesConnection.CreateEntities())
+                {
+                    return entities.Database.SqlQuery<RawImage>(sb.ToString()).ToList();
+                }
             }
         }
 
@@ -1367,7 +1469,10 @@ namespace MyCaffe.db.image
 
             lock (m_objSync)
             {
-                rgImg = m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+                using (DNNEntities entities = EntitiesConnection.CreateEntities())
+                {
+                    rgImg = entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+                }
             }
 
             if (rgImg == null || rgImg.Count == 0)
@@ -2567,15 +2672,25 @@ namespace MyCaffe.db.image
         /// Returns the number of RawImages in a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="dtMin">Specifies the min date or null to ignore.</param>
+        /// <param name="dtMax">Specifies the max date or null to ignore.</param>
         /// <returns>The number of RawImages is returned.</returns>
-        public int QueryRawImageCount(int nSrcId = 0)
+        public int QueryRawImageCount(int nSrcId = 0, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                return entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId).Count();
+                IQueryable<RawImage> iqry = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Active == true);
+
+                if (dtMin != null)
+                    iqry = iqry.Where(p => p.TimeStamp >= dtMin.Value);
+
+                if (dtMax != null)
+                    iqry = iqry.Where(p => p.TimeStamp <= dtMax.Value);
+
+                return iqry.Count();
             }
         }
 
