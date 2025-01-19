@@ -711,20 +711,31 @@ namespace MyCaffe.layers
                         itemQry = DB_ITEM_SELECTION_METHOD.RANDOM;
 
                     if (m_param.data_param.time_align && i > 0)
-                        datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, itemQry, false);
+                    {
+                        DateTime dt = datum.TimeStamp;
+                        datum = m_cursor.GetValue(dt, null, bLoadDataCriteria, itemQry, false);
+
+                        while (datum == null && nRetry < 10)
+                        {
+                            if (nRetry == 9)
+                                bThrowExceptions = true;
+
+                            datum = m_cursor.GetValue(dt, null, bLoadDataCriteria, itemQry, bThrowExceptions);
+                            nRetry++;
+                        }
+                    }
                     else
+                    {
                         datum = m_cursor.GetValue(null, bLoadDataCriteria, itemQry, false);
 
-                    while (datum == null && nRetry < 10)
-                    {
-                        if (nRetry == 9)
-                            bThrowExceptions = true;
+                        while (datum == null && nRetry < 10)
+                        {
+                            if (nRetry == 9)
+                                bThrowExceptions = true;
 
-                        if (m_param.data_param.time_align && i > 0)
-                            datum = m_cursor.GetValue(datum.TimeStamp, null, bLoadDataCriteria, itemQry, bThrowExceptions);
-                        else
                             datum = m_cursor.GetValue(null, bLoadDataCriteria, itemQry, bThrowExceptions);
-                        nRetry++;
+                            nRetry++;
+                        }
                     }
 
                     if (m_param.data_param.images_per_blob > 1)
