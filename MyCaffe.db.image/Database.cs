@@ -1129,10 +1129,12 @@ namespace MyCaffe.db.image
         /// <param name="bBoostedOnly">Specifies to only retrieve boosted images.</param>
         /// <param name="bIncludeActive">Optionally, specifies to query active images (default = true).</param>
         /// <param name="bIncludeInactive">Optionally, specifies to query inactive images (default = false).</param>
+        /// <param name="nHt">Optionally, specifies an image height to enforce.</param>
+        /// <param name="nWd">Optionally, specifies an image width to enforce.</param>
         /// <param name="dtMax">Optionally, specifies the minimum time to load.</param>
         /// <param name="dtMin">Optionally, specifies the maximum time to load.</param>
         /// <returns>The image indexes are returned in a list.</returns>
-        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false, DateTime? dtMin = null, DateTime? dtMax = null)
+        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false, int? nHt = null, int? nWd = null, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -1152,6 +1154,12 @@ namespace MyCaffe.db.image
 
                 if (dtMax != null)
                     iQuery = iQuery.Where(p => p.TimeStamp <= dtMax);
+
+                if (nHt != null)
+                    iQuery = iQuery.Where(p => p.Height == nHt.Value);
+
+                if (nWd != null)
+                    iQuery = iQuery.Where(p => p.Width == nWd.Value);
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
