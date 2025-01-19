@@ -191,7 +191,7 @@ namespace MyCaffe.db.image
 
                 StopRefresh();
 
-                m_loadSequence = new LoadSequence(m_src.ID, m_log, m_random, m_rgImages.Length, m_src.ImageCount, m_factory.MinDate, m_factory.MaxDate, m_refreshManager);
+                m_loadSequence = new LoadSequence(m_src, m_log, m_random, m_rgImages.Length, m_src.ImageCount, m_factory.MinDate, m_factory.MaxDate, m_refreshManager);
             }
 
             if (bReLoad)
@@ -1074,10 +1074,10 @@ namespace MyCaffe.db.image
         Dictionary<int, AutoResetEvent> m_rgPending = new Dictionary<int, AutoResetEvent>();
         object m_syncObj = new object();
 
-        public LoadSequence(int nSrcID, Log log, CryptoRandom random, int nCount, int nImageCount, DateTime? dtMin, DateTime? dtMax, RefreshManager refresh)
+        public LoadSequence(SourceDescriptor src, Log log, CryptoRandom random, int nCount, int nImageCount, DateTime? dtMin, DateTime? dtMax, RefreshManager refresh)
         {
-            m_db.Open(nSrcID);
-            List<DbItem> rgImg = m_db.GetAllRawImageIndexes(false, true, false, dtMin, dtMax);
+            m_db.Open(src.ID);
+            List<DbItem> rgImg = m_db.GetAllRawImageIndexes(false, true, false, src.Height, src.Width, dtMin, dtMax);
             m_db.Close();
 
             if (nCount >= nImageCount)
@@ -1229,6 +1229,7 @@ namespace MyCaffe.db.image
         public RefreshManager(CryptoRandom random, SourceDescriptor src, DatasetFactory factory)
         {
             m_random = random;
+            factory.Open(src);
             m_rgItems = factory.LoadImageIndexes(false, true);
         }
 

@@ -1968,7 +1968,7 @@ namespace MyCaffe.db.image
         /// <returns>The list of DbItem's is returned where each DbItem contains the image index, label, and boost.</returns>
         public List<DbItem> LoadImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false)
         {
-            return m_db.GetAllRawImageIndexes(bBoostedOnly, bIncludeActive, bIncludeInactive, m_dtMin, m_dtMax);
+            return m_db.GetAllRawImageIndexes(bBoostedOnly, bIncludeActive, bIncludeInactive, m_openSource.Height, m_openSource.Width, m_dtMin, m_dtMax);
         }
 
         /// <summary>
