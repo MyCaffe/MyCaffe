@@ -19,6 +19,7 @@ namespace MyCaffe.db.image
         DatasetFactory m_factory;
         SourceDescriptor m_src;
         SimpleDatum[] m_rgImages = null;
+        Dictionary<int, int> m_rgImgIdxToIdx = null;
         RefreshManager m_refreshManager = null;
         bool m_bRefreshManagerActive = false;
         LoadSequence m_loadSequence = null;
@@ -29,6 +30,8 @@ namespace MyCaffe.db.image
         ManualResetEvent m_evtRefreshCancel = new ManualResetEvent(false);
         ManualResetEvent m_evtRefreshRunning = new ManualResetEvent(false);
         ManualResetEvent m_evtRefreshDone = new ManualResetEvent(false);
+        ManualResetEvent m_evtDataReady = new ManualResetEvent(false);
+        int m_nDataReadyWait = 1000000;
         Thread m_dataLoadThread;
         Thread m_dataRefreshThread;
         SimpleDatum m_imgMean = null;
@@ -78,6 +81,7 @@ namespace MyCaffe.db.image
             }
 
             m_rgImages = new SimpleDatum[m_nLoadCount];
+            m_rgImgIdxToIdx = new Dictionary<int, int>(m_nLoadCount);
             m_nLoadedCount = 0;
 
             if (m_nLoadCount < m_src.ImageCount)
@@ -149,6 +153,17 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Wait for the initial data to be ready.
+        /// </summary>
+        /// <returns></returns>
+        public bool WaitDataReady()
+        {
+            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+                return false;
+            return true;
+        }
+
+        /// <summary>
         /// Start loading the dataset.
         /// </summary>
         /// <param name="bSilent">Specifies whether or not to output the loading status.</param>
@@ -157,7 +172,7 @@ namespace MyCaffe.db.image
         {
             lock (m_syncObj)
             {
-                if (m_evtRunning.WaitOne(0))
+                if (m_evtRunning.WaitOne(0) || m_nLoadedCount == m_rgImages.Length)
                     return false;
 
                 m_bSilent = bSilent;
@@ -577,6 +592,9 @@ namespace MyCaffe.db.image
         /// <returns>If found, the image is returned, otherwise it is loaded then returned.</returns>
         public SimpleDatum GetImage(DbItem item1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
         {
+            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+                return null;
+
             // Cache the index since we use it multiple times
             int targetIndex = item1.Index;
             int targetLabel = item1.Label;
@@ -628,17 +646,20 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Get the image with a specific image index.
         /// </summary>
-        /// <param name="nIdx1">Specifies the image index or null when using LoadLimit.</param>
+        /// <param name="nImgIdx">Specifies the image index to get from the images or null when using LoadLimit.</param>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria along with the image.</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
         /// <param name="loadMethod">Specifies the image loading method used.</param>
         /// <param name="nLabel">Optionally, specifies the label of the image to randomly load (only used whent LoadLimit > 0, default = null).</param>
         /// <returns>If found, the image is returned.</returns>
-        public SimpleDatum GetImage(int? nIdx1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod, int? nLabel = null)
+        public SimpleDatum GetImage(int? nImgIdx, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod, int? nLabel = null)
         {
+            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+                return null;
+
             SimpleDatum sd = null;
 
-            if (!nIdx1.HasValue)
+            if (!nImgIdx.HasValue)
             {
                 if (m_nLoadCount == 0)
                     throw new Exception("The image index must be specified when NOT using LoadLimit.");
@@ -667,8 +688,14 @@ namespace MyCaffe.db.image
             }
             else
             {
-                int nIdx = nIdx1.Value;
-                sd = m_rgImages[nIdx];
+                int nImgIdx1 = nImgIdx.Value;
+                int nIdx = 0;
+
+                if (m_rgImgIdxToIdx.ContainsKey(nImgIdx1))
+                {
+                    nIdx = m_rgImgIdxToIdx[nImgIdx1];
+                    sd = m_rgImages[nIdx];
+                }
 
                 if (sd == null)
                 {
@@ -689,11 +716,27 @@ namespace MyCaffe.db.image
                         if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
                             Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
-                        sd = directLoadImage(nIdx);
-                        if (sd == null)
-                            throw new Exception("The image is still null yet should have loaded!");
+                        lock (m_syncObj)
+                        {
+                            if (!m_rgImgIdxToIdx.ContainsKey(nImgIdx1))
+                            {
+                                sd = directLoadImage(nImgIdx1);
+                                if (sd == null)
+                                    throw new Exception("The image is still null yet should have loaded!");
 
-                        m_rgImages[nIdx] = sd;
+                                if (m_nLoadedCount < m_rgImages.Length)
+                                {
+                                    m_rgImages[m_nLoadedCount] = sd;
+                                    m_rgImgIdxToIdx.Add(nImgIdx1, m_nLoadedCount);
+                                    m_nLoadedCount++;
+                                }
+                            }
+                            else
+                            {
+                                nIdx = m_rgImgIdxToIdx[nImgIdx1];
+                                sd = m_rgImages[nIdx];
+                            }                            
+                        }
                     }
                 }
 
@@ -736,6 +779,9 @@ namespace MyCaffe.db.image
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         public List<SimpleDatum> GetImages(QueryState state, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
         {
+            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+                return null;
+
             List<int> rgIdx = state.GetIndexes(nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
             List<SimpleDatum> rgSd;
 
@@ -777,6 +823,9 @@ namespace MyCaffe.db.image
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         public List<SimpleDatum> GetImages(QueryState state, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
+            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+                return null;
+
             List<int> rgIdx = state.GetIndexes(dtStart, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
 
             lock (m_syncObj)
@@ -881,7 +930,7 @@ namespace MyCaffe.db.image
         {
             m_evtRunning.Set();
             DatasetFactory factory = new DatasetFactory(m_factory);
-            int? nNextIdx = m_loadSequence.GetNext();
+            int? nNextImgIdx = m_loadSequence.GetNext();
             Stopwatch sw = new Stopwatch();
 
             if (m_bRefreshManagerActive && m_refreshManager != null)
@@ -891,7 +940,7 @@ namespace MyCaffe.db.image
             {
                 sw.Start();
 
-                List<int> rgIdxBatch = new List<int>();
+                List<int> rgImgIdxBatch = new List<int>();
                 int nBatchSize = getBatchSize(m_src);
 
                 if (m_nLoadedCount > 0)
@@ -902,19 +951,22 @@ namespace MyCaffe.db.image
                 if (m_log != null)
                     m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...", true);
 
-                while (nNextIdx.HasValue || rgIdxBatch.Count > 0)
-                {
-                    if (nNextIdx.HasValue)
-                        rgIdxBatch.Add(nNextIdx.Value);
+                m_rgImgIdxToIdx.Clear();
+                Dictionary<int, int> rgDuplicateIdxToImgIdx = new Dictionary<int, int>();
 
-                    if (rgIdxBatch.Count >= nBatchSize || !nNextIdx.HasValue)
+                while ((nNextImgIdx.HasValue || rgImgIdxBatch.Count > 0) && m_nLoadedCount < m_rgImages.Length)
+                {
+                    if (nNextImgIdx.HasValue)
+                        rgImgIdxBatch.Add(nNextImgIdx.Value);
+
+                    if (rgImgIdxBatch.Count >= nBatchSize || !nNextImgIdx.HasValue)
                     {
                         List<RawImage> rgImg;
 
                         if (m_bRefreshManagerActive && m_refreshManager == null)
-                            rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
+                            rgImg = factory.GetRawImagesAt(rgImgIdxBatch[0], rgImgIdxBatch.Count);
                         else                        
-                            rgImg = factory.GetRawImagesAt(rgIdxBatch, m_evtCancel, 0, null, m_log);
+                            rgImg = factory.GetRawImagesAt(rgImgIdxBatch, m_evtCancel, 0, null, m_log);
 
                         if (rgImg == null)
                             break;
@@ -923,11 +975,26 @@ namespace MyCaffe.db.image
                         {
                             SimpleDatum sd = factory.LoadDatum(rgImg[j]);
 
-                            if (m_bRefreshManagerActive && m_refreshManager != null)
-                                m_refreshManager.AddLoaded(sd);
+                            lock (m_syncObj)
+                            {
+                                if (m_nLoadedCount < m_rgImages.Length)
+                                {
+                                    if (m_rgImages[m_nLoadedCount] == null)
+                                    {
+                                        if (m_bRefreshManagerActive && m_refreshManager != null)
+                                            m_refreshManager.AddLoaded(sd);
 
-                            m_rgImages[m_nLoadedCount] = sd;
-                            m_nLoadedCount++;
+                                        m_rgImages[m_nLoadedCount] = sd;
+
+                                        if (!m_rgImgIdxToIdx.ContainsKey(sd.Index))
+                                            m_rgImgIdxToIdx.Add(sd.Index, m_nLoadedCount);
+                                        else
+                                            rgDuplicateIdxToImgIdx.Add(m_nLoadedCount, sd.Index);
+
+                                        m_nLoadedCount++;
+                                    }
+                                }
+                            }
 
                             if (sw.Elapsed.TotalMilliseconds > 1000)
                             {
@@ -946,14 +1013,18 @@ namespace MyCaffe.db.image
                             }
                         }
 
-                        rgIdxBatch = new List<int>();
+                        rgImgIdxBatch = new List<int>();
                     }
 
-                    nNextIdx = m_loadSequence.GetNext();
+                    m_evtDataReady.Set();
+                    nNextImgIdx = m_loadSequence.GetNext();
                 }
 
-                if (rgIdxBatch.Count > 0 && m_log != null)
-                    m_log.FAIL("Not all images were loaded!");
+                if (!m_evtCancel.WaitOne(0))
+                {
+                    if (rgImgIdxBatch.Count > 0 && m_log != null)
+                        m_log.FAIL("Not all images were loaded!");
+                }
             }
             finally
             {
@@ -1072,7 +1143,7 @@ namespace MyCaffe.db.image
     public class LoadSequence /** @private */
     {
         Database m_db = new Database();
-        List<int> m_rgLoadSequence = new List<int>();
+        List<int> m_rgLoadSequenceOfImgIdx = new List<int>();
         Dictionary<int, Tuple<bool, bool>> m_rgLoadConditions = new Dictionary<int, Tuple<bool, bool>>();
         Dictionary<int, AutoResetEvent> m_rgPending = new Dictionary<int, AutoResetEvent>();
         object m_syncObj = new object();
@@ -1086,11 +1157,11 @@ namespace MyCaffe.db.image
             if (nCount >= nImageCount)
             {
                 // Fast path for loading all indexes
-                m_rgLoadSequence.Capacity = nCount;  // Preallocate
+                m_rgLoadSequenceOfImgIdx.Capacity = nCount;  // Preallocate
                 for (int i = 0; i < nCount; i++)
                 {
                     int nIdx = rgImg[i].Index;
-                    m_rgLoadSequence.Add(nIdx);
+                    m_rgLoadSequenceOfImgIdx.Add(nIdx);
                 }
                 return;
             }
@@ -1098,7 +1169,7 @@ namespace MyCaffe.db.image
             // Initialize for partial loading
             var sw = new Stopwatch();
             sw.Start();
-            m_rgLoadSequence.Capacity = nCount;  // Preallocate
+            m_rgLoadSequenceOfImgIdx.Capacity = nCount;  // Preallocate
 
             var rgItemsByLabel = refresh.GetItemsByLabel();
 
@@ -1134,7 +1205,7 @@ namespace MyCaffe.db.image
                 var items = labelToItems[label];
 
                 int itemIndex = random.Next(items.Count);
-                m_rgLoadSequence.Add(items[itemIndex].Index);
+                m_rgLoadSequenceOfImgIdx.Add(items[itemIndex].Index);
 
                 availableLabels.RemoveAt(labelIndex);
 
@@ -1151,7 +1222,7 @@ namespace MyCaffe.db.image
 
         public int Count
         {
-            get { return m_rgLoadSequence.Count; }
+            get { return m_rgLoadSequenceOfImgIdx.Count; }
         }
 
         public bool IsEmpty
@@ -1160,7 +1231,7 @@ namespace MyCaffe.db.image
             {
                 lock (m_syncObj)
                 {
-                    return (m_rgLoadSequence.Count == 0) ? true : false;
+                    return (m_rgLoadSequenceOfImgIdx.Count == 0) ? true : false;
                 }
             }
         }
@@ -1171,8 +1242,8 @@ namespace MyCaffe.db.image
             {
                 m_rgLoadConditions.Add(nIdx, new Tuple<bool, bool>(bLoadDataCriteria, bLoadDebugData));
                 m_rgPending.Add(nIdx, new AutoResetEvent(false));
-                m_rgLoadSequence.Remove(nIdx);
-                m_rgLoadSequence.Insert(0, nIdx);
+                m_rgLoadSequenceOfImgIdx.Remove(nIdx);
+                m_rgLoadSequenceOfImgIdx.Insert(0, nIdx);
             }
         }
 
@@ -1208,13 +1279,13 @@ namespace MyCaffe.db.image
         {
             lock (m_syncObj)
             {
-                if (m_rgLoadSequence.Count == 0)
+                if (m_rgLoadSequenceOfImgIdx.Count == 0)
                     return null;
 
-                int nIdx = m_rgLoadSequence[0];
-                m_rgLoadSequence.RemoveAt(0);
+                int nImgIdx = m_rgLoadSequenceOfImgIdx[0];
+                m_rgLoadSequenceOfImgIdx.RemoveAt(0);
 
-                return nIdx;
+                return nImgIdx;
             }
         }
     }
