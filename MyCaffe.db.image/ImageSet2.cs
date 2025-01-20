@@ -379,6 +379,9 @@ namespace MyCaffe.db.image
             if (!nLabel.HasValue && (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
                 nLabel = state.GetNextLabel(labelSelectionMethod);
 
+            if (!m_masterList.WaitDataReady())
+                return null;
+
             int? nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
 
             if (state.LoadLimit == 0 && (!nIdx.HasValue || nIdx.Value < 0))
