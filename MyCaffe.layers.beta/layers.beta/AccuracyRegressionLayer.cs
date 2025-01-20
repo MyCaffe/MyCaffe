@@ -32,7 +32,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobWork = null;
         Blob<T> m_blobWork2 = null;
         AccuracyRegressionParameter.ALGORITHM m_alg = AccuracyRegressionParameter.ALGORITHM.MAPE;
-        RollingBucketAccuracy m_rgBucketAccuracy = null;
+        BucketAccuracy m_totalAccuracy = null;
         BucketAccuracy m_testingAccuracy1 = null;
         BucketAccuracy m_testingAccuracy2 = null;
         BucketCollection m_colLabel = null;
@@ -113,11 +113,32 @@ namespace MyCaffe.layers.beta
                 }
 
                 if (m_colLabel != null)
+                {
                     m_log.WriteLine("INFO: Using Label Bucket Collection from 'LabelBucketConfig' dataset parameter instead of accuraccy regression parameters.");
+                }
+                else if (m_param.accuracy_regression_param.center_bucket_percent_from_mid.HasValue && m_param.accuracy_regression_param.bucket_count == 3)
+                {
+                    m_colLabel = new BucketCollection(true);
 
-                m_rgBucketAccuracy = new RollingBucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, 200, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
-                m_testingAccuracy1 = new BucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
-                m_testingAccuracy2 = new BucketAccuracy(m_colLabel, p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
+                    double dfMin = m_param.accuracy_regression_param.bucket_min;
+                    double dfMax = m_param.accuracy_regression_param.bucket_center - (Math.Abs(m_param.accuracy_regression_param.bucket_min) * m_param.accuracy_regression_param.center_bucket_percent_from_mid.Value);
+                    Bucket b = new Bucket(dfMin, dfMax);
+                    m_colLabel.Buckets.Add(b);
+
+                    dfMin = dfMax;
+                    dfMax = m_param.accuracy_regression_param.bucket_center + (m_param.accuracy_regression_param.bucket_max * m_param.accuracy_regression_param.center_bucket_percent_from_mid.Value);
+                    b = new Bucket(dfMin, dfMax);
+                    m_colLabel.Buckets.Add(b);
+
+                    dfMin = dfMax;
+                    dfMax = m_param.accuracy_regression_param.bucket_max;
+                    b = new Bucket(dfMin, dfMax);
+                    m_colLabel.Buckets.Add(b);
+                }
+
+                m_totalAccuracy = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, m_colLabel, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
+                m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, m_colLabel, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
+                m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, m_colLabel, p.accuracy_regression_param.bucket_ignore_min, p.accuracy_regression_param.bucket_ignore_max);
             }
         }
 
@@ -145,8 +166,9 @@ namespace MyCaffe.layers.beta
             if (layer_param.accuracy_regression_param.algorithm != AccuracyRegressionParameter.ALGORITHM.BUCKETING)
                 throw new Exception("The 'ResetTesting' is only supported when using the 'BUCKETING' algorithm.");
 
-            m_testingAccuracy1 = new BucketAccuracy(m_colLabel, layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
-            m_testingAccuracy2 = null;
+            LayerParameter p = m_param;
+            m_testingAccuracy1 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, m_colLabel);
+            m_testingAccuracy2 = new BucketAccuracy(p.accuracy_regression_param.bucket_min, p.accuracy_regression_param.bucket_max, p.accuracy_regression_param.bucket_count, 100, m_colLabel);
         }
 
         /// <summary>
@@ -170,8 +192,6 @@ namespace MyCaffe.layers.beta
                     if (m_zscore != null && bNormalize)
                         fGroundTruth2 = m_zscore.Normalize(fGroundTruth2.Value);
 
-                    if (m_testingAccuracy2 == null)
-                        m_testingAccuracy2 = new BucketAccuracy(m_colLabel, layer_param.accuracy_regression_param.bucket_min, layer_param.accuracy_regression_param.bucket_max, layer_param.accuracy_regression_param.bucket_count, layer_param.accuracy_regression_param.bucket_ignore_min, layer_param.accuracy_regression_param.bucket_ignore_max);
                     m_testingAccuracy2.Add(new float[] { fPredicted }, new float[] { fGroundTruth2.Value });
                 }
             }
@@ -290,8 +310,9 @@ namespace MyCaffe.layers.beta
             {
                 float[] rgPredicted = convertF(colBottom[0].mutable_cpu_data);
                 float[] rgTarget = convertF(colBottom[1].mutable_cpu_data);
-                m_rgBucketAccuracy.Add(rgPredicted, rgTarget);
-                fAccuracy = (float)m_rgBucketAccuracy.CalculateAccuracy();
+                m_totalAccuracy.Add(rgPredicted, rgTarget);
+                string str;
+                fAccuracy = (float)m_totalAccuracy.CalculateAccuracy(false, out str);
             }
             else
             {
