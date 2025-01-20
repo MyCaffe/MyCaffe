@@ -41,6 +41,7 @@ namespace MyCaffe.db.image
         int m_nLoadCount = 0;
         int m_nReplacementBatch = 100;
         object m_syncObj = new object();
+        DB_LOAD_METHOD m_loadMethod;
 
         /// <summary>
         /// The OnCalculateImageMean event fires when the ImageSet needs to calculate the image mean for the image set.
@@ -56,8 +57,9 @@ namespace MyCaffe.db.image
         /// <param name="factory">Specifies the data factory used to access the database data.</param>
         /// <param name="rgAbort">Specifies the cancel handles.</param>
         /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
-        public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0)
+        public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0, DB_LOAD_METHOD loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND)
         {
+            m_loadMethod = loadMethod;
             m_random = random;
             m_log = log;
             m_src = src;
@@ -158,6 +160,9 @@ namespace MyCaffe.db.image
         /// <returns></returns>
         public bool WaitDataReady()
         {
+            if (m_loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND || m_loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
+                return true;
+
             if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
                 return false;
             return true;
@@ -592,7 +597,7 @@ namespace MyCaffe.db.image
         /// <returns>If found, the image is returned, otherwise it is loaded then returned.</returns>
         public SimpleDatum GetImage(DbItem item1, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
         {
-            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+            if (!WaitDataReady())
                 return null;
 
             // Cache the index since we use it multiple times
@@ -654,7 +659,7 @@ namespace MyCaffe.db.image
         /// <returns>If found, the image is returned.</returns>
         public SimpleDatum GetImage(int? nImgIdx, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod, int? nLabel = null)
         {
-            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+            if (!WaitDataReady())
                 return null;
 
             SimpleDatum sd = null;
@@ -779,7 +784,7 @@ namespace MyCaffe.db.image
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         public List<SimpleDatum> GetImages(QueryState state, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
         {
-            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+            if (!WaitDataReady())
                 return null;
 
             List<int> rgIdx = state.GetIndexes(nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
@@ -823,7 +828,7 @@ namespace MyCaffe.db.image
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         public List<SimpleDatum> GetImages(QueryState state, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
-            if (!m_evtDataReady.WaitOne(m_nDataReadyWait))
+            if (!WaitDataReady())
                 return null;
 
             List<int> rgIdx = state.GetIndexes(dtStart, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);

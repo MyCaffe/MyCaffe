@@ -104,7 +104,7 @@ namespace MyCaffe.db.image
         {
             if (m_masterList == null)
             {
-                m_masterList = new MasterList(m_random, m_log, m_src, m_factory, m_rgAbort, nMaxLoadCount);
+                m_masterList = new MasterList(m_random, m_log, m_src, m_factory, m_rgAbort, nMaxLoadCount, m_loadMethod);
 
                 if (OnCalculateImageMean != null)
                     m_masterList.OnCalculateImageMean += OnCalculateImageMean;
