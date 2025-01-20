@@ -219,7 +219,7 @@ namespace MyCaffe.basecode
             switch (m_method)
             {
                 case SCORE_AS_LABEL_NORMALIZATION.Z_SCORE:
-                    if (!m_fScoreMean.HasValue || m_fScoreStdev.HasValue)
+                    if (!m_fScoreMean.HasValue || !m_fScoreStdev.HasValue)
                         m_log.WriteLine("WARNING: missing 'Mean' and/or 'StdDev' needed for Z_SCORE normalization - no normalization taking place.");
                     else
                     {
@@ -229,7 +229,7 @@ namespace MyCaffe.basecode
                     break;
 
                 case SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG:
-                    if (!m_fScoreMean.HasValue || m_fScoreStdev.HasValue)
+                    if (!m_fScoreMean.HasValue || !m_fScoreStdev.HasValue)
                         m_log.WriteLine("WARNING: missing 'Mean' and/or 'StdDev' needed for Z_SCORE_POSNEG normalization - no normalization taking place.");
                     else if (!m_fNegScoreMean.HasValue || !m_fNegScoreStdev.HasValue)
                         m_log.WriteLine("WARNING: missing 'NegMean' and/or 'NegStdDev' needed for Z_SCORE_POSNEG normalization - no normalization taking place.");
