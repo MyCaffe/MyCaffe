@@ -34,6 +34,16 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Reset the bucket.
+        /// </summary>
+        public void Reset()
+        {
+            m_nCount = 0;
+            m_fSum = 0;
+            m_rgReturns.Clear();
+        }
+
+        /// <summary>
         /// Returns the returns if any exist.
         /// </summary>
         public List<List<float>> Returns
@@ -285,18 +295,33 @@ namespace MyCaffe.basecode
         /// <param name="fMin">Specifies the overall minimum of all Buckets.</param>
         /// <param name="fMax">Specifies the overall maximum of all Buckets.</param>
         /// <param name="nCount">Specifies the number of Buckets to use.</param>
-        public BucketCollection(double fMin, double fMax, int nCount)
+        /// <param name="colOverride">Optionally, specifies an pre-set bucket ranges to use.</param>
+        public BucketCollection(double fMin, double fMax, int nCount, BucketCollection colOverride = null)
         {
-            double fRange = fMax - fMin;
-            double fStep = fRange / (double)nCount;
-            double fVal = fMin;
-
-            for (int i = 0; i < nCount; i++)
+            if (colOverride != null)
             {
-                double dfMax = (i == nCount - 1) ? fMax : Math.Round(fVal + fStep, 9);
+                for (int i = 0; i < colOverride.Count; i++)
+                {
+                    Bucket b = colOverride[i];
+                    Bucket b1 = b.Clone();
 
-                m_rgBuckets.Add(new Bucket(fVal, dfMax));
-                fVal = dfMax;
+                    b1.Reset();
+                    m_rgBuckets.Add(b1);
+                }
+            }
+            else
+            {
+                double fRange = fMax - fMin;
+                double fStep = fRange / (double)nCount;
+                double fVal = fMin;
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfMax = (i == nCount - 1) ? fMax : Math.Round(fVal + fStep, 9);
+
+                    m_rgBuckets.Add(new Bucket(fVal, dfMax));
+                    fVal = dfMax;
+                }
             }
 
             m_bIsDataReal = true;
@@ -946,14 +971,15 @@ namespace MyCaffe.basecode
         /// <param name="fMax">Specifies the maximum of the range managed by all bucket collections.</param>
         /// <param name="nCount">Specifies the number of buckets in each bucket collection.</param>
         /// <param name="nMax">Specifies the maximum number of bucket collections (default = 1000).</param>
-        public RollingBucketCollection(double fMin, double fMax, int nCount, int nMax = 1000)
+        /// <param name="colOverride">Specifies an already set of bucket ranges to use.</param>
+        public RollingBucketCollection(double fMin, double fMax, int nCount, int nMax = 1000, BucketCollection colOverride = null)
         {
             m_nMax = nMax;
             m_dfMin = fMin;
             m_dfMax = fMax;
             m_nCount = nCount;
 
-            m_rgBucketColletions.Add(new BucketCollection(fMin, fMax, nCount));
+            m_rgBucketColletions.Add(new BucketCollection(fMin, fMax, nCount, colOverride));
         }
 
         /// <summary>
