@@ -68,6 +68,7 @@
     <Compile Include="BinaryData.cs" />
     <Compile Include="BucketAnalysis.cs" />
     <Compile Include="BucketCollection.cs" />
+    <Compile Include="ConfusionMatrix.cs" />
     <Compile Include="ConfusionMatrixStats.cs" />
     <Compile Include="ConnectInfo.cs" />
     <Compile Include="descriptors\TemporalDescriptor.cs" />
