@@ -71,11 +71,11 @@ namespace MyCaffe.layers.beta
             m_blobWeights.Name = m_param.name + " weights";
             m_fAlpha = p.mean_error_loss_param.weight_frequency_error_alpha;
 
-            if (p.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.POS_SHIFT)
-            {
-                m_fMin = 0;
-                m_fMax = (float)(p.mean_error_loss_param.score_norm_param.pos_shift_mult * 2);
-            }
+            if (p.mean_error_loss_param.weight_buckets_min_value.HasValue)
+                m_fMin = p.mean_error_loss_param.weight_buckets_min_value.Value;
+
+            if (p.mean_error_loss_param.weight_buckets_max_value.HasValue)
+                m_fMax = p.mean_error_loss_param.weight_buckets_max_value.Value;
         }
 
         /** @copydoc Layer::dispose */
@@ -188,8 +188,7 @@ namespace MyCaffe.layers.beta
                 else if (m_fAlpha == 0)
                     m_rgWeights[i] = 1.0f + fErrorWeight;
                 else 
-                    m_rgWeights[i] = 1.0f + (fFrequencyWeight * fErrorWeight);
-
+                    m_rgWeights[i] = 1.0f + (fFrequencyWeight + fErrorWeight);
 
                 // Constrain weights to the max.
                 if (m_rgWeights[i] > m_param.mean_error_loss_param.max_weight)
@@ -233,7 +232,6 @@ namespace MyCaffe.layers.beta
 
             // When using weighted loss, run warmup iterations to collect target values for bucketing
             if (m_param.mean_error_loss_param.enable_weighted_loss &&
-                m_param.mean_error_loss_param.score_norm_param.enabled && 
                 m_nCurrentIteration >= m_param.mean_error_loss_param.weight_warmup_iterations)
             {
                 if (m_buckets == null)
@@ -244,12 +242,19 @@ namespace MyCaffe.layers.beta
 
                 ComputeWeights(convertF(colBottom[0].update_cpu_data()), convertF(colBottom[1].update_cpu_data()), nCount);
             }
-            else if (m_param.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE || 
-                     m_param.mean_error_loss_param.score_norm_param.method == SCORE_AS_LABEL_NORMALIZATION.Z_SCORE_POSNEG)
+            else 
             {
-                Tuple<double, double, double, double> minmax = colBottom[1].minmax_data(m_blobWork);
-                m_fMin = Math.Min(m_fMin, (float)minmax.Item1);
-                m_fMax = Math.Max(m_fMax, (float)minmax.Item2);
+                if (!m_param.mean_error_loss_param.weight_buckets_min_value.HasValue ||
+                    !m_param.mean_error_loss_param.weight_buckets_max_value.HasValue)
+                {
+                    Tuple<double, double, double, double> minmax = colBottom[1].minmax_data(m_blobWork);
+
+                    if (!m_param.mean_error_loss_param.weight_buckets_min_value.HasValue)
+                        m_fMin = Math.Min(m_fMin, (float)minmax.Item1);
+
+                    if (!m_param.mean_error_loss_param.weight_buckets_max_value.HasValue)
+                        m_fMax = Math.Max(m_fMax, (float)minmax.Item2);
+                }
             }
 
             switch (m_meanType)
