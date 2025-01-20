@@ -31,13 +31,13 @@ namespace MyCaffe.param
         int m_nWeightBucketCount = 20;
         int m_nWeightWarmupIerations = 100;
         int m_nWeightMaxHistory = 1000;
+        float? m_fWeightBucketsMinValue = null;
+        float? m_fWeightBucketsMaxValue = null;
 
         float m_fAbovePenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesAboveThreshold = null;
         float m_fBelowPenaltyPortionLambda = 1.0f;
         float? m_fPenalizeValuesBelowThreshold = null;
-
-        NormalizationScoreParameter m_scoreNormParam = new NormalizationScoreParameter();
 
         /** @copydoc LayerParameterBase */
         public MeanErrorLossParameter()
@@ -98,13 +98,23 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the score normalization parameter used to normalize score and score2 values, when enabled.
+        /// [\b optional, default = null] Specifies the minimum value used to initialize the buckets (overrides the dynamic range determined during warmup).
         /// </summary>
-        [Category("Labels"), Description("Specifies the score normalization parameter used to normalize score and score2 values, when enabled.")]
-        public NormalizationScoreParameter score_norm_param
+        [Description("Specifies the minimum value used to initialize the buckets (overrides the dynamic range determined during warmup) default = null.")]
+        public float? weight_buckets_min_value
         {
-            get { return m_scoreNormParam; }
-            set { m_scoreNormParam = value; }
+            get { return m_fWeightBucketsMinValue; }
+            set { m_fWeightBucketsMinValue = value; }
+        }
+
+        /// <summary>
+        /// [\b optional, default = null] Specifies the maximum value used to initialize the buckets (overrides the dynamic range determined during warmup).
+        /// </summary>
+        [Description("Specifies the maximum value used to initialize the buckets (overrides the dynamic range determined during warmup) default = null.")]
+        public float? weight_buckets_max_value
+        {
+            get { return m_fWeightBucketsMaxValue; }
+            set { m_fWeightBucketsMaxValue = value; }
         }
 
         /// <summary>
@@ -205,7 +215,8 @@ namespace MyCaffe.param
             m_nWeightWarmupIerations = p.m_nWeightWarmupIerations;
             m_fWeightFrequencyErrorAlpha = p.m_fWeightFrequencyErrorAlpha;
             m_nWeightMaxHistory = p.m_nWeightMaxHistory;
-            m_scoreNormParam.Copy(p.score_norm_param);
+            m_fWeightBucketsMinValue = p.m_fWeightBucketsMinValue;
+            m_fWeightBucketsMaxValue = p.m_fWeightBucketsMaxValue;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -246,7 +257,11 @@ namespace MyCaffe.param
                 rgChildren.Add("below_penalty_portion_lambda", below_penalty_portion_lambda.ToString());
             }
 
-            rgChildren.Add(score_norm_param.ToProto("score_norm_param"));
+            if (weight_buckets_min_value.HasValue)
+                rgChildren.Add("weight_buckets_min_value", weight_buckets_min_value.ToString());
+
+            if (weight_buckets_max_value.HasValue)
+                rgChildren.Add("weight_buckets_max_value", weight_buckets_max_value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -309,9 +324,11 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("weight_warmup_iterations")) != null)
                 p.weight_warmup_iterations = int.Parse(strVal);
 
-            RawProto rpScoreNorm = rp.FindChild("score_norm_param");
-            if (rpScoreNorm != null)
-                p.score_norm_param = NormalizationScoreParameter.FromProto(rpScoreNorm);
+            if ((strVal = rp.FindValue("weight_buckets_min_value")) != null)
+                p.weight_buckets_min_value = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("weight_buckets_max_value")) != null)
+                p.weight_buckets_max_value = int.Parse(strVal);
 
             return p;
         }
