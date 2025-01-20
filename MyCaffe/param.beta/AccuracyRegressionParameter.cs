@@ -20,10 +20,11 @@ namespace MyCaffe.param
         double m_dfBucketMin = -2.0;
         double m_dfBucketMax = 2.0;
         int m_nBucketCount = 10;
-        double? m_dfIgnoreMin = null;
-        double? m_dfIgnoreMax = null;
+        float? m_fIgnoreMin = null;
+        float? m_fIgnoreMax = null;
         bool m_bEnableOverride = false;
         double m_dfBucketCenterValue = 0;
+        double? m_dfCenterBucketPercentFromMid = null;
 
         /// <summary>
         /// Defines the MAPE algorithm to use.
@@ -79,23 +80,33 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the percent from the bucket center value to set the center bucket bounds with (optional, default = null).
+        /// </summary>
+        [Description("Specifies the percent from the bucket center value to set the center bucket bounds with (optional, default = null).")]
+        public double? center_bucket_percent_from_mid
+        {
+            get { return m_dfCenterBucketPercentFromMid; }
+            set { m_dfCenterBucketPercentFromMid= value; }
+        }
+
+        /// <summary>
         /// Ignore all scores below this value (default = null).  Note when using ignore ranges both min and max must be specified.
         /// </summary>
         [Description("Ignore all scores below this value (default = null).  Note when using ignore ranges both min and max must be specified.")]
-        public double? bucket_ignore_max
+        public float? bucket_ignore_max
         {
-            get { return m_dfIgnoreMin; }
-            set { m_dfIgnoreMin = value; }
+            get { return m_fIgnoreMin; }
+            set { m_fIgnoreMin = value; }
         }
 
         /// <summary>
         /// Ignore all scores above this value (default = null).  Note when using ignore ranges both min and max must be specified.
         /// </summary>
         [Description("Ignore all scores above this value (default = null).  Note when using ignore ranges both min and max must be specified.")]
-        public double? bucket_ignore_min
+        public float? bucket_ignore_min
         {
-            get { return m_dfIgnoreMax; }
-            set { m_dfIgnoreMax = value; }
+            get { return m_fIgnoreMax; }
+            set { m_fIgnoreMax = value; }
         }
 
         /// <summary>
@@ -149,10 +160,11 @@ namespace MyCaffe.param
             m_dfBucketMin = p.m_dfBucketMin;
             m_dfBucketMax = p.m_dfBucketMax;
             m_nBucketCount = p.m_nBucketCount;
-            m_dfIgnoreMin = p.m_dfIgnoreMin;
-            m_dfIgnoreMax = p.m_dfIgnoreMax;
+            m_fIgnoreMin = p.m_fIgnoreMin;
+            m_fIgnoreMax = p.m_fIgnoreMax;
             m_bEnableOverride = p.m_bEnableOverride;
             m_dfBucketCenterValue = p.m_dfBucketCenterValue;
+            m_dfCenterBucketPercentFromMid = p.m_dfCenterBucketPercentFromMid;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -184,6 +196,9 @@ namespace MyCaffe.param
             if (bucket_ignore_max.HasValue)
                 rgChildren.Add("bucket_ignore_max", bucket_ignore_max.Value.ToString());
 
+            if (center_bucket_percent_from_mid.HasValue)
+                rgChildren.Add("center_bucket_percent_from_mid", center_bucket_percent_from_mid.Value.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -213,13 +228,16 @@ namespace MyCaffe.param
                 p.bucket_count = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("bucket_ignore_min")) != null)
-                p.bucket_ignore_min = BaseParameter.ParseDouble(strVal);
+                p.bucket_ignore_min = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("bucket_ignore_max")) != null)
-                p.bucket_ignore_max = BaseParameter.ParseDouble(strVal);
+                p.bucket_ignore_max = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("enable_override")) != null)
                 p.enable_override = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("center_bucket_percent_from_mid")) != null)
+                p.center_bucket_percent_from_mid = float.Parse(strVal);
 
             return p;
         }
