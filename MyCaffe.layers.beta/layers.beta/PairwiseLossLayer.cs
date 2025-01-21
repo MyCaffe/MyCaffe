@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.PerformanceData;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
@@ -464,7 +466,7 @@ namespace MyCaffe.layers.beta
                 m_param.loss_param.loss_scale != 0.0)
                 fLossWeight *= (float)m_param.loss_param.loss_scale;
 
-            // Calculate total weight for normalization
+            // Calculate total weight for normalization with safety check
             float fTotalWeight = 0.0f;
             for (int i = 0; i < m_nBatchSize; i++)
             {
@@ -472,7 +474,7 @@ namespace MyCaffe.layers.beta
                 {
                     if (i == j) continue;
                     int idx = i * m_nBatchSize + j;
-                    if (rgfValidPairs[idx] > 0)
+                    if (rgfValidPairs[idx] > 0 && !float.IsNaN(rgfWeights[idx]))
                     {
                         fTotalWeight += rgfWeights[idx];
                     }
@@ -482,7 +484,8 @@ namespace MyCaffe.layers.beta
             // Initialize gradients to zero
             Array.Clear(rgfGrad, 0, colBottom[0].count());
 
-            if (fTotalWeight > 0)
+            // Only proceed if we have valid weights
+            if (fTotalWeight > float.Epsilon)
             {
                 for (int i = 0; i < m_nBatchSize; i++)
                 {
@@ -490,25 +493,39 @@ namespace MyCaffe.layers.beta
                     {
                         if (i == j) continue;
                         int idx = i * m_nBatchSize + j;
-
                         if (rgfValidPairs[idx] > 0)
                         {
                             float fTrueDiff = rgfDiffTrue[idx];
                             float fPredDiff = rgfDiffPred[idx];
                             float fWeight = rgfWeights[idx];
+
+                            // Check for invalid inputs
+                            if (float.IsNaN(fTrueDiff) || float.IsNaN(fPredDiff) || float.IsNaN(fWeight))
+                                continue;  // Skip this pair
+
                             float fReturnDiffAbs = Math.Abs(fTrueDiff);
 
-                            // Calculate dynamic margin as in forward pass
-                            float fDynamicMargin = (float)(m_dfMargin * (1.0f + 0.5f * (float)Math.Tanh(fReturnDiffAbs)));
+                            // Calculate dynamic margin as in forward pass with safety clamp
+                            float fTanhInput = Math.Min(Math.Max(fReturnDiffAbs, -20.0f), 20.0f);  // Reduced clamp range for tanh
+                            float fDynamicMargin = (float)(m_dfMargin * (1.0f + 0.5f * (float)Math.Tanh(fTanhInput)));
 
-                            // Calculate softplus gradient
-                            float z = fDynamicMargin - Math.Sign(fTrueDiff) * fPredDiff;
+                            // Calculate softplus gradient with safety clamp
+                            float z = Math.Min(fDynamicMargin - Math.Sign(fTrueDiff) * fPredDiff, 20.0f);  // Reduced clamp for exp
                             float fExpZ = (float)Math.Exp(z);
+
+                            // Check for infinity or NaN in exp result
+                            if (float.IsInfinity(fExpZ) || float.IsNaN(fExpZ))
+                                continue;  // Skip if exp result is invalid
+
                             float fSoftplusGrad = fExpZ / (1.0f + fExpZ);  // Derivative of softplus
 
                             // Apply gradient with weight, loss weight, and normalization
                             float fGradMagnitude = fSoftplusGrad * fWeight * fLossWeight / fTotalWeight;
                             float fGradSign = Math.Sign(fTrueDiff) * fGradMagnitude;
+
+                            // Check for NaN before applying gradients
+                            if (float.IsNaN(fGradSign))
+                                continue;  // Skip this update
 
                             // Apply gradients to both items in the pair
                             rgfGrad[i] -= fGradSign;
