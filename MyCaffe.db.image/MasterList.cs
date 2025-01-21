@@ -31,6 +31,7 @@ namespace MyCaffe.db.image
         ManualResetEvent m_evtRefreshRunning = new ManualResetEvent(false);
         ManualResetEvent m_evtRefreshDone = new ManualResetEvent(false);
         ManualResetEvent m_evtDataReady = new ManualResetEvent(false);
+        ManualResetEvent m_evtDataLoaded = new ManualResetEvent(false);
         int m_nDataReadyWait = 1000000;
         Thread m_dataLoadThread;
         Thread m_dataRefreshThread;
@@ -680,7 +681,7 @@ namespace MyCaffe.db.image
 
                 if (sd == null)
                 {
-                    if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
+                    if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0))
                         Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                     sd = directLoadImage(nIdx);
@@ -718,7 +719,7 @@ namespace MyCaffe.db.image
                     }
                     else
                     {
-                        if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
+                        if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0))
                             Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                         lock (m_syncObj)
@@ -1030,6 +1031,8 @@ namespace MyCaffe.db.image
                     if (rgImgIdxBatch.Count > 0 && m_log != null)
                         m_log.FAIL("Not all images were loaded!");
                 }
+
+                m_evtDataLoaded.Set();
             }
             finally
             {
