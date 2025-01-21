@@ -996,9 +996,9 @@ namespace MyCaffe.db.image
                                             m_rgImgIdxToIdx.Add(sd.Index, m_nLoadedCount);
                                         else
                                             rgDuplicateIdxToImgIdx.Add(m_nLoadedCount, sd.Index);
-
-                                        m_nLoadedCount++;
                                     }
+
+                                    m_nLoadedCount++;
                                 }
                             }
 
