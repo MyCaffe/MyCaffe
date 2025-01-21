@@ -178,7 +178,7 @@ namespace MyCaffe.db.image
         {
             lock (m_syncObj)
             {
-                if (m_evtRunning.WaitOne(0) || m_nLoadedCount == m_rgImages.Length)
+                if (m_evtRunning.WaitOne(0) || m_evtDataLoaded.WaitOne(0) || m_nLoadedCount == m_rgImages.Length)
                     return false;
 
                 m_bSilent = bSilent;
