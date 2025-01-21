@@ -311,8 +311,9 @@ namespace MyCaffe.layers.beta
                 float[] rgPredicted = convertF(colBottom[0].mutable_cpu_data);
                 float[] rgTarget = convertF(colBottom[1].mutable_cpu_data);
                 m_totalAccuracy.Add(rgPredicted, rgTarget);
-                string str;
-                fAccuracy = (float)m_totalAccuracy.CalculateAccuracy(false, out str);
+                string strDetails;
+                bool bShowDetails = false;
+                fAccuracy = (float)m_totalAccuracy.CalculateAccuracy(bShowDetails, out strDetails);
             }
             else
             {
