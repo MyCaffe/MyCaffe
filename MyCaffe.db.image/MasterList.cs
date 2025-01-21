@@ -681,7 +681,7 @@ namespace MyCaffe.db.image
 
                 if (sd == null)
                 {
-                    if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0))
+                    if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0) && m_loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && m_loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                         Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                     sd = directLoadImage(nIdx);
@@ -719,7 +719,7 @@ namespace MyCaffe.db.image
                     }
                     else
                     {
-                        if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0))
+                        if (!m_evtRunning.WaitOne(0) && !m_evtDataLoaded.WaitOne(0) && m_loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && m_loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                             Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                         lock (m_syncObj)
