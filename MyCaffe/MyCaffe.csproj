@@ -89,6 +89,7 @@
     <Compile Include="common\BeamSearch.cs" />
     <Compile Include="common\Blob.cs" />
     <Compile Include="common\BlobCollection.cs" />
+    <Compile Include="common\BlobValidation.cs" />
     <Compile Include="common\BlockingQueue.cs" />
     <Compile Include="common\ComputeGraph.cs" />
     <Compile Include="common\CudaDnn.cs" />
