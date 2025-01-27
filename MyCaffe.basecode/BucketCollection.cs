@@ -20,7 +20,7 @@ namespace MyCaffe.basecode
         double m_fSum;
         int m_nCount;
         object m_tag = null;
-        List<List<float>> m_rgReturns = new List<List<float>>();
+        List<KeyValuePair<double,List<float>>> m_rgReturns = new List<KeyValuePair<double,List<float>>>();
 
         /// <summary>
         /// The constructor.
@@ -46,7 +46,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns the returns if any exist.
         /// </summary>
-        public List<List<float>> Returns
+        public List<KeyValuePair<double, List<float>>> Returns
         {
             get { return m_rgReturns; }
         }
@@ -71,22 +71,16 @@ namespace MyCaffe.basecode
             if (m_rgReturns.Count == 0)
                 return null;
 
-            if (m_rgReturns[0].Count <= nIdx)
+            if (m_rgReturns[0].Value.Count <= nIdx)
                 return null;
 
-            double fSum = 0;
-            int nCount = 0;
-            foreach (List<float> rg in m_rgReturns)
-            {
-                if (nIdx < rg.Count)
-                {
-                    fSum += rg[nIdx];
-                    nCount++;
-                }
-            }
+            List<float> rgReturns = m_rgReturns.Select(p => p.Value[nIdx]).ToList();
+            int nCount = rgReturns.Count;
 
             if (nCount == 0)
                 return null;
+
+            double fSum = rgReturns.Sum();
 
             return fSum / nCount;
         }
@@ -143,7 +137,7 @@ namespace MyCaffe.basecode
                 m_fSum += fVal;
 
                 if (rgReturns != null && rgReturns.Count > 0)
-                    m_rgReturns.Add(rgReturns);
+                    m_rgReturns.Add(new KeyValuePair<double, List<float>>(fVal, rgReturns));
             }
 
             return 0;
