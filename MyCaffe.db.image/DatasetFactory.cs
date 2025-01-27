@@ -2139,10 +2139,9 @@ namespace MyCaffe.db.image
             sd.DataCriteriaFormat = (SimpleDatum.DATA_FORMAT)nDataCriteriaFormatId.GetValueOrDefault(0);
             sd.DebugData = rgDebugData;
             sd.DebugDataFormat = (SimpleDatum.DATA_FORMAT)nDebugDataFormatId.GetValueOrDefault(0);
-            if (img.Score.HasValue)
-                sd.SetScore(img.Score.Value);
-            if (img.Score2.HasValue)
-                sd.SetScore2(img.Score2.Value);
+
+            sd.SetScores(img.Score, img.Score2, img.Score3, img.Score4, img.Score5, img.Score6, img.Score7, img.Score8, img.Score9, img.Score10, img.Score11, img.Score12, img.Score13, img.Score14);
+
             sd.LoadAnnotationDataFromDataCriteria();
 
             return sd;

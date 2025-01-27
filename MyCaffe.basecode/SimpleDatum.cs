@@ -1692,6 +1692,18 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Set multiple scores.
+        /// </summary>
+        /// <param name="rgd">Specifies the scores to set.</param>
+        public void SetScores(params decimal?[] rgd)
+        {
+            for (int i = 0; i < rgd.Length && i < MAX_SCORE; i++)
+            {
+                SetScore(rgd[i], i);
+            }
+        }
+
+        /// <summary>
         /// Set the score value for the datum.
         /// </summary>
         /// <param name="dfScore">Specifies the score value.</param>
