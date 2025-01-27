@@ -185,8 +185,7 @@ namespace MyCaffe.basecode
         int m_nIndex = 0;
         int m_nOriginalLabel = 0;
         int m_nLabel = 0;
-        decimal? m_dfScore = null;
-        decimal? m_dfScore2 = null;
+        decimal?[] m_rgdScore = null;
         int m_nHeight = 0;
         int m_nWidth = 0;
         int m_nChannels = 0;
@@ -220,6 +219,8 @@ namespace MyCaffe.basecode
         /// Specifies the name of the user value.
         /// </summary>
         protected string m_strTagName = null;
+
+        const int MAX_SCORE = 14;
 
         /// <summary>
         /// Specifies the annotation type when using annotations.
@@ -1375,8 +1376,18 @@ namespace MyCaffe.basecode
         {
             m_bIsRealData = d.m_bIsRealData;
             m_nLabel = d.m_nLabel;
-            m_dfScore = d.m_dfScore;
-            m_dfScore2 = d.m_dfScore2;
+
+            if (d.m_rgdScore == null)
+                m_rgdScore = null;
+            else
+            {
+                m_rgdScore = new decimal?[m_rgdScore.Length];
+                for (int i = 0; i < m_rgdScore.Length; i++)
+                {
+                    m_rgdScore[i] = d.m_rgdScore[i];
+                }
+            }
+
             m_nOriginalLabel = d.m_nOriginalLabel;
             m_nChannels = d.m_nChannels;
             m_nHeight = nHeight.GetValueOrDefault(d.m_nHeight);
@@ -1664,21 +1675,148 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Set the score value for the datum.
+        /// Set a set of scores.
         /// </summary>
-        /// <param name="dfScore">Specifies the score value.</param>
-        public void SetScore(decimal dfScore)
+        /// <param name="rg">Specifies the score group.</param>
+        /// <param name="nOffset">Specifies the index offset, default = 0.</param>
+        /// <returns>The next index is returned.</returns>
+        public int SetScores(List<Tuple<decimal?, Tuple<int, int>>> rg, int nOffset = 0)
         {
-            m_dfScore = dfScore;
+            for (int i = 0; i < rg.Count; i++)
+            {
+                int nIdx = i + nOffset;
+                SetScore(rg[i].Item1, nIdx);
+            }
+
+            return nOffset + rg.Count;
         }
 
         /// <summary>
-        /// Set the secondary, optional score value for the datum.
+        /// Set the score value for the datum.
         /// </summary>
-        /// <param name="dfScore2">Specifies the secondary score.</param>
-        public void SetScore2(decimal dfScore2)
+        /// <param name="dfScore">Specifies the score value.</param>
+        public void SetScore(decimal? dfScore, int nIdx = 0)
         {
-            m_dfScore2 = dfScore2;
+            if (m_rgdScore == null)
+                m_rgdScore = new decimal?[MAX_SCORE];
+            if (nIdx < MAX_SCORE)
+                m_rgdScore[nIdx] = dfScore;
+            else
+                throw new Exception("The index 'nIdx' is out of range as it exceeds the MAX_SCORE value of " + MAX_SCORE.ToString() + "!");
+        }
+
+        /// <summary>
+        /// Return the score at the index specified, cannot exceed MAX_SCORE=14.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index (max=14)</param>
+        /// <returns>The score is returned.</returns>
+        public decimal? GetScore(int nIdx)
+        {
+            if (m_rgdScore == null)
+                return null;
+            return m_rgdScore[nIdx];
+        }
+
+        /// <summary>
+        /// Return score 1.
+        /// </summary>
+        public decimal? Score
+        {
+            get { return GetScore(0); }
+        }
+
+        /// <summary>
+        /// Return score 2.
+        /// </summary>
+        public decimal? Score2
+        {
+            get { return GetScore(1); }
+        }
+
+        /// <summary>
+        /// Return score 3.
+        /// </summary>
+        public decimal? Score3
+        {
+            get { return GetScore(2); }
+        }
+
+        /// <summary>
+        /// Return score 4.
+        /// </summary>
+        public decimal? Score4
+        {
+            get { return GetScore(3); }
+        }
+        /// <summary>
+        /// Return score 5.
+        /// </summary>
+        public decimal? Score5
+        {
+            get { return GetScore(4); }
+        }
+        /// <summary>
+        /// Return score 6.
+        /// </summary>
+        public decimal? Score6
+        {
+            get { return GetScore(5); }
+        }
+        /// <summary>
+        /// Return score 7.
+        /// </summary>
+        public decimal? Score7
+        {
+            get { return GetScore(6); }
+        }
+        /// <summary>
+        /// Return score 8.
+        /// </summary>
+        public decimal? Score8
+        {
+            get { return GetScore(7); }
+        }
+        /// <summary>
+        /// Return score 9.
+        /// </summary>
+        public decimal? Score9
+        {
+            get { return GetScore(8); }
+        }
+        /// <summary>
+        /// Return score 10.
+        /// </summary>
+        public decimal? Score10
+        {
+            get { return GetScore(9); }
+        }
+        /// <summary>
+        /// Return score 11.
+        /// </summary>
+        public decimal? Score11
+        {
+            get { return GetScore(10); }
+        }
+        /// <summary>
+        /// Return score 12.
+        /// </summary>
+        public decimal? Score12
+        {
+            get { return GetScore(11); }
+        }
+        /// <summary>
+        /// Return score 13.
+        /// </summary>
+        public decimal? Score13
+        {
+            get { return GetScore(12); }
+        }
+        /// <summary>
+        /// Return score 14.
+        /// </summary>
+        public decimal? Score14
+        {
+            get { return GetScore(13); }
         }
 
         /// <summary>
@@ -2412,22 +2550,6 @@ namespace MyCaffe.basecode
         {
             get { return m_nOriginalLabel; }
             set { m_nOriginalLabel = value; }
-        }
-
-        /// <summary>
-        /// Returns the score for the data.
-        /// </summary>
-        public decimal? Score
-        {
-            get { return m_dfScore; }
-        }
-
-        /// <summary>
-        /// Returns the secondary, optional score for the data.
-        /// </summary>
-        public decimal? Score2
-        {
-            get { return m_dfScore2; }
         }
 
         /// <summary>
