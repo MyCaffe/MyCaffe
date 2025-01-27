@@ -1172,6 +1172,18 @@ namespace MyCaffe.db.image
                     label = p.ActiveLabel,
                     score = p.Score,
                     score2 = p.Score2,
+                    score3 = p.Score3,
+                    score4 = p.Score4,
+                    score5 = p.Score5,
+                    score6 = p.Score6,
+                    score7 = p.Score7,
+                    score8 = p.Score8,
+                    score9 = p.Score9,
+                    score10 = p.Score10,
+                    score11 = p.Score11,
+                    score12 = p.Score12,
+                    score13 = p.Score13,
+                    score14 = p.Score14,
                     boost = p.ActiveBoost,
                     time = p.TimeStamp,
                     desc = p.Description,
@@ -2054,17 +2066,74 @@ namespace MyCaffe.db.image
         /// Update the raw image scores.
         /// </summary>
         /// <param name="nID">Specifies the image ID.</param>
-        /// <param name="tgt">Specifies the score information.</param>
+        /// <param name="rgTgt">Specifies the list of score information.</param>
+        /// <param name="nImgIdx">Optionally, specifies the image index to update (default = null).</param>
         /// <returns>true is returned on success otherwise false.</returns>
-        public bool UpdateRawImageScores(int nID, Tuple<DateTime, decimal?, decimal?> tgt)
+        public bool UpdateRawImageScores(int nID, List<Tuple<decimal?,Tuple<int,int>>> rgTgt, int? nImgIdx = null)
         {
             var rawImage = m_entities.RawImages.FirstOrDefault(p => p.ID == nID);
             if (rawImage == null)
                 return false;
 
-            rawImage.Score = tgt.Item2;
-            rawImage.Score2 = tgt.Item3;
+            for (int i = 0; i < rgTgt.Count && i < 14; i++)
+            {
+                Tuple < decimal ?,Tuple<int, int>> tgt = rgTgt[i];
+
+                switch (i)
+                {
+                    case 0:
+                        rawImage.Score = tgt.Item1;
+                        break;
+                    case 1:
+                        rawImage.Score2 = tgt.Item1;
+                        break;
+                    case 2:
+                        rawImage.Score3 = tgt.Item1;
+                        break;
+                    case 3:
+                        rawImage.Score4 = tgt.Item1;
+                        break;
+                    case 4:
+                        rawImage.Score5 = tgt.Item1;
+                        break;
+                    case 5:
+                        rawImage.Score6 = tgt.Item1;
+                        break;
+                    case 6:
+                        rawImage.Score7 = tgt.Item1;
+                        break;
+                    case 7:
+                        rawImage.Score8 = tgt.Item1;
+                        break;
+                    case 8:
+                        rawImage.Score9 = tgt.Item1;
+                        break;
+                    case 9:
+                        rawImage.Score10 = tgt.Item1;
+                        break;
+                    case 10:
+                        rawImage.Score11 = tgt.Item1;
+                        break;
+                    case 11:
+                        rawImage.Score12 = tgt.Item1;
+                        break;
+                    case 12:
+                        rawImage.Score13 = tgt.Item1;
+                        break;
+                    case 13:
+                        rawImage.Score14 = tgt.Item1;
+                        break;
+
+                    default:
+                        throw new Exception("Index out of range - there are only scores 1-14, at indexes 0-13.");
+                }
+            }
+
+            if (nImgIdx.HasValue)
+                rawImage.Idx = nImgIdx.Value;
+
             m_entities.SaveChanges();
+
             return true;
         }
 
@@ -2193,8 +2262,64 @@ namespace MyCaffe.db.image
             img.Active = bActive;
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
-            img.Score = d.Score;
-            img.Score2 = d.Score2;
+
+            decimal? dScore = null;
+
+            dScore = d.GetScore(0);
+            if (dScore != null)
+                img.Score = dScore;
+
+            dScore = d.GetScore(1);
+            if (dScore != null)
+                img.Score2 = dScore;
+
+            dScore = d.GetScore(2);
+            if (dScore != null)
+                img.Score3 = dScore;
+
+            dScore = d.GetScore(3);
+            if (dScore != null)
+                img.Score4 = dScore;
+
+            dScore = d.GetScore(4);
+            if (dScore != null)
+                img.Score5 = dScore;
+
+            dScore = d.GetScore(5);
+            if (dScore != null)
+                img.Score6 = dScore;
+
+            dScore = d.GetScore(6);
+            if (dScore != null)
+                img.Score7 = dScore;
+
+            dScore = d.GetScore(7);
+            if (dScore != null)
+                img.Score8 = dScore;
+
+            dScore = d.GetScore(8);
+            if (dScore != null)
+                img.Score9 = dScore;
+
+            dScore = d.GetScore(9);
+            if (dScore != null)
+                img.Score10 = dScore;
+
+            dScore = d.GetScore(10);
+            if (dScore != null)
+                img.Score11 = dScore;
+
+            dScore = d.GetScore(11);
+            if (dScore != null)
+                img.Score12 = dScore;
+
+            dScore = d.GetScore(12);
+            if (dScore != null)
+                img.Score13 = dScore;
+
+            dScore = d.GetScore(13);
+            if (dScore != null)
+                img.Score14 = dScore;
 
             if (nOriginalSourceID.HasValue)
                 img.OriginalSourceID = nOriginalSourceID.Value;
@@ -6144,6 +6269,19 @@ namespace MyCaffe.db.image
             item.index = index;
             item.label = label;
             item.score = score;
+            item.score2 = score2;
+            item.score3 = score3;
+            item.score4 = score4;
+            item.score5 = score5;
+            item.score6 = score6;
+            item.score7 = score7;
+            item.score8 = score8;
+            item.score9 = score9;
+            item.score10 = score10;
+            item.score11 = score11;
+            item.score12 = score12;
+            item.score13 = score13;
+            item.score14 = score14;
             item.boost = boost;
             item.time = time;
             item.desc = desc;
@@ -6240,7 +6378,7 @@ namespace MyCaffe.db.image
         public decimal? score { get; set; }
 
         /// <summary>
-        /// Specifies the image score.
+        /// Specifies the image score2.
         /// </summary>
         public decimal Score2
         {
@@ -6248,9 +6386,168 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Specifies the image score used within the lambda statement.
+        /// Specifies the image score2 used within the lambda statement.
         /// </summary>
         public decimal? score2 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score3.
+        /// </summary>
+        public decimal Score3
+        {
+            get { return score3.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score3 used within the lambda statement.
+        /// </summary>
+        public decimal? score3 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score4.
+        /// </summary>
+        public decimal Score4
+        {
+            get { return score4.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score4 used within the lambda statement.
+        /// </summary>
+        public decimal? score4 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score5.
+        /// </summary>
+        public decimal Score5
+        {
+            get { return score5.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score5 used within the lambda statement.
+        /// </summary>
+        public decimal? score5 { get; set; }
+
+
+        /// <summary>
+        /// Specifies the image score6.
+        /// </summary>
+        public decimal Score6
+        {
+            get { return score6.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score6 used within the lambda statement.
+        /// </summary>
+        public decimal? score6 { get; set; }
+
+
+        /// <summary>
+        /// Specifies the image score7.
+        /// </summary>
+        public decimal Score7
+        {
+            get { return score7.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score7 used within the lambda statement.
+        /// </summary>
+        public decimal? score7 { get; set; }
+
+
+        /// <summary>
+        /// Specifies the image score8.
+        /// </summary>
+        public decimal Score8
+        {
+            get { return score8.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score8 used within the lambda statement.
+        /// </summary>
+        public decimal? score8 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score9.
+        /// </summary>
+        public decimal Score9
+        {
+            get { return score9.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score9 used within the lambda statement.
+        /// </summary>
+        public decimal? score9 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score10.
+        /// </summary>
+        public decimal Score10
+        {
+            get { return score10.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score10 used within the lambda statement.
+        /// </summary>
+        public decimal? score10 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score11.
+        /// </summary>
+        public decimal Score11
+        {
+            get { return score11.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score11 used within the lambda statement.
+        /// </summary>
+        public decimal? score11 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score12.
+        /// </summary>
+        public decimal Score12
+        {
+            get { return score12.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score12 used within the lambda statement.
+        /// </summary>
+        public decimal? score12 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score13.
+        /// </summary>
+        public decimal Score13
+        {
+            get { return score13.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score13 used within the lambda statement.
+        /// </summary>
+        public decimal? score13 { get; set; }
+
+        /// <summary>
+        /// Specifies the image score14.
+        /// </summary>
+        public decimal Score14
+        {
+            get { return score14.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image score14 used within the lambda statement.
+        /// </summary>
+        public decimal? score14 { get; set; }
 
         /// <summary>
         /// Specifies the image boost.
