@@ -568,6 +568,71 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score10&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score10] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable10 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable10", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score11&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score11] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable11 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable11", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score12&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score12] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable12 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable12", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score13&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score13] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable13 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable13", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score14&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score14] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable14 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable14", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score2&apos;) IS NULL
         ///BEGIN
         ///    ALTER TABLE [dbo].[RawImages] ADD 
@@ -577,6 +642,97 @@ namespace MyCaffe.db.image.Properties {
         internal static string UpdateRawImagesTable2 {
             get {
                 return ResourceManager.GetString("UpdateRawImagesTable2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score3&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score3] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable3 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score4&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score4] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable4 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score5&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score5] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable5 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable5", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score6&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score6] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable6 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable6", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score7&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score7] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable7 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable7", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score8&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score8] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable8 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable8", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImages&apos;, &apos;Score9&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImages] ADD 
+        ///	    [Score9] [numeric](18,10) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImagesTable9 {
+            get {
+                return ResourceManager.GetString("UpdateRawImagesTable9", resourceCulture);
             }
         }
         

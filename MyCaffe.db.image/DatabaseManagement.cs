@@ -330,6 +330,54 @@ namespace MyCaffe.db.image
             cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable2, connection);
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable3, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable4, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable5, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable6, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable7, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable8, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable9, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable10, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable11, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable12, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable13, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImagesTable14, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
         }
 
         /// <summary>

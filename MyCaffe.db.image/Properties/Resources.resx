@@ -369,10 +369,24 @@ END</value>
 	[DebugDataFormatID] [tinyint] NULL,
 	[DataCriteriaFormatID] [tinyint] NULL,
 	[OriginalSourceID] [int] NULL,
+	[Score] [numeric](18, 10) NULL,
+	[Score2] [numeric](18, 10) NULL,
+	[Score3] [numeric](18, 10) NULL,
+	[Score4] [numeric](18, 10) NULL,
+	[Score5] [numeric](18, 10) NULL,
+	[Score6] [numeric](18, 10) NULL,
+	[Score7] [numeric](18, 10) NULL,
+	[Score8] [numeric](18, 10) NULL,
+	[Score9] [numeric](18, 10) NULL,
+	[Score10] [numeric](18, 10) NULL,
+	[Score11] [numeric](18, 10) NULL,
+	[Score12] [numeric](18, 10) NULL,
+	[Score13] [numeric](18, 10) NULL,
+	[Score14] [numeric](18, 10) NULL,
  CONSTRAINT [PK_RawImages] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
-)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
   </data>
   <data name="CreateRawValuesIndex" xml:space="preserve">
@@ -524,11 +538,95 @@ BEGIN
 	    [Score] [numeric](18,10) NULL
 END</value>
   </data>
+  <data name="UpdateRawImagesTable10" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score10') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score10] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable11" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score11') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score11] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable12" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score12') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score12] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable13" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score13') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score13] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable14" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score14') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score14] [numeric](18,10) NULL
+END</value>
+  </data>
   <data name="UpdateRawImagesTable2" xml:space="preserve">
     <value>IF COL_LENGTH('dbo.RawImages', 'Score2') IS NULL
 BEGIN
     ALTER TABLE [dbo].[RawImages] ADD 
 	    [Score2] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable3" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score3') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score3] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable4" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score4') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score4] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable5" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score5') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score5] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable6" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score6') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score6] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable7" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score7') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score7] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable8" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score8') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score8] [numeric](18,10) NULL
+END</value>
+  </data>
+  <data name="UpdateRawImagesTable9" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImages', 'Score9') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImages] ADD 
+	    [Score9] [numeric](18,10) NULL
 END</value>
   </data>
   <data name="UpdateValueItemsTable1" xml:space="preserve">
