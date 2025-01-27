@@ -2069,72 +2069,63 @@ namespace MyCaffe.db.image
         /// <param name="rgTgt">Specifies the list of score information.</param>
         /// <param name="nImgIdx">Optionally, specifies the image index to update (default = null).</param>
         /// <returns>true is returned on success otherwise false.</returns>
-        public bool UpdateRawImageScores(int nID, List<Tuple<decimal?,Tuple<int,int>>> rgTgt, int? nImgIdx = null)
+        public bool UpdateRawImageScores(int nID, List<Tuple<decimal?, Tuple<int, int>>> rgTgt, int? nImgIdx = null)
         {
-            var rawImage = m_entities.RawImages.FirstOrDefault(p => p.ID == nID);
-            if (rawImage == null)
-                return false;
+            const string baseQuery = @"
+        UPDATE RawImages 
+        SET {0} {1}
+        WHERE ID = @pID";
 
+            var setClauses = new List<string>();
+            var parameters = new List<object>();
+            var paramNames = new List<string>();
+
+            // Add ID parameter first
+            parameters.Add(nID);
+            paramNames.Add("pID");
+
+            // Process scores
             for (int i = 0; i < rgTgt.Count && i < 14; i++)
             {
-                Tuple < decimal ?,Tuple<int, int>> tgt = rgTgt[i];
-
-                switch (i)
+                var score = rgTgt[i].Item1;
+                if (score.HasValue)
                 {
-                    case 0:
-                        rawImage.Score = tgt.Item1;
-                        break;
-                    case 1:
-                        rawImage.Score2 = tgt.Item1;
-                        break;
-                    case 2:
-                        rawImage.Score3 = tgt.Item1;
-                        break;
-                    case 3:
-                        rawImage.Score4 = tgt.Item1;
-                        break;
-                    case 4:
-                        rawImage.Score5 = tgt.Item1;
-                        break;
-                    case 5:
-                        rawImage.Score6 = tgt.Item1;
-                        break;
-                    case 6:
-                        rawImage.Score7 = tgt.Item1;
-                        break;
-                    case 7:
-                        rawImage.Score8 = tgt.Item1;
-                        break;
-                    case 8:
-                        rawImage.Score9 = tgt.Item1;
-                        break;
-                    case 9:
-                        rawImage.Score10 = tgt.Item1;
-                        break;
-                    case 10:
-                        rawImage.Score11 = tgt.Item1;
-                        break;
-                    case 11:
-                        rawImage.Score12 = tgt.Item1;
-                        break;
-                    case 12:
-                        rawImage.Score13 = tgt.Item1;
-                        break;
-                    case 13:
-                        rawImage.Score14 = tgt.Item1;
-                        break;
-
-                    default:
-                        throw new Exception("Index out of range - there are only scores 1-14, at indexes 0-13.");
+                    string scoreColumn = i == 0 ? "Score" : $"Score{i + 1}";
+                    string paramName = $"p{i}";
+                    setClauses.Add($"{scoreColumn} = @{paramName}");
+                    parameters.Add(score.Value);
+                    paramNames.Add(paramName);
                 }
             }
 
+            // Add image index if provided
             if (nImgIdx.HasValue)
-                rawImage.Idx = nImgIdx.Value;
+            {
+                setClauses.Add("Idx = @pIdx");
+                parameters.Add(nImgIdx.Value);
+                paramNames.Add("pIdx");
+            }
 
-            m_entities.SaveChanges();
+            // If nothing to update except ID, return false
+            if (!setClauses.Any())
+                return false;
 
-            return true;
+            string setClause = string.Join(", ", setClauses);
+            string finalQuery = string.Format(baseQuery, setClause, "");
+
+            try
+            {
+                // Use the existing context to execute the SQL command
+                var result = m_entities.Database.ExecuteSqlCommand(finalQuery,
+                    parameters.Select((p, i) => new SqlParameter($"@{paramNames[i]}", p)).ToArray());
+
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                return false;
+            }
         }
 
         /// <summary>
