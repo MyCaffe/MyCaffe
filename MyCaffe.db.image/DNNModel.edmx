@@ -167,6 +167,18 @@
           <Property Name="OriginalSourceID" Type="int" />
           <Property Name="Score" Type="numeric" Precision="18" Scale="10" />
           <Property Name="Score2" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score3" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score4" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score5" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score6" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score7" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score8" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score9" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score10" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score11" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score12" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score13" Type="numeric" Precision="18" Scale="10" />
+          <Property Name="Score14" Type="numeric" Precision="18" Scale="10" />
         </EntityType>
         <EntityType Name="SourceParameters">
           <Key>
@@ -320,9 +332,9 @@
           <EntitySet Name="DatasetCreators" EntityType="DNNModel.DatasetCreator" />
           <EntitySet Name="ModelGroups" EntityType="DNNModel.ModelGroup" />
           <EntitySet Name="Datasets" EntityType="DNNModel.Dataset" />
-          <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
           <EntitySet Name="DatasetParameters" EntityType="DNNModel.DatasetParameter" />
           <EntitySet Name="RawImageParameters" EntityType="DNNModel.RawImageParameter" />
+          <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
         </EntityContainer>
         <EntityType Name="DatasetCreator">
           <Key>
@@ -362,6 +374,28 @@
           <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
           <Property Name="Description" Type="String" MaxLength="Max" FixedLength="false" Unicode="false" />
         </EntityType>
+        <EntityType Name="DatasetParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="DatasetID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="RawImageParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="RawImageID" Type="Int32" />
+          <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="NumericValue2" Type="Single" />
+        </EntityType>
         <EntityType Name="RawImage">
           <Key>
             <PropertyRef Name="ID" />
@@ -392,28 +426,18 @@
           <Property Name="OriginalSourceID" Type="Int32" />
           <Property Name="Score" Type="Decimal" Precision="18" Scale="10" />
           <Property Name="Score2" Type="Decimal" Precision="18" Scale="10" />
-        </EntityType>
-        <EntityType Name="DatasetParameter">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
-          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="DatasetID" Type="Int32" />
-        </EntityType>
-        <EntityType Name="RawImageParameter">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
-          <Property Name="Value" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="SourceID" Type="Int32" />
-          <Property Name="RawImageID" Type="Int32" />
-          <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
-          <Property Name="NumericValue2" Type="Single" />
+          <Property Name="Score3" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score4" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score5" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score6" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score7" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score8" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score9" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score10" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score11" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score12" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score13" Type="Decimal" Precision="18" Scale="10" />
+          <Property Name="Score14" Type="Decimal" Precision="18" Scale="10" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -566,9 +590,45 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="DatasetParameters">
+            <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
+              <MappingFragment StoreEntitySet="DatasetParameters">
+                <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageParameters">
+            <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
+              <MappingFragment StoreEntitySet="RawImageParameters">
+                <ScalarProperty Name="NumericValue2" ColumnName="NumericValue2" />
+                <ScalarProperty Name="NumericValue" ColumnName="NumericValue" />
+                <ScalarProperty Name="TextValue" ColumnName="TextValue" />
+                <ScalarProperty Name="RawImageID" ColumnName="RawImageID" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           <EntitySetMapping Name="RawImages">
             <EntityTypeMapping TypeName="DNNModel.RawImage">
               <MappingFragment StoreEntitySet="RawImages">
+                <ScalarProperty Name="Score14" ColumnName="Score14" />
+                <ScalarProperty Name="Score13" ColumnName="Score13" />
+                <ScalarProperty Name="Score12" ColumnName="Score12" />
+                <ScalarProperty Name="Score11" ColumnName="Score11" />
+                <ScalarProperty Name="Score10" ColumnName="Score10" />
+                <ScalarProperty Name="Score9" ColumnName="Score9" />
+                <ScalarProperty Name="Score8" ColumnName="Score8" />
+                <ScalarProperty Name="Score7" ColumnName="Score7" />
+                <ScalarProperty Name="Score6" ColumnName="Score6" />
+                <ScalarProperty Name="Score5" ColumnName="Score5" />
+                <ScalarProperty Name="Score4" ColumnName="Score4" />
+                <ScalarProperty Name="Score3" ColumnName="Score3" />
                 <ScalarProperty Name="Score2" ColumnName="Score2" />
                 <ScalarProperty Name="Score" ColumnName="Score" />
                 <ScalarProperty Name="OriginalSourceID" ColumnName="OriginalSourceID" />
@@ -594,30 +654,6 @@
                 <ScalarProperty Name="Channels" ColumnName="Channels" />
                 <ScalarProperty Name="Width" ColumnName="Width" />
                 <ScalarProperty Name="Height" ColumnName="Height" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="DatasetParameters">
-            <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
-              <MappingFragment StoreEntitySet="DatasetParameters">
-                <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
-                <ScalarProperty Name="Value" ColumnName="Value" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="RawImageParameters">
-            <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
-              <MappingFragment StoreEntitySet="RawImageParameters">
-                <ScalarProperty Name="NumericValue2" ColumnName="NumericValue2" />
-                <ScalarProperty Name="NumericValue" ColumnName="NumericValue" />
-                <ScalarProperty Name="TextValue" ColumnName="TextValue" />
-                <ScalarProperty Name="RawImageID" ColumnName="RawImageID" />
-                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
-                <ScalarProperty Name="Value" ColumnName="Value" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
               </MappingFragment>
             </EntityTypeMapping>

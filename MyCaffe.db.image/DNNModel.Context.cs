@@ -18,9 +18,8 @@ namespace MyCaffe.db.image
         public DNNEntities()
             : base("name=DNNEntities")
         {
-            ((IObjectContextAdapter)this).ObjectContext.CommandTimeout = 600;
         }
-
+    
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             throw new UnintentionalCodeFirstException();
@@ -37,8 +36,8 @@ namespace MyCaffe.db.image
         public virtual DbSet<DatasetCreator> DatasetCreators { get; set; }
         public virtual DbSet<ModelGroup> ModelGroups { get; set; }
         public virtual DbSet<Dataset> Datasets { get; set; }
-        public virtual DbSet<RawImage> RawImages { get; set; }
         public virtual DbSet<DatasetParameter> DatasetParameters { get; set; }
         public virtual DbSet<RawImageParameter> RawImageParameters { get; set; }
+        public virtual DbSet<RawImage> RawImages { get; set; }
     }
 }

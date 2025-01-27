@@ -16,9 +16,9 @@
         <EntityTypeShape EntityType="DNNModel.DatasetCreator" Width="1.5" PointX="9.375" PointY="4.75" />
         <EntityTypeShape EntityType="DNNModel.ModelGroup" Width="1.5" PointX="9.375" PointY="7.75" />
         <EntityTypeShape EntityType="DNNModel.Dataset" Width="1.5" PointX="0.625" PointY="3.375" />
-        <EntityTypeShape EntityType="DNNModel.RawImage" Width="1.5" PointX="5.375" PointY="10.75" />
         <EntityTypeShape EntityType="DNNModel.DatasetParameter" Width="1.5" PointX="2.75" PointY="0.75" />
         <EntityTypeShape EntityType="DNNModel.RawImageParameter" Width="1.5" PointX="7.375" PointY="10.75" />
+        <EntityTypeShape EntityType="DNNModel.RawImage" Width="1.5" PointX="9.375" PointY="10.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>
