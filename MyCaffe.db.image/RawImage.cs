@@ -40,5 +40,17 @@ namespace MyCaffe.db.image
         public Nullable<int> OriginalSourceID { get; set; }
         public Nullable<decimal> Score { get; set; }
         public Nullable<decimal> Score2 { get; set; }
+        public Nullable<decimal> Score3 { get; set; }
+        public Nullable<decimal> Score4 { get; set; }
+        public Nullable<decimal> Score5 { get; set; }
+        public Nullable<decimal> Score6 { get; set; }
+        public Nullable<decimal> Score7 { get; set; }
+        public Nullable<decimal> Score8 { get; set; }
+        public Nullable<decimal> Score9 { get; set; }
+        public Nullable<decimal> Score10 { get; set; }
+        public Nullable<decimal> Score11 { get; set; }
+        public Nullable<decimal> Score12 { get; set; }
+        public Nullable<decimal> Score13 { get; set; }
+        public Nullable<decimal> Score14 { get; set; }
     }
 }
