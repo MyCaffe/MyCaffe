@@ -113,7 +113,6 @@ namespace MyCaffe.layers
         bool m_bWarningShown = false;
         bool m_bCudnnRnn8Supported = false;
         bool m_bUseCudnnRnn8 = false;
-        bool m_bFirstReshape = true;
         List<int> m_rgShapeBtm0 = null;
         List<int> m_rgShapeBtm1 = null;
 
