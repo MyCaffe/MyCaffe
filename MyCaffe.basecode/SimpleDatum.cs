@@ -1707,6 +1707,7 @@ namespace MyCaffe.basecode
         /// Set the score value for the datum.
         /// </summary>
         /// <param name="dfScore">Specifies the score value.</param>
+        /// <param name="nIdx">Optionally specifies the index into the score array that should be set (default = 0).</param>
         public void SetScore(decimal? dfScore, int nIdx = 0)
         {
             if (m_rgdScore == null)
