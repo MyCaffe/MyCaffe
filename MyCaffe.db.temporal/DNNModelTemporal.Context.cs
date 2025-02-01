@@ -15,18 +15,35 @@ namespace MyCaffe.db.temporal
     
     public partial class DNNEntitiesTemporal : DbContext
     {
+        /// <summary>
+        /// Create a new DNNEntitiesTemporal instance.
+        /// </summary>
         public DNNEntitiesTemporal()
             : base("name=DNNEntitiesTemporal")
         {
         }
-    
+
+        /// <summary>
+        /// The OnModelCreating event method, currently not implemented.
+        /// </summary>
+        /// <param name="modelBuilder">n/a</param>
+        /// <exception cref="UnintentionalCodeFirstException">Unintentional code exception thrown.</exception>
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             throw new UnintentionalCodeFirstException();
         }
-    
+
+        /// <summary>
+        /// The ValueItems table.
+        /// </summary>
         public virtual DbSet<ValueItem> ValueItems { get; set; }
+        /// <summary>
+        /// The RawValues table.
+        /// </summary>
         public virtual DbSet<RawValue> RawValues { get; set; }
+        /// <summary>
+        /// The ValueStreams table.
+        /// </summary>
         public virtual DbSet<ValueStream> ValueStreams { get; set; }
     }
 }
