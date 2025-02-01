@@ -124,6 +124,8 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file. (default = true).</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file. (default = true).</param>
+        /// <param name="dtMin">Optionally, specifies the min DateTime (default = null).</param>
+        /// <param name="dtMax">Optionally, specifies the max DateTime (default = null).</param>
         public void SetLoadingParameters(bool bLoadDataCriteria, bool bLoadDebugData, DateTime? dtMin = null, DateTime? dtMax = null)
         {
             m_bLoadDataCriteria = bLoadDataCriteria;
