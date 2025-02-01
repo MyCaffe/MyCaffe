@@ -218,7 +218,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns the load limit, or 0 if none specified.
         /// </summary>
-        public int LoadLimit
+        public new int LoadLimit
         {
             get { return m_master.LoadLimit; }
         }
