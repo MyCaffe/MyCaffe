@@ -11003,7 +11003,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// Calculation: @f$ f(x) = 
         /// \begin{cases}
-        ///     x * scaleData[(i / nInnerDim) \mod nScaleDim],                                           & \text{if } hBias == 0\\
+        ///     x * scaleData[(i / nInnerDim) \mod nScaleDim], & \text{if } hBias == 0\\
         ///     x * scaleData[(i / nInnerDim) \mod nScaleDim] + biasData[(i / nInnerDim) \mod nScaleDim] & \text{otherwise}
         /// \end{cases} @f$
         /// </remarks>
