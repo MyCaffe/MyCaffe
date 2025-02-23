@@ -1381,7 +1381,7 @@ namespace MyCaffe.basecode
                 m_rgdScore = null;
             else
             {
-                m_rgdScore = new decimal?[m_rgdScore.Length];
+                m_rgdScore = new decimal?[d.m_rgdScore.Length];
                 for (int i = 0; i < m_rgdScore.Length; i++)
                 {
                     m_rgdScore[i] = d.m_rgdScore[i];
