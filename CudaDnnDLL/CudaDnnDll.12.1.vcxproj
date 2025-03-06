@@ -23,7 +23,7 @@
     <ProjectGuid>{FF2BE7C2-6FCC-4D2E-AC4A-3A543DED71E6}</ProjectGuid>
     <RootNamespace>CudaDLL_NN</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
