@@ -58,6 +58,7 @@ namespace MyCaffe.db.image
         /// <param name="factory">Specifies the data factory used to access the database data.</param>
         /// <param name="rgAbort">Specifies the cancel handles.</param>
         /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
+        /// <param name="loadMethod">Optionally, specifies the load method.</param>
         public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0, DB_LOAD_METHOD loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND)
         {
             m_loadMethod = loadMethod;

@@ -1352,7 +1352,11 @@ namespace MyCaffe.db.image
                 return query.ToList();
             }
         }
-        public List<RawImage> GetRawImagesAtOld(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null)
+
+
+#pragma warning disable 1591
+
+        public List<RawImage> GetRawImagesAtOld(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null) /** @private */
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1371,6 +1375,8 @@ namespace MyCaffe.db.image
 
             return query.ToList();
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Returns a list of RawImages from the database for a data source.
@@ -1436,7 +1442,9 @@ namespace MyCaffe.db.image
             }
         }
 
-        public List<RawImage> GetRawImagesAtIDOld(List<int> rgImageID, int nSrcId = 0, string strDescription = null)
+#pragma warning disable 1591
+
+        public List<RawImage> GetRawImagesAtIDOld(List<int> rgImageID, int nSrcId = 0, string strDescription = null) /** @private */
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1472,6 +1480,8 @@ namespace MyCaffe.db.image
                 }
             }
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Returns the RawImage at a given image index.

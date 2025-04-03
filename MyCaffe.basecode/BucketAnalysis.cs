@@ -163,45 +163,72 @@ namespace MyCaffe.basecode
         }
     }
 
+    /// <summary>
+    /// The CurveItem class is used to represent a single item in a curve.
+    /// </summary>
     class CurveItem
     {
         PointF m_pt;
         Bucket m_bucket;
         int m_nX;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bucket">Specifies the bucket for the curve.</param>
+        /// <param name="nX">Specifies the x position.</param>
         public CurveItem(Bucket bucket, int nX)
         {
             m_bucket = bucket;
             m_nX = nX;
         }
 
+        /// <summary>
+        /// Returns the bucket associated with the curve item.
+        /// </summary>
         public Bucket Bucket
         {
             get { return m_bucket; }
         }
 
+        /// <summary>
+        /// Returns the x position of the curve item.
+        /// </summary>
         public int X
         {
             get { return m_nX; }
         }
 
+        /// <summary>
+        /// Returns the point associated with the curve item.
+        /// </summary>
         public PointF Point
         {
             get { return m_pt; }
             set { m_pt = value; }
         }
 
+        /// <summary>
+        /// Returns the string representation of the curve item.
+        /// </summary>
+        /// <returns>Returns the string.</returns>
         public override string ToString()
         {
             return "X=" + m_nX.ToString() + ", Count=" + m_bucket.Count.ToString() + " Range:" + m_bucket.Minimum.ToString() + "," + m_bucket.Maximum.ToString() + " Pt=" + m_pt.X.ToString() + "," + m_pt.Y.ToString();
         }
     }
 
+    /// <summary>
+    /// The CurveCollection class is used to represent a collection of curves.
+    /// </summary>
     class CurveCollection
     {
         int m_nMidIdx = -1;
         List<CurveItem> m_rgCurves = new List<CurveItem>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public CurveCollection()
         {
         }
@@ -343,6 +370,22 @@ namespace MyCaffe.basecode
             }
         }
 
+        /// <summary>
+        /// Render the curve.
+        /// </summary>
+        /// <param name="g">Specifies the graphics object.</param>
+        /// <param name="nX">Specifies the x location.</param>
+        /// <param name="nY">Specifies the y location.</param>
+        /// <param name="nWid">Specifies the width.</param>
+        /// <param name="nHt">Specifies the height</param>
+        /// <param name="nMaxCount">Specifies the maximum count.</param>
+        /// <param name="strType">Specifies the type.</param>
+        /// <param name="dfPctFromMidNeg">Specifies the percent from mid on the negative side.</param>
+        /// <param name="dfPctFromMidPos">Specifies the percent from mid on the positive side.</param>
+        /// <param name="clr">Specifies the color.</param>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <param name="dtMin">Specifies the minimum date.</param>
+        /// <param name="dtMax">Specifies the maximum date.</param>
         public void Render(Graphics g, int nX, int nY, int nWid, int nHt, int nMaxCount, string strType, double dfPctFromMidNeg, double dfPctFromMidPos, Color clr, int nIdx, DateTime? dtMin, DateTime? dtMax)
         {
             Font font = new Font("Century Gothic", 8.0f);
@@ -428,6 +471,15 @@ namespace MyCaffe.basecode
             font.Dispose();
         }
 
+        /// <summary>
+        /// Translate the curves to the specified location.
+        /// </summary>
+        /// <param name="nX">Specifies the x location.</param>
+        /// <param name="nY">Specifies the y location.</param>
+        /// <param name="nWid">Specifies the width.</param>
+        /// <param name="nHt">Specifies the height.</param>
+        /// <param name="nMaxCount">Specifies the maximum count.</param>
+        /// <returns></returns>
         public int Translate(int nX, int nY, int nWid, int nHt, int nMaxCount)
         {
             nHt -= 10;
@@ -449,6 +501,12 @@ namespace MyCaffe.basecode
             return nMaxCount;
         }
 
+        /// <summary>
+        /// Add a curve to the collection.
+        /// </summary>
+        /// <param name="curve">Specifies the curve.</param>
+        /// <param name="bReverse">Specifies to add in reverse.</param>
+        /// <param name="nOffset">Specifies the offset.</param>
         public void Add(CurveCollection curve, bool bReverse, int nOffset = 0)
         {
             if (bReverse)
@@ -473,16 +531,29 @@ namespace MyCaffe.basecode
             }
         }
 
+        /// <summary>
+        /// Add a curve item to the collection.
+        /// </summary>
+        /// <param name="bucket">Specifies the bucket.</param>
+        /// <param name="nX">Specifies the x position.</param>
         public void Add(Bucket bucket, int nX)
         {
             m_rgCurves.Add(new CurveItem(bucket, nX));
         }
 
+        /// <summary>
+        /// Returns the number of curves in the collection.
+        /// </summary>
         public int Count
         {
             get { return m_rgCurves.Count; }
         }
 
+        /// <summary>
+        /// Returns the item at the index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <returns>The curve item is returned.</returns>
         public CurveItem this[int nIdx]
         {
             get { return m_rgCurves[nIdx]; }
