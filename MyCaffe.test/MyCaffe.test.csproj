@@ -73,8 +73,8 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=1.12.4.80, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.1.12.4.80\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=1.12.4.82, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.1.12.4.82\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="SimpleGraphing">
       <HintPath>..\_references\SimpleGraphing.dll</HintPath>
